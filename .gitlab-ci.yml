@@ -1,0 +1,30 @@
+stages:
+  - "build"
+  - "quality"
+
+image: "golang:1.12"
+
+variables:
+  GOPATH: "${CI_PROJECT_DIR}/.go"
+
+cache:
+  key: "${CI_COMMIT_REF_SLUG}"
+  untracked: true
+  paths:
+    - ".go/"
+
+build:go:
+  stage: "build"
+  script:
+    - "./build.sh"
+  artifacts:
+    untracked: true
+    paths:
+      - build/
+
+quality:test:
+  stage: "quality"
+  cache:
+    policy: "pull"
+  script:
+    - "go test"
