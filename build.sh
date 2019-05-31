@@ -17,9 +17,11 @@ for platform in "${PLATFORMS[@]}"
 do
   platform_split=(${platform//\// })
   arm_split=(${platform_split[1]//v/ })
-  GOOS="${platform_split[0]}"
-  GOARCH="${arm_split[0]}"
-  GOARM="${arm_split[1]}"
+
+  export GOOS="${platform_split[0]}"
+  export GOARCH="${arm_split[0]}"
+  export GOARM="${arm_split[1]}"
+
   OUTPUT="build/nas-cli-${VERSION}-${GOOS}"
 
   # Add .exe when OS is Windows
