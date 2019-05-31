@@ -162,6 +162,10 @@ func process(wd string, tvShows []TVShow, owner, group int) error {
 			continue
 		}
 		tvShowPath := path.Join(wd, tvShow.Name)
+		os.Mkdir(tvShowPath, util.DirectoryMode)
+		os.Chmod(tvShowPath, util.DirectoryMode)
+		os.Chown(tvShowPath, owner, group)
+
 		for _, season := range tvShow.Seasons {
 			prompt := promptui.Prompt{
 				Label:     season.Name,
@@ -175,10 +179,12 @@ func process(wd string, tvShows []TVShow, owner, group int) error {
 				}
 				continue
 			}
+
 			seasonPath := path.Join(tvShowPath, season.Name)
-			os.MkdirAll(seasonPath, util.DirectoryMode)
-			os.Chown(tvShowPath, owner, group)
+			os.Mkdir(seasonPath, util.DirectoryMode)
+			os.Chmod(seasonPath, util.DirectoryMode)
 			os.Chown(seasonPath, owner, group)
+
 			for _, episode := range season.Episodes {
 				oldPath := path.Join(wd, episode.Basename)
 				newPath := path.Join(seasonPath, episode.Fullname)
