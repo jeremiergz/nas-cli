@@ -16,9 +16,9 @@ cache:
 build:go:
   stage: "build"
   script:
-    - "./build.sh"
+    - "rm -r build/"
+    - "bash build.sh"
   artifacts:
-    untracked: true
     paths:
       - build/
 
