@@ -1,31 +1,37 @@
-APP_NAME		:= $(shell basename "$(PWD)")
+DEPENDENCIES	:= date find git go
+$(foreach dependency, ${DEPENDENCIES}, $(if $(shell which ${dependency}),, $(error No ${dependency} in PATH)))
+
+BINARY			:= nas-cli
 BUILD_DATE		:= $(shell date -u +%FT%TZ)
-BUILD_DIR		:= build
 GIT_COMMIT		:= $(shell git rev-parse HEAD)
 PATCH_VERSION	?= 0
 VERSION			:= $(shell date +%y.%m).$(PATCH_VERSION)
-LDFLAGS			:= -X gitlab.com/jeremiergz/nas-cli/cmd/info.BuildDate=$(BUILD_DATE) -X gitlab.com/jeremiergz/nas-cli/cmd/info.GitCommit=$(GIT_COMMIT) -X gitlab.com/jeremiergz/nas-cli/cmd/info.Version=$(VERSION)
+LDFLAGS			:= -ldflags "-X gitlab.com/jeremiergz/nas-cli/cmd/info.BuildDate=$(BUILD_DATE) -X gitlab.com/jeremiergz/nas-cli/cmd/info.GitCommit=$(GIT_COMMIT) -X gitlab.com/jeremiergz/nas-cli/cmd/info.Version=$(VERSION)"
 
-install:
-	@go install -ldflags "$(LDFLAGS)"
+default: install
 
-build: clean compile
+all: clean build-all install
 
-build-all: clean compile-all
+build: clean
+	@go build ${LDFLAGS} -o ${BINARY}
+
+build-all: clean
+	@export GOOS=darwin;  export GOARCH=386;                   go build ${LDFLAGS} -o ${BINARY}-${VERSION}-darwin-386
+	@export GOOS=darwin;  export GOARCH=amd64;                 go build ${LDFLAGS} -o ${BINARY}-${VERSION}-darwin-amd64
+	@export GOOS=freebsd; export GOARCH=386;                   go build ${LDFLAGS} -o ${BINARY}-${VERSION}-freebsd-386
+	@export GOOS=freebsd; export GOARCH=amd64;                 go build ${LDFLAGS} -o ${BINARY}-${VERSION}-freebsd-amd64
+	@export GOOS=linux;   export GOARCH=386;                   go build ${LDFLAGS} -o ${BINARY}-${VERSION}-linux-386
+	@export GOOS=linux;   export GOARCH=amd64;                 go build ${LDFLAGS} -o ${BINARY}-${VERSION}-linux-amd64
+	@export GOOS=linux;   export GOARCH=arm64;                 go build ${LDFLAGS} -o ${BINARY}-${VERSION}-linux-arm64
+	@export GOOS=linux;   export GOARCH=arm;   export GOARM=7; go build ${LDFLAGS} -o ${BINARY}-${VERSION}-linux-armv7
+	@export GOOS=windows; export GOARCH=386;                   go build ${LDFLAGS} -o ${BINARY}-${VERSION}-windows-386.exe
+	@export GOOS=windows; export GOARCH=amd64;                 go build ${LDFLAGS} -o ${BINARY}-${VERSION}-windows-amd64.exe
 
 clean:
-	@find . -name "$(APP_NAME)*" -type f -delete
+	@find . -name "${BINARY}*" -type f -delete
 
-compile:
-	@go build -ldflags "$(LDFLAGS)"
-
-compile-all:
-	@goos=darwin  GOARCH=amd64         go build -o "$(APP_NAME)-$(VERSION)-darwin-amd64"      -ldflags "$(LDFLAGS)"
-	@GOOS=freebsd GOARCH=amd64         go build -o "$(APP_NAME)-$(VERSION)-freebsd-amd64"     -ldflags "$(LDFLAGS)"
-	@GOOS=linux   GOARCH=amd64         go build -o "$(APP_NAME)-$(VERSION)-linux-amd64"       -ldflags "$(LDFLAGS)"
-	@GOOS=linux   GOARCH=arm64         go build -o "$(APP_NAME)-$(VERSION)-linux-arm64"       -ldflags "$(LDFLAGS)"
-	@GOOS=linux   GOARCH=arm   GOARM=7 go build -o "$(APP_NAME)-$(VERSION)-linux-armv7"       -ldflags "$(LDFLAGS)"
-	@GOOS=windows GOARCH=amd64         go build -o "$(APP_NAME)-$(VERSION)-windows-amd64.exe" -ldflags "$(LDFLAGS)"
+install:
+	@go install ${LDFLAGS}
 
 uninstall:
-	@find "$(GOPATH)/bin" -name "$(APP_NAME)" -type f -delete
+	@find "${GOPATH}/bin" -name "${BINARY}" -type f -delete
