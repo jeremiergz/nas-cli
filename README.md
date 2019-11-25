@@ -1,6 +1,6 @@
 # NAS CLI
 
-[![pipeline status](https://gitlab.com/jeremiergz/nas-cli/badges/master/pipeline.svg)](https://gitlab.com/jeremiergz/nas-cli/commits/master)
+[![pipeline status](https://gitlab.com/jeremiergz/nas-cli/badges/master/pipeline.svg)](https://gitlab.com/jeremiergz/nas-cli/pipelines)
 [![license](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](https://gitlab.com/jeremiergz/nas-cli/blob/master/LICENSE)
 
 CLI application for managing my NAS.
