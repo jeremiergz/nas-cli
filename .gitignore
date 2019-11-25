@@ -40,4 +40,4 @@ vendor/
 *.out
 *.so
 *.test
-nas-cli
+nas-cli*

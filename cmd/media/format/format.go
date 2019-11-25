@@ -14,16 +14,16 @@ import (
 )
 
 func init() {
-	FormatCmd.PersistentFlags().Bool("dry-run", false, "print result without processing it")
-	FormatCmd.PersistentFlags().StringArrayP("ext", "e", []string{"avi", "mkv", "mp4"}, "set extensions to look for in directory")
-	FormatCmd.PersistentFlags().StringP("group", "g", "", "set formatted files group")
-	FormatCmd.PersistentFlags().StringP("user", "u", "", "set formatted files owner")
-	FormatCmd.AddCommand(movie.FormatMoviesCmd)
-	FormatCmd.AddCommand(tvshow.FormatTVShowsCmd)
+	Cmd.PersistentFlags().Bool("dry-run", false, "print result without processing it")
+	Cmd.PersistentFlags().StringArrayP("ext", "e", []string{"avi", "mkv", "mp4"}, "set extensions to look for in directory")
+	Cmd.PersistentFlags().StringP("group", "g", "", "set formatted files group")
+	Cmd.PersistentFlags().StringP("user", "u", "", "set formatted files owner")
+	Cmd.AddCommand(movie.Cmd)
+	Cmd.AddCommand(tvshow.Cmd)
 }
 
-// FormatCmd formats given media type according to personal conventions
-var FormatCmd = &cobra.Command{
+// Cmd formats given media type according to personal conventions
+var Cmd = &cobra.Command{
 	Use:   "format",
 	Short: "Batch media formatting depending on their type",
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {

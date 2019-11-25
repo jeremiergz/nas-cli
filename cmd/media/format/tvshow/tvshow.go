@@ -1,7 +1,6 @@
 package tvshow
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"path"
@@ -13,7 +12,6 @@ import (
 	"github.com/spf13/cobra"
 	"gitlab.com/jeremiergz/nas-cli/util"
 	"gitlab.com/jeremiergz/nas-cli/util/media"
-	"gitlab.com/jeremiergz/nas-cli/util/openfaas"
 )
 
 // Episode holds information about an episode
@@ -62,59 +60,45 @@ func findTVShowIndex(name string, tvShows []TVShow) int {
 // loadTVShows lists TV shows in folder that must be processed
 func loadTVShows(wd string, extensions []string) ([]TVShow, error) {
 	toProcess := media.List(wd, extensions, tvShowFmtRegexp)
-
-	jsonBody, err := json.Marshal(toProcess)
-	responseData, err := openfaas.InvokeFaaS(openfaas.ParseMediaTitle, jsonBody)
-	if err != nil {
-		return nil, err
-	}
-
-	var parsedJSONResponse []struct {
-		Basename  string
-		Container string
-		Episode   int
-		Season    int
-		Title     string
-	}
-	err = json.Unmarshal(responseData, &parsedJSONResponse)
-	if err != nil {
-		return nil, err
-	}
-
 	tvShows := []TVShow{}
-	for _, e := range parsedJSONResponse {
-		episode := Episode{
-			Basename:  e.Basename,
-			Extension: e.Container,
-			Fullname:  fmt.Sprintf("%s - %dx%02d.%s", e.Title, e.Season, e.Episode, e.Container),
-		}
-		var tvShow *TVShow
-		tvShowIndex := findTVShowIndex(e.Title, tvShows)
-		if tvShowIndex == -1 {
-			tvShow = &TVShow{
-				Name:    e.Title,
-				Seasons: []Season{},
+	for _, basename := range toProcess {
+		e, err := media.ParseTitle(basename)
+		if err == nil {
+			episode := Episode{
+				Basename:  basename,
+				Extension: e.Container,
+				Fullname:  fmt.Sprintf("%s - %dx%02d.%s", e.Title, e.Season, e.Episode, e.Container),
+			}
+			var tvShow *TVShow
+			tvShowIndex := findTVShowIndex(e.Title, tvShows)
+			if tvShowIndex == -1 {
+				tvShow = &TVShow{
+					Name:    e.Title,
+					Seasons: []Season{},
+				}
+			} else {
+				tvShow = &tvShows[tvShowIndex]
+			}
+
+			seasonName := fmt.Sprintf("Season %d", e.Season)
+			seasonIndex := findSeasonIndex(seasonName, tvShow.Seasons)
+			if seasonIndex == -1 {
+				season := Season{
+					Name:     seasonName,
+					Episodes: []Episode{},
+				}
+				season.Episodes = append(season.Episodes, episode)
+				tvShow.Seasons = append(tvShow.Seasons, season)
+			} else {
+				season := &tvShow.Seasons[seasonIndex]
+				season.Episodes = append(season.Episodes, episode)
+			}
+
+			if tvShowIndex == -1 {
+				tvShows = append(tvShows, *tvShow)
 			}
 		} else {
-			tvShow = &tvShows[tvShowIndex]
-		}
-
-		seasonName := fmt.Sprintf("Season %d", e.Season)
-		seasonIndex := findSeasonIndex(seasonName, tvShow.Seasons)
-		if seasonIndex == -1 {
-			season := Season{
-				Name:     seasonName,
-				Episodes: []Episode{},
-			}
-			season.Episodes = append(season.Episodes, episode)
-			tvShow.Seasons = append(tvShow.Seasons, season)
-		} else {
-			season := &tvShow.Seasons[seasonIndex]
-			season.Episodes = append(season.Episodes, episode)
-		}
-
-		if tvShowIndex == -1 {
-			tvShows = append(tvShows, *tvShow)
+			return nil, err
 		}
 	}
 	return tvShows, nil
@@ -199,10 +183,10 @@ func process(wd string, tvShows []TVShow, owner, group int) error {
 	return nil
 }
 
-// FormatTVShowsCmd is the TV Shows-specific format command
-var FormatTVShowsCmd = &cobra.Command{
+// Cmd is the TV Shows-specific format command
+var Cmd = &cobra.Command{
 	Use:   "tvshows <directory>",
-	Short: "TV Shows-specific batch formatting",
+	Short: "TV Shows batch formatting",
 	Args:  cobra.MinimumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		extensions, _ := cmd.Flags().GetStringArray("ext")

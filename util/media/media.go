@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"strings"
 
+	PTN "github.com/middelink/go-parse-torrent-name"
 	"gitlab.com/jeremiergz/nas-cli/util"
 )
 
@@ -31,4 +32,9 @@ func List(wd string, extensions []string, regExp *regexp.Regexp) []string {
 		}
 	}
 	return filesList
+}
+
+// ParseTitle returns parsed information from a file name
+func ParseTitle(filename string) (*PTN.TorrentInfo, error) {
+	return PTN.Parse((filename))
 }

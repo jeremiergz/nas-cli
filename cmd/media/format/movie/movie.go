@@ -1,7 +1,6 @@
 package movie
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"path"
@@ -12,7 +11,6 @@ import (
 	"github.com/manifoldco/promptui"
 	"gitlab.com/jeremiergz/nas-cli/util"
 	"gitlab.com/jeremiergz/nas-cli/util/media"
-	"gitlab.com/jeremiergz/nas-cli/util/openfaas"
 
 	gotree "github.com/DiSiqueira/GoTree"
 	"github.com/spf13/cobra"
@@ -37,35 +35,21 @@ func getFullname(title string, year int, extension string) string {
 // loadMovies lists movies in folder that must be processed
 func loadMovies(wd string, extensions []string) ([]Movie, error) {
 	toProcess := media.List(wd, extensions, movieFmtRegexp)
-
-	jsonBody, _ := json.Marshal(toProcess)
-	responseData, err := openfaas.InvokeFaaS(openfaas.ParseMediaTitle, jsonBody)
-	if err != nil {
-		return nil, err
-	}
-
-	var parsedJSONResponse []struct {
-		Basename  string
-		Container string
-		Title     string
-		Year      int
-	}
-	err = json.Unmarshal(responseData, &parsedJSONResponse)
-	if err != nil {
-		return nil, err
-	}
-
 	movies := []Movie{}
-	for _, movie := range parsedJSONResponse {
-		movies = append(movies, Movie{
-			Basename:  movie.Basename,
-			Extension: movie.Container,
-			Fullname:  getFullname(movie.Title, movie.Year, movie.Container),
-			Title:     movie.Title,
-			Year:      movie.Year,
-		})
+	for _, basename := range toProcess {
+		m, err := media.ParseTitle(basename)
+		if err == nil {
+			movies = append(movies, Movie{
+				Basename:  basename,
+				Extension: m.Container,
+				Fullname:  getFullname(m.Title, m.Year, m.Container),
+				Title:     m.Title,
+				Year:      m.Year,
+			})
+		} else {
+			return nil, err
+		}
 	}
-
 	return movies, nil
 }
 
@@ -140,10 +124,10 @@ func process(wd string, movies []Movie, owner, group int) error {
 	return nil
 }
 
-// FormatMoviesCmd is the movies-specific format command
-var FormatMoviesCmd = &cobra.Command{
+// Cmd is the movies-specific format command
+var Cmd = &cobra.Command{
 	Use:   "movies <directory>",
-	Short: "Movies-specific batch formatting",
+	Short: "Movies batch formatting",
 	Args:  cobra.MinimumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		extensions, _ := cmd.Flags().GetStringArray("ext")

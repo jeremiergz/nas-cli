@@ -2,7 +2,7 @@ stages:
   - "build"
   - "quality"
 
-image: "golang:1.12"
+image: "golang:1.13"
 
 variables:
   GOPATH: "${CI_PROJECT_DIR}/.go"
@@ -16,11 +16,10 @@ cache:
 build:go:
   stage: "build"
   script:
-    - "rm -r build/"
-    - "bash build.sh"
+    - "make build"
   artifacts:
     paths:
-      - build/
+      - nas-cli*
 
 quality:test:
   stage: "quality"

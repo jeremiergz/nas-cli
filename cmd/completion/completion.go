@@ -6,8 +6,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// CompletionCmd prints completion script for given shell
-var CompletionCmd = &cobra.Command{
+// Cmd prints completion script for given shell
+var Cmd = &cobra.Command{
 	Use:       "completion <bash|zsh>",
 	Short:     "Generate completion scripts",
 	Args:      cobra.ExactValidArgs(1),
@@ -15,9 +15,9 @@ var CompletionCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		switch args[0] {
 		case "bash":
-			cmd.GenBashCompletion(os.Stdout)
+			cmd.Parent().GenBashCompletion(os.Stdout)
 		case "zsh":
-			cmd.GenZshCompletion(os.Stdout)
+			cmd.Parent().GenZshCompletion(os.Stdout)
 		}
 	},
 }
