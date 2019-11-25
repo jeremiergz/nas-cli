@@ -16,7 +16,7 @@ cache:
 build:go:
   stage: "build"
   script:
-    - "make build"
+    - "make build-all"
   artifacts:
     paths:
       - nas-cli*
