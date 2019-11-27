@@ -13,11 +13,12 @@ var Cmd = &cobra.Command{
 	Args:      cobra.ExactValidArgs(1),
 	ValidArgs: []string{"bash", "zsh"},
 	Run: func(cmd *cobra.Command, args []string) {
+		rootCmd := cmd.Parent()
 		switch args[0] {
 		case "bash":
-			cmd.Parent().GenBashCompletion(os.Stdout)
+			rootCmd.GenBashCompletion(os.Stdout)
 		case "zsh":
-			cmd.Parent().GenZshCompletion(os.Stdout)
+			rootCmd.GenZshCompletion(os.Stdout)
 		}
 	},
 }

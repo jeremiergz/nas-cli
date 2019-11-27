@@ -35,7 +35,6 @@ var Cmd = &cobra.Command{
 				return fmt.Errorf("%s is not a valid directory", media.WD)
 			}
 		}
-
 		// Set user from process user or from command flag
 		owner, err := user.Current()
 		ownerName, _ := cmd.Flags().GetString("user")
@@ -49,7 +48,6 @@ var Cmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("could not set user %s", ownerName)
 		}
-
 		// Set group from user or from command flag
 		group := &user.Group{Gid: owner.Gid}
 		groupName, _ := cmd.Flags().GetString("group")
@@ -63,7 +61,6 @@ var Cmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("could not set group %s", groupName)
 		}
-
 		return nil
 	},
 }

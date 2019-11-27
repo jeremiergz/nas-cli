@@ -11,6 +11,7 @@ import (
 	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
 	"gitlab.com/jeremiergz/nas-cli/util"
+	"gitlab.com/jeremiergz/nas-cli/util/console"
 	"gitlab.com/jeremiergz/nas-cli/util/media"
 )
 
@@ -35,6 +36,7 @@ type TVShow struct {
 
 var tvShowFmtRegexp = regexp.MustCompile(`(^.+)(\s-\s)\d+x\d+\.(.+)$`)
 
+// findSeasonIndex in seasons array
 func findSeasonIndex(name string, seasons []Season) int {
 	seasonIndex := -1
 	for i, season := range seasons {
@@ -46,6 +48,7 @@ func findSeasonIndex(name string, seasons []Season) int {
 	return seasonIndex
 }
 
+// findTVShowIndex in TV Shows array
 func findTVShowIndex(name string, tvShows []TVShow) int {
 	tvShowIndex := -1
 	for i, tvShow := range tvShows {
@@ -79,7 +82,6 @@ func loadTVShows(wd string, extensions []string) ([]TVShow, error) {
 			} else {
 				tvShow = &tvShows[tvShowIndex]
 			}
-
 			seasonName := fmt.Sprintf("Season %d", e.Season)
 			seasonIndex := findSeasonIndex(seasonName, tvShow.Seasons)
 			if seasonIndex == -1 {
@@ -93,7 +95,6 @@ func loadTVShows(wd string, extensions []string) ([]TVShow, error) {
 				season := &tvShow.Seasons[seasonIndex]
 				season.Episodes = append(season.Episodes, episode)
 			}
-
 			if tvShowIndex == -1 {
 				tvShows = append(tvShows, *tvShow)
 			}
@@ -122,17 +123,17 @@ func printAll(wd string, tvShows []TVShow) {
 	fmt.Println(toPrint)
 }
 
-// Prepares directories by recursively creating target directory, setting its mode to
-// 755 and also setting ownership if an user is provided
-func prepareDirectories(targetDirectory string, owner, group int) {
-
+// prepareDirectory by creating target directory, setting its mode to 755 and setting ownership
+func prepareDirectory(targetDirectory string, owner, group int) {
+	os.Mkdir(targetDirectory, util.DirectoryMode)
+	os.Chmod(targetDirectory, util.DirectoryMode)
+	os.Chown(targetDirectory, owner, group)
 }
 
 // process processes listed TV shows by prompting user
 func process(wd string, tvShows []TVShow, owner, group int) error {
 	for _, tvShow := range tvShows {
 		fmt.Println()
-
 		prompt := promptui.Prompt{
 			Label:     fmt.Sprintf("Process %s", tvShow.Name),
 			IsConfirm: true,
@@ -146,10 +147,7 @@ func process(wd string, tvShows []TVShow, owner, group int) error {
 			continue
 		}
 		tvShowPath := path.Join(wd, tvShow.Name)
-		os.Mkdir(tvShowPath, util.DirectoryMode)
-		os.Chmod(tvShowPath, util.DirectoryMode)
-		os.Chown(tvShowPath, owner, group)
-
+		prepareDirectory(tvShowPath, owner, group)
 		for _, season := range tvShow.Seasons {
 			prompt := promptui.Prompt{
 				Label:     season.Name,
@@ -163,20 +161,15 @@ func process(wd string, tvShows []TVShow, owner, group int) error {
 				}
 				continue
 			}
-
 			seasonPath := path.Join(tvShowPath, season.Name)
-			os.Mkdir(seasonPath, util.DirectoryMode)
-			os.Chmod(seasonPath, util.DirectoryMode)
-			os.Chown(seasonPath, owner, group)
-
+			prepareDirectory(seasonPath, owner, group)
 			for _, episode := range season.Episodes {
 				oldPath := path.Join(wd, episode.Basename)
 				newPath := path.Join(seasonPath, episode.Fullname)
 				os.Rename(oldPath, newPath)
 				os.Chown(newPath, owner, group)
 				os.Chmod(newPath, util.FileMode)
-
-				fmt.Println(promptui.Styler(promptui.FGGreen)("✔"), episode.Fullname)
+				console.Success(episode.Fullname)
 			}
 		}
 	}
@@ -194,7 +187,7 @@ var Cmd = &cobra.Command{
 		dryRun, _ := cmd.Flags().GetBool("dry-run")
 		if err == nil {
 			if len(tvShows) == 0 {
-				fmt.Println(promptui.Styler(promptui.FGGreen)("✔"), "Nothing to process")
+				console.Success("Nothing to process")
 			} else {
 				printAll(media.WD, tvShows)
 				if !dryRun {

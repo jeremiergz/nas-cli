@@ -22,7 +22,7 @@ func initConfig() {
 }
 
 var (
-	// Cmd adds all child commands and sets flags appropriately
+	// Cmd adds all child commands and sets global flags
 	Cmd = &cobra.Command{
 		Use:   "nas-cli",
 		Short: "CLI application for managing my NAS",

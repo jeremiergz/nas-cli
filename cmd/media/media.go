@@ -29,6 +29,5 @@ func filterByExtensions(paths []string, extensions []string) []string {
 			filteredPaths = append(filteredPaths, p)
 		}
 	}
-
 	return filteredPaths
 }

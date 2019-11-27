@@ -13,8 +13,10 @@ import (
 var (
 	// GID is the processed files group to set
 	GID int
+
 	// UID is the processed files owner to set
 	UID int
+
 	// WD is the working directory's absolute path
 	WD string
 )

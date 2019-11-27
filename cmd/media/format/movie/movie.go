@@ -10,6 +10,7 @@ import (
 	"github.com/logrusorgru/aurora"
 	"github.com/manifoldco/promptui"
 	"gitlab.com/jeremiergz/nas-cli/util"
+	"gitlab.com/jeremiergz/nas-cli/util/console"
 	"gitlab.com/jeremiergz/nas-cli/util/media"
 
 	gotree "github.com/DiSiqueira/GoTree"
@@ -69,7 +70,6 @@ func printAll(wd string, movies []Movie) {
 func process(wd string, movies []Movie, owner, group int) error {
 	for _, m := range movies {
 		fmt.Println()
-
 		// Ask if current movie must be processed
 		prompt := promptui.Prompt{
 			Label:     fmt.Sprintf("Rename %s", m.Basename),
@@ -83,7 +83,6 @@ func process(wd string, movies []Movie, owner, group int) error {
 			}
 			continue
 		}
-
 		// Allow modification of parsed movie title
 		prompt = promptui.Prompt{
 			Label:   "Name",
@@ -96,7 +95,6 @@ func process(wd string, movies []Movie, owner, group int) error {
 			}
 			continue
 		}
-
 		// Allow modification of parsed movie year
 		prompt = promptui.Prompt{
 			Label:   "Year",
@@ -110,16 +108,13 @@ func process(wd string, movies []Movie, owner, group int) error {
 			}
 			continue
 		}
-
 		newMovieName := getFullname(titleInput, yearInt, m.Extension)
-
 		currentFilepath := path.Join(wd, m.Basename)
 		newFilepath := path.Join(wd, newMovieName)
 		os.Rename(currentFilepath, newFilepath)
 		os.Chown(newFilepath, owner, group)
 		os.Chmod(newFilepath, util.FileMode)
-
-		fmt.Println(promptui.Styler(promptui.FGGreen)("✔"), newMovieName)
+		console.Success(newMovieName)
 	}
 	return nil
 }
@@ -135,7 +130,7 @@ var Cmd = &cobra.Command{
 		dryRun, _ := cmd.Flags().GetBool("dry-run")
 		if err == nil {
 			if len(movies) == 0 {
-				fmt.Println(promptui.Styler(promptui.FGGreen)("✔"), "Nothing to process")
+				console.Success("Nothing to process")
 			} else {
 				printAll(media.WD, movies)
 				if !dryRun {
