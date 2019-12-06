@@ -14,10 +14,10 @@ LDFLAGS				:= -ldflags "-X gitlab.com/jeremiergz/nas-cli/cmd/info.BuildDate=${BU
 
 ifeq (${PREV_VERSION_BASE}, ${NEXT_VERSION_BASE})
 	NEXT_VERSION_PATCH	:= $(shell echo $$((PREV_VERSION_PATCH + 1)))
-	VERSION				:= ${NEXT_VERSION_BASE}.${NEXT_VERSION_PATCH}
+	NEXT_VERSION		:= ${NEXT_VERSION_BASE}.${NEXT_VERSION_PATCH}
 else
 	NEXT_VERSION_PATCH	:= 0
-	VERSION				:= ${NEXT_VERSION_BASE}.${NEXT_VERSION_PATCH}
+	NEXT_VERSION		:= ${NEXT_VERSION_BASE}.${NEXT_VERSION_PATCH}
 endif
 
 default: install
@@ -25,6 +25,7 @@ default: install
 all: clean build-all install
 
 build: clean
+	echo ${PREV_VERSION_BASE} ${PREV_VERSION_PATCH} ${VERSION}
 	@go build ${LDFLAGS} -o ${BINARY}
 
 build-all: clean
@@ -48,7 +49,7 @@ install:
 release:
 	@git checkout master
 	@git rebase develop
-	@git tag --annotate "${VERSION}" --message "Release v${VERSION}"
+	@git tag --annotate "${NEXT_VERSION}" --message "Release v${NEXT_VERSION}"
 	@git push --follow-tags
 	@git checkout develop
 	@git rebase master
