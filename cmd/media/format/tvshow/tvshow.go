@@ -7,7 +7,6 @@ import (
 	"regexp"
 
 	gotree "github.com/DiSiqueira/GoTree"
-	"github.com/logrusorgru/aurora"
 	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
 	"gitlab.com/jeremiergz/nas-cli/util"
@@ -15,29 +14,10 @@ import (
 	"gitlab.com/jeremiergz/nas-cli/util/media"
 )
 
-// Episode holds information about an episode
-type Episode struct {
-	Basename  string
-	Extension string
-	Fullname  string
-}
-
-// Season holds information about a season
-type Season struct {
-	Name     string
-	Episodes []Episode
-}
-
-// TVShow is the type of data that will be formatted as a TV show
-type TVShow struct {
-	Name    string
-	Seasons []Season
-}
-
 var tvShowFmtRegexp = regexp.MustCompile(`(^.+)(\s-\s)\d+x\d+\.(.+)$`)
 
 // findSeasonIndex in seasons array
-func findSeasonIndex(name string, seasons []Season) int {
+func findSeasonIndex(name string, seasons []media.Season) int {
 	seasonIndex := -1
 	for i, season := range seasons {
 		if season.Name == name {
@@ -49,7 +29,7 @@ func findSeasonIndex(name string, seasons []Season) int {
 }
 
 // findTVShowIndex in TV Shows array
-func findTVShowIndex(name string, tvShows []TVShow) int {
+func findTVShowIndex(name string, tvShows []media.TVShow) int {
 	tvShowIndex := -1
 	for i, tvShow := range tvShows {
 		if tvShow.Name == name {
@@ -61,33 +41,33 @@ func findTVShowIndex(name string, tvShows []TVShow) int {
 }
 
 // loadTVShows lists TV shows in folder that must be processed
-func loadTVShows(wd string, extensions []string) ([]TVShow, error) {
+func loadTVShows(wd string, extensions []string) ([]media.TVShow, error) {
 	toProcess := media.List(wd, extensions, tvShowFmtRegexp)
-	tvShows := []TVShow{}
+	tvShows := []media.TVShow{}
 	for _, basename := range toProcess {
 		e, err := media.ParseTitle(basename)
 		if err == nil {
-			episode := Episode{
+			episode := media.Episode{
 				Basename:  basename,
 				Extension: e.Container,
-				Fullname:  fmt.Sprintf("%s - %dx%02d.%s", e.Title, e.Season, e.Episode, e.Container),
+				Fullname:  media.ToEpisodeName(e.Title, e.Season, e.Episode, e.Container),
 			}
-			var tvShow *TVShow
+			var tvShow *media.TVShow
 			tvShowIndex := findTVShowIndex(e.Title, tvShows)
 			if tvShowIndex == -1 {
-				tvShow = &TVShow{
+				tvShow = &media.TVShow{
 					Name:    e.Title,
-					Seasons: []Season{},
+					Seasons: []media.Season{},
 				}
 			} else {
 				tvShow = &tvShows[tvShowIndex]
 			}
-			seasonName := fmt.Sprintf("Season %d", e.Season)
+			seasonName := media.ToSeasonName(e.Season)
 			seasonIndex := findSeasonIndex(seasonName, tvShow.Seasons)
 			if seasonIndex == -1 {
-				season := Season{
+				season := media.Season{
 					Name:     seasonName,
-					Episodes: []Episode{},
+					Episodes: []media.Episode{},
 				}
 				season.Episodes = append(season.Episodes, episode)
 				tvShow.Seasons = append(tvShow.Seasons, season)
@@ -106,14 +86,14 @@ func loadTVShows(wd string, extensions []string) ([]TVShow, error) {
 }
 
 // printAll prints given TV shows as a tree
-func printAll(wd string, tvShows []TVShow) {
+func printAll(wd string, tvShows []media.TVShow) {
 	rootTree := gotree.New(wd)
 	for _, tvShow := range tvShows {
 		tvShowTree := rootTree.Add(tvShow.Name)
 		for _, season := range tvShow.Seasons {
 			seasonsTree := tvShowTree.Add(season.Name)
 			for _, episode := range season.Episodes {
-				seasonsTree.Add(fmt.Sprintf("%s  %s", episode.Fullname, aurora.Gray(10, episode.Basename)))
+				seasonsTree.Add(fmt.Sprintf("%s  %s", episode.Fullname, episode.Basename))
 			}
 		}
 	}
@@ -131,7 +111,7 @@ func prepareDirectory(targetDirectory string, owner, group int) {
 }
 
 // process processes listed TV shows by prompting user
-func process(wd string, tvShows []TVShow, owner, group int) error {
+func process(wd string, tvShows []media.TVShow, owner, group int) error {
 	for _, tvShow := range tvShows {
 		fmt.Println()
 		prompt := promptui.Prompt{
@@ -185,16 +165,17 @@ var Cmd = &cobra.Command{
 		extensions, _ := cmd.Flags().GetStringArray("ext")
 		tvShows, err := loadTVShows(media.WD, extensions)
 		dryRun, _ := cmd.Flags().GetBool("dry-run")
-		if err == nil {
-			if len(tvShows) == 0 {
-				console.Success("Nothing to process")
-			} else {
-				printAll(media.WD, tvShows)
-				if !dryRun {
-					process(media.WD, tvShows, media.UID, media.GID)
-				}
+		if err != nil {
+			return err
+		}
+		if len(tvShows) == 0 {
+			console.Success("Nothing to process")
+		} else {
+			printAll(media.WD, tvShows)
+			if !dryRun {
+				process(media.WD, tvShows, media.UID, media.GID)
 			}
 		}
-		return err
+		return nil
 	},
 }
