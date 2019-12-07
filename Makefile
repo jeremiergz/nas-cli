@@ -9,15 +9,14 @@ TAG					:= $(shell git describe --abbrev=0)
 PREV_VERSION_BASE	:= $(shell echo ${TAG} | cut -c1-5)
 PREV_VERSION_PATCH	:= $(shell echo ${TAG} | cut -c7-7)
 NEXT_VERSION_BASE	:= $(shell date +%y.%m)
-VERSION				:= $(shell date +%y.%m).${PATCH_VERSION}
 LDFLAGS				:= -ldflags "-X gitlab.com/jeremiergz/nas-cli/cmd/info.BuildDate=${BUILD_DATE} -X gitlab.com/jeremiergz/nas-cli/cmd/info.GitCommit=${GIT_COMMIT} -X gitlab.com/jeremiergz/nas-cli/cmd/info.Version=${VERSION}"
 
 ifeq (${PREV_VERSION_BASE}, ${NEXT_VERSION_BASE})
 	NEXT_VERSION_PATCH	:= $(shell echo $$((PREV_VERSION_PATCH + 1)))
-	NEXT_VERSION		:= ${NEXT_VERSION_BASE}.${NEXT_VERSION_PATCH}
+	VERSION		:= ${NEXT_VERSION_BASE}.${NEXT_VERSION_PATCH}
 else
 	NEXT_VERSION_PATCH	:= 0
-	NEXT_VERSION		:= ${NEXT_VERSION_BASE}.${NEXT_VERSION_PATCH}
+	VERSION		:= ${NEXT_VERSION_BASE}.${NEXT_VERSION_PATCH}
 endif
 
 default: install
@@ -49,7 +48,7 @@ install:
 release:
 	@git checkout master
 	@git rebase develop
-	@git tag --annotate "${NEXT_VERSION}" --message "Release v${NEXT_VERSION}"
+	@git tag --annotate "${VERSION}" --message "Release v${VERSION}"
 	@git push --follow-tags
 	@git checkout develop
 	@git rebase master

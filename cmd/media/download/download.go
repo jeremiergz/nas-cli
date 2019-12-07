@@ -57,8 +57,8 @@ var Cmd = &cobra.Command{
 		isMovie, _ := cmd.Flags().GetBool("movie")
 		isTVShow, _ := cmd.Flags().GetBool("tv-show")
 		targetURL := args[0]
-		destination := media.WD
 		basename := filepath.Base(targetURL)
+		destination := path.Join(media.WD, basename)
 		if isMovie || isTVShow {
 			if p, err := media.ParseTitle(basename); err == nil {
 				year := time.Now().Year()
@@ -74,7 +74,7 @@ var Cmd = &cobra.Command{
 		}
 
 		termWidth, err := termutil.TerminalWidth()
-		defaultWidth := 80
+		defaultWidth := 100
 		if err != nil || termWidth > defaultWidth {
 			termWidth = defaultWidth
 		}
@@ -84,8 +84,8 @@ var Cmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		res := client.Do(req)
+		fmt.Println(path.Join(destination, basename))
 		ticker := time.NewTicker(time.Second)
 		defer ticker.Stop()
 
@@ -94,7 +94,7 @@ var Cmd = &cobra.Command{
 		bar.Set(pb.Color, false)
 		bar.Set(pb.Static, true)
 		bar.SetCurrent(res.BytesComplete())
-		bar.SetTemplate(pb.Simple)
+		bar.SetTemplate(pb.Full)
 		bar.SetWidth(termWidth)
 		bar.Start()
 
