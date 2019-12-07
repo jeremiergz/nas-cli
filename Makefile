@@ -12,7 +12,7 @@ NEXT_VERSION_BASE	:= $(shell date +%y.%m)
 LDFLAGS				:= -ldflags "-X gitlab.com/jeremiergz/nas-cli/cmd/info.BuildDate=${BUILD_DATE} -X gitlab.com/jeremiergz/nas-cli/cmd/info.GitCommit=${GIT_COMMIT} -X gitlab.com/jeremiergz/nas-cli/cmd/info.Version=${VERSION}"
 
 ifeq (${PREV_VERSION_BASE}, ${NEXT_VERSION_BASE})
-	NEXT_VERSION_PATCH	:= $(shell echo $$((PREV_VERSION_PATCH + 1)))
+	NEXT_VERSION_PATCH	:= $(shell echo $$((${PREV_VERSION_PATCH} + 1)))
 	VERSION		:= ${NEXT_VERSION_BASE}.${NEXT_VERSION_PATCH}
 else
 	NEXT_VERSION_PATCH	:= 0
