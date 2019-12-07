@@ -9,7 +9,6 @@ TAG					:= $(shell git describe --abbrev=0)
 PREV_VERSION_BASE	:= $(shell echo ${TAG} | cut -c1-5)
 PREV_VERSION_PATCH	:= $(shell echo ${TAG} | cut -c7-7)
 NEXT_VERSION_BASE	:= $(shell date +%y.%m)
-LDFLAGS				:= -ldflags "-X gitlab.com/jeremiergz/nas-cli/cmd/info.BuildDate=${BUILD_DATE} -X gitlab.com/jeremiergz/nas-cli/cmd/info.GitCommit=${GIT_COMMIT} -X gitlab.com/jeremiergz/nas-cli/cmd/info.Version=${VERSION}"
 
 ifeq (${PREV_VERSION_BASE}, ${NEXT_VERSION_BASE})
 	NEXT_VERSION_PATCH	:= $(shell echo $$((${PREV_VERSION_PATCH} + 1)))
@@ -19,12 +18,13 @@ else
 	VERSION		:= ${NEXT_VERSION_BASE}.${NEXT_VERSION_PATCH}
 endif
 
+LDFLAGS				:= -ldflags "-X gitlab.com/jeremiergz/nas-cli/cmd/info.BuildDate=${BUILD_DATE} -X gitlab.com/jeremiergz/nas-cli/cmd/info.GitCommit=${GIT_COMMIT} -X gitlab.com/jeremiergz/nas-cli/cmd/info.Version=${VERSION}"
+
 default: install
 
 all: clean build-all install
 
 build: clean
-	echo ${PREV_VERSION_BASE} ${PREV_VERSION_PATCH} ${VERSION}
 	@go build ${LDFLAGS} -o ${BINARY}
 
 build-all: clean
