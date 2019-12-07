@@ -58,7 +58,7 @@ var Cmd = &cobra.Command{
 		isTVShow, _ := cmd.Flags().GetBool("tv-show")
 		targetURL := args[0]
 		basename := filepath.Base(targetURL)
-		destination := path.Join(media.WD, basename)
+		var destination string
 		if isMovie || isTVShow {
 			if p, err := media.ParseTitle(basename); err == nil {
 				year := time.Now().Year()
@@ -71,6 +71,8 @@ var Cmd = &cobra.Command{
 					destination = path.Join(destination, media.ToEpisodeName(p.Title, p.Season, p.Episode, p.Container))
 				}
 			}
+		} else {
+			destination = path.Join(media.WD, basename)
 		}
 
 		termWidth, err := termutil.TerminalWidth()
