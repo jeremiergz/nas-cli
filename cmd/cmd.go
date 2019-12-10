@@ -6,6 +6,7 @@ import (
 	"gitlab.com/jeremiergz/nas-cli/cmd/completion"
 	"gitlab.com/jeremiergz/nas-cli/cmd/info"
 	"gitlab.com/jeremiergz/nas-cli/cmd/media"
+	"gitlab.com/jeremiergz/nas-cli/cmd/update"
 	"gitlab.com/jeremiergz/nas-cli/cmd/version"
 )
 
@@ -14,6 +15,7 @@ func init() {
 	Cmd.AddCommand(completion.Cmd)
 	Cmd.AddCommand(info.Cmd)
 	Cmd.AddCommand(media.Cmd)
+	Cmd.AddCommand(update.Cmd)
 	Cmd.AddCommand(version.Cmd)
 }
 
