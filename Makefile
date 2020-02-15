@@ -24,19 +24,19 @@ default: install
 all: clean build-all install
 
 build: clean
-	@go build ${LDFLAGS} -o ${BINARY}
+	@go build -mod vendor ${LDFLAGS} -o ${BINARY}
 
 build-all: clean
-	@export GOOS=darwin;  export GOARCH=386;                   go build ${LDFLAGS} -o ${BINARY}-darwin-386
-	@export GOOS=darwin;  export GOARCH=amd64;                 go build ${LDFLAGS} -o ${BINARY}-darwin-amd64
-	@export GOOS=freebsd; export GOARCH=386;                   go build ${LDFLAGS} -o ${BINARY}-freebsd-386
-	@export GOOS=freebsd; export GOARCH=amd64;                 go build ${LDFLAGS} -o ${BINARY}-freebsd-amd64
-	@export GOOS=linux;   export GOARCH=386;                   go build ${LDFLAGS} -o ${BINARY}-linux-386
-	@export GOOS=linux;   export GOARCH=amd64;                 go build ${LDFLAGS} -o ${BINARY}-linux-amd64
-	@export GOOS=linux;   export GOARCH=arm64;                 go build ${LDFLAGS} -o ${BINARY}-linux-arm64
-	@export GOOS=linux;   export GOARCH=arm;   export GOARM=7; go build ${LDFLAGS} -o ${BINARY}-linux-armv7
-	@export GOOS=windows; export GOARCH=386;                   go build ${LDFLAGS} -o ${BINARY}-windows-386.exe
-	@export GOOS=windows; export GOARCH=amd64;                 go build ${LDFLAGS} -o ${BINARY}-windows-amd64.exe
+	@export GOOS=darwin;  export GOARCH=386;                   go build -mod vendor ${LDFLAGS} -o ${BINARY}-darwin-386
+	@export GOOS=darwin;  export GOARCH=amd64;                 go build -mod vendor ${LDFLAGS} -o ${BINARY}-darwin-amd64
+	@export GOOS=freebsd; export GOARCH=386;                   go build -mod vendor ${LDFLAGS} -o ${BINARY}-freebsd-386
+	@export GOOS=freebsd; export GOARCH=amd64;                 go build -mod vendor ${LDFLAGS} -o ${BINARY}-freebsd-amd64
+	@export GOOS=linux;   export GOARCH=386;                   go build -mod vendor ${LDFLAGS} -o ${BINARY}-linux-386
+	@export GOOS=linux;   export GOARCH=amd64;                 go build -mod vendor ${LDFLAGS} -o ${BINARY}-linux-amd64
+	@export GOOS=linux;   export GOARCH=arm64;                 go build -mod vendor ${LDFLAGS} -o ${BINARY}-linux-arm64
+	@export GOOS=linux;   export GOARCH=arm;   export GOARM=7; go build -mod vendor ${LDFLAGS} -o ${BINARY}-linux-armv7
+	@export GOOS=windows; export GOARCH=386;                   go build -mod vendor ${LDFLAGS} -o ${BINARY}-windows-386.exe
+	@export GOOS=windows; export GOARCH=amd64;                 go build -mod vendor ${LDFLAGS} -o ${BINARY}-windows-amd64.exe
 
 clean:
 	@find . -name "${BINARY}*" -type f -delete
