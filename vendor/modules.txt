@@ -18,10 +18,6 @@ github.com/cheggaaa/pb/v3
 github.com/cheggaaa/pb/v3/termutil
 # github.com/chzyer/readline v0.0.0-20180603132655-2972be24d48e
 github.com/chzyer/readline
-# github.com/coreos/go-etcd v2.0.0+incompatible
-## explicit
-# github.com/cpuguy83/go-md2man v1.0.10
-## explicit
 # github.com/fatih/color v1.9.0
 ## explicit
 github.com/fatih/color
@@ -57,7 +53,6 @@ github.com/manifoldco/promptui/screenbuf
 ## explicit
 github.com/mattn/go-colorable
 # github.com/mattn/go-isatty v0.0.12
-## explicit
 github.com/mattn/go-isatty
 # github.com/mattn/go-runewidth v0.0.8
 ## explicit
@@ -93,8 +88,6 @@ github.com/spf13/viper
 ## explicit
 # github.com/subosito/gotenv v1.2.0
 github.com/subosito/gotenv
-# github.com/ugorji/go/codec v0.0.0-20181204163529-d75b2dcb6bc8
-## explicit
 # golang.org/x/sys v0.0.0-20200302150141-5c8b2ff67527
 ## explicit
 golang.org/x/sys/unix
