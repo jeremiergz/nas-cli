@@ -2,7 +2,7 @@ stages:
   - "build"
   - "quality"
 
-image: "golang:1.13"
+image: "golang:1.14"
 
 variables:
   GOPATH: "${CI_PROJECT_DIR}/.go"
