@@ -6,6 +6,7 @@ import (
 	"path"
 	"regexp"
 	"strconv"
+	"strings"
 
 	"github.com/manifoldco/promptui"
 	"gitlab.com/jeremiergz/nas-cli/util"
@@ -15,6 +16,10 @@ import (
 	gotree "github.com/DiSiqueira/GoTree"
 	"github.com/spf13/cobra"
 )
+
+func init() {
+	Cmd.MarkFlagFilename("directory")
+}
 
 var movieFmtRegexp = regexp.MustCompile(`(^.+)\s\(([0-9]{4})\)\.(.+)$`)
 
@@ -71,7 +76,7 @@ func process(wd string, movies []media.Movie, owner, group int) error {
 		// Allow modification of parsed movie title
 		prompt = promptui.Prompt{
 			Label:   "Name",
-			Default: m.Title,
+			Default: strings.Title(m.Title),
 		}
 		titleInput, err := prompt.Run()
 		if err != nil {

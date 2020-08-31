@@ -5,6 +5,7 @@ import (
 	"os"
 	"path"
 	"regexp"
+	"strings"
 
 	gotree "github.com/DiSiqueira/GoTree"
 	"github.com/manifoldco/promptui"
@@ -13,6 +14,10 @@ import (
 	"gitlab.com/jeremiergz/nas-cli/util/console"
 	"gitlab.com/jeremiergz/nas-cli/util/media"
 )
+
+func init() {
+	Cmd.MarkFlagFilename("directory")
+}
 
 var tvShowFmtRegexp = regexp.MustCompile(`(^.+)(\s-\s)\d+x\d+\.(.+)$`)
 
@@ -56,7 +61,7 @@ func loadTVShows(wd string, extensions []string) ([]media.TVShow, error) {
 			tvShowIndex := findTVShowIndex(e.Title, tvShows)
 			if tvShowIndex == -1 {
 				tvShow = &media.TVShow{
-					Name:    e.Title,
+					Name:    strings.Title(e.Title),
 					Seasons: []media.Season{},
 				}
 			} else {
