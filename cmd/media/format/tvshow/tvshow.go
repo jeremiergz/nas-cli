@@ -51,6 +51,7 @@ func loadTVShows(wd string, extensions []string) ([]media.TVShow, error) {
 	tvShows := []media.TVShow{}
 	for _, basename := range toProcess {
 		e, err := media.ParseTitle(basename)
+		e.Title = strings.Title(e.Title)
 		if err == nil {
 			episode := media.Episode{
 				Basename:  basename,
@@ -61,7 +62,7 @@ func loadTVShows(wd string, extensions []string) ([]media.TVShow, error) {
 			tvShowIndex := findTVShowIndex(e.Title, tvShows)
 			if tvShowIndex == -1 {
 				tvShow = &media.TVShow{
-					Name:    strings.Title(e.Title),
+					Name:    e.Title,
 					Seasons: []media.Season{},
 				}
 			} else {
