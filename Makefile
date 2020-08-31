@@ -26,7 +26,6 @@ build: clean
 	@go build -mod vendor ${LDFLAGS} -o ${BINARY}
 
 build-all: clean
-	@export GOOS=darwin;  export GOARCH=386;                   go build -mod vendor ${LDFLAGS} -o ${BINARY}-darwin-386
 	@export GOOS=darwin;  export GOARCH=amd64;                 go build -mod vendor ${LDFLAGS} -o ${BINARY}-darwin-amd64
 	@export GOOS=freebsd; export GOARCH=386;                   go build -mod vendor ${LDFLAGS} -o ${BINARY}-freebsd-386
 	@export GOOS=freebsd; export GOARCH=amd64;                 go build -mod vendor ${LDFLAGS} -o ${BINARY}-freebsd-amd64
