@@ -57,9 +57,11 @@ func List(wd string, extensions []string, regExp *regexp.Regexp) []string {
 	for _, f := range files {
 		ext := strings.Replace(path.Ext(f.Name()), ".", "", 1)
 		isValidExt := util.StringInSlice(ext, extensions)
-		shouldProcess := !f.IsDir() && isValidExt && !regExp.Match([]byte(f.Name()))
+		shouldProcess := !f.IsDir() && isValidExt
 		if shouldProcess {
-			filesList = append(filesList, f.Name())
+			if regExp == nil || !regExp.Match([]byte(f.Name())) {
+				filesList = append(filesList, f.Name())
+			}
 		}
 	}
 	return filesList
