@@ -13,7 +13,7 @@ import (
 
 func init() {
 	Cmd.PersistentFlags().Bool("dry-run", false, "print result without processing it")
-	Cmd.PersistentFlags().StringArrayP("ext", "e", []string{"avi", "mkv", "mp4"}, "set extensions to look for in directory")
+	Cmd.PersistentFlags().StringArrayP("ext", "e", []string{"avi", "mkv", "mp4"}, "filter files by extension")
 	Cmd.AddCommand(movie.Cmd)
 	Cmd.AddCommand(tvshow.Cmd)
 }
