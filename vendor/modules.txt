@@ -65,10 +65,10 @@ github.com/middelink/go-parse-torrent-name
 # github.com/mitchellh/mapstructure v1.3.3
 ## explicit
 github.com/mitchellh/mapstructure
-# github.com/pelletier/go-toml v1.8.0
+# github.com/pelletier/go-toml v1.8.1
 ## explicit
 github.com/pelletier/go-toml
-# github.com/spf13/afero v1.3.4
+# github.com/spf13/afero v1.3.5
 ## explicit
 github.com/spf13/afero
 github.com/spf13/afero/mem
@@ -89,15 +89,16 @@ github.com/spf13/pflag
 github.com/spf13/viper
 # github.com/subosito/gotenv v1.2.0
 github.com/subosito/gotenv
-# golang.org/x/sys v0.0.0-20200828194041-157a740278f4
+# golang.org/x/sys v0.0.0-20200909081042-eff7692f9009
 ## explicit
 golang.org/x/sys/internal/unsafeheader
 golang.org/x/sys/unix
 # golang.org/x/text v0.3.3
 golang.org/x/text/transform
 golang.org/x/text/unicode/norm
-# gopkg.in/ini.v1 v1.60.2
+# gopkg.in/ini.v1 v1.61.0
 ## explicit
 gopkg.in/ini.v1
 # gopkg.in/yaml.v2 v2.3.0
+## explicit
 gopkg.in/yaml.v2
