@@ -10,6 +10,7 @@ import (
 	"github.com/spf13/cobra"
 	"gitlab.com/jeremiergz/nas-cli/cmd/media/download"
 	"gitlab.com/jeremiergz/nas-cli/cmd/media/format"
+	"gitlab.com/jeremiergz/nas-cli/cmd/media/subsync"
 	"gitlab.com/jeremiergz/nas-cli/util"
 	"gitlab.com/jeremiergz/nas-cli/util/media"
 )
@@ -19,6 +20,7 @@ func init() {
 	Cmd.PersistentFlags().StringP("user", "u", "", "override default file owner")
 	Cmd.AddCommand(download.Cmd)
 	Cmd.AddCommand(format.Cmd)
+	Cmd.AddCommand(subsync.Cmd)
 }
 
 // filterByExtensions filters given array against valid extensions array
