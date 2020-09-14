@@ -25,25 +25,37 @@ all: clean build-all install
 
 build: clean
 	@go build -mod vendor ${LDFLAGS} -o ${OUTPUT_DIR}/${BINARY}
+	@echo ✔ successfully built ${OUTPUT_DIR}/${BINARY}
 
 build-all: clean
 	@export GOOS=darwin;  export GOARCH=amd64;                 go build -mod vendor ${LDFLAGS} -o ${OUTPUT_DIR}/${BINARY}-darwin-amd64
+	@echo ✔ successfully built ${OUTPUT_DIR}/${BINARY}-darwin-amd64
 	@export GOOS=freebsd; export GOARCH=386;                   go build -mod vendor ${LDFLAGS} -o ${OUTPUT_DIR}/${BINARY}-freebsd-386
+	@echo ✔ successfully built ${OUTPUT_DIR}/${BINARY}-freebsd-386
 	@export GOOS=freebsd; export GOARCH=amd64;                 go build -mod vendor ${LDFLAGS} -o ${OUTPUT_DIR}/${BINARY}-freebsd-amd64
+	@echo ✔ successfully built ${OUTPUT_DIR}/${BINARY}-freebsd-amd64
 	@export GOOS=linux;   export GOARCH=386;                   go build -mod vendor ${LDFLAGS} -o ${OUTPUT_DIR}/${BINARY}-linux-386
+	@echo ✔ successfully built ${OUTPUT_DIR}/${BINARY}-linux-386
 	@export GOOS=linux;   export GOARCH=amd64;                 go build -mod vendor ${LDFLAGS} -o ${OUTPUT_DIR}/${BINARY}-linux-amd64
+	@echo ✔ successfully built ${OUTPUT_DIR}/${BINARY}-linux-amd64
 	@export GOOS=linux;   export GOARCH=arm64;                 go build -mod vendor ${LDFLAGS} -o ${OUTPUT_DIR}/${BINARY}-linux-arm64
+	@echo ✔ successfully built ${OUTPUT_DIR}/${BINARY}-linux-arm64
 	@export GOOS=linux;   export GOARCH=arm;   export GOARM=7; go build -mod vendor ${LDFLAGS} -o ${OUTPUT_DIR}/${BINARY}-linux-armv7
+	@echo ✔ successfully built ${OUTPUT_DIR}/${BINARY}-linux-armv7
 	@export GOOS=windows; export GOARCH=386;                   go build -mod vendor ${LDFLAGS} -o ${OUTPUT_DIR}/${BINARY}-windows-386.exe
+	@echo ✔ successfully built ${OUTPUT_DIR}/${BINARY}-windows-386.exe
 	@export GOOS=windows; export GOARCH=amd64;                 go build -mod vendor ${LDFLAGS} -o ${OUTPUT_DIR}/${BINARY}-windows-amd64.exe
+	@echo ✔ successfully built ${OUTPUT_DIR}/${BINARY}-windows-amd64.exe
 
 clean:
 	@rm -rf ${OUTPUT_DIR}
 
 install:
 	@go install ${LDFLAGS}
+	@echo ✔ successfully installed ${BINARY}
 
 release:
+	@echo ➜ releasing v${NEXT_VERSION}
 	@git checkout master
 	@git rebase develop
 	@git tag --annotate "${NEXT_VERSION}" --message "Release v${NEXT_VERSION}"
@@ -51,6 +63,8 @@ release:
 	@git checkout develop
 	@git rebase master
 	@git push
+	@echo ✔ successfully released v${NEXT_VERSION}
 
 uninstall:
 	@find "${GOPATH}/bin" -name "${BINARY}" -type f -delete
+	@echo ✔ successfully uninstalled ${BINARY}
