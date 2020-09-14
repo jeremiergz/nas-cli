@@ -93,4 +93,4 @@ jobs:
           asset_content_type: application/octet-stream
           asset_name: nas-cli-${{ matrix.target }}
           asset_path: build/nas-cli-${{ matrix.target }}
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          upload_url: ${{ needs.release-create.outputs.upload_url }}
