@@ -24,10 +24,12 @@ default: install
 all: clean build-all install
 
 build: clean
+	@echo ➜ building v${TAG}
 	@go build -mod vendor ${LDFLAGS} -o ${OUTPUT_DIR}/${BINARY}
 	@echo ✔ successfully built ${OUTPUT_DIR}/${BINARY}
 
 build-all: clean
+	@echo ➜ building v${TAG}
 	@export GOOS=darwin;  export GOARCH=amd64;                 go build -mod vendor ${LDFLAGS} -o ${OUTPUT_DIR}/${BINARY}-darwin-amd64
 	@echo ✔ successfully built ${OUTPUT_DIR}/${BINARY}-darwin-amd64
 	@export GOOS=freebsd; export GOARCH=386;                   go build -mod vendor ${LDFLAGS} -o ${OUTPUT_DIR}/${BINARY}-freebsd-386
