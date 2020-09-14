@@ -4,7 +4,6 @@ go 1.15
 
 require (
 	github.com/DiSiqueira/GoTree v1.0.0
-	github.com/blang/semver v3.5.1+incompatible
 	github.com/cavaliercoder/grab v2.0.0+incompatible
 	github.com/cheggaaa/pb v2.0.7+incompatible
 	github.com/cheggaaa/pb/v3 v3.0.5

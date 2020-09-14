@@ -3,9 +3,6 @@
 github.com/DiSiqueira/GoTree
 # github.com/VividCortex/ewma v1.1.1
 github.com/VividCortex/ewma
-# github.com/blang/semver v3.5.1+incompatible
-## explicit
-github.com/blang/semver
 # github.com/cavaliercoder/grab v2.0.0+incompatible
 ## explicit
 github.com/cavaliercoder/grab
