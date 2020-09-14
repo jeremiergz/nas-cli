@@ -55,7 +55,7 @@ install:
 	@echo ✔ successfully installed ${BINARY}
 
 release:
-	@echo ➜ releasing v${NEXT_VERSION}
+	@echo ➜ creating release v${NEXT_VERSION}
 	@git checkout master
 	@git rebase develop
 	@git tag --annotate "${NEXT_VERSION}" --message "Release v${NEXT_VERSION}"
@@ -63,7 +63,7 @@ release:
 	@git checkout develop
 	@git rebase master
 	@git push
-	@echo ✔ successfully released v${NEXT_VERSION}
+	@echo ✔ successfully created release v${NEXT_VERSION}
 
 uninstall:
 	@find "${GOPATH}/bin" -name "${BINARY}" -type f -delete
