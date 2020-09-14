@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"gitlab.com/jeremiergz/nas-cli/cmd"
+	"github.com/jeremiergz/nas-cli/cmd"
 )
 
 func main() {

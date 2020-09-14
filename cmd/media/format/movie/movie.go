@@ -8,10 +8,10 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/jeremiergz/nas-cli/util"
+	"github.com/jeremiergz/nas-cli/util/console"
+	"github.com/jeremiergz/nas-cli/util/media"
 	"github.com/manifoldco/promptui"
-	"gitlab.com/jeremiergz/nas-cli/util"
-	"gitlab.com/jeremiergz/nas-cli/util/console"
-	"gitlab.com/jeremiergz/nas-cli/util/media"
 
 	gotree "github.com/DiSiqueira/GoTree"
 	"github.com/spf13/cobra"
@@ -90,7 +90,7 @@ func process(wd string, movies []media.Movie, owner, group int) error {
 			Label:   "Year",
 			Default: strconv.Itoa(m.Year),
 		}
-		yearInput, err := prompt.Run()
+		yearInput, _ := prompt.Run()
 		yearInt, err := strconv.Atoi(yearInput)
 		if err != nil {
 			if err.Error() == "^C" {
@@ -126,7 +126,10 @@ var Cmd = &cobra.Command{
 		} else {
 			printAll(media.WD, movies)
 			if !dryRun {
-				process(media.WD, movies, media.UID, media.GID)
+				err := process(media.WD, movies, media.UID, media.GID)
+				if err != nil {
+					return err
+				}
 			}
 		}
 		return nil

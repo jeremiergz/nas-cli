@@ -3,16 +3,13 @@ package media
 import (
 	"fmt"
 	"os/user"
-	"path"
 	"strconv"
-	"strings"
 
+	"github.com/jeremiergz/nas-cli/cmd/media/download"
+	"github.com/jeremiergz/nas-cli/cmd/media/format"
+	"github.com/jeremiergz/nas-cli/cmd/media/subsync"
+	"github.com/jeremiergz/nas-cli/util/media"
 	"github.com/spf13/cobra"
-	"gitlab.com/jeremiergz/nas-cli/cmd/media/download"
-	"gitlab.com/jeremiergz/nas-cli/cmd/media/format"
-	"gitlab.com/jeremiergz/nas-cli/cmd/media/subsync"
-	"gitlab.com/jeremiergz/nas-cli/util"
-	"gitlab.com/jeremiergz/nas-cli/util/media"
 )
 
 func init() {
@@ -23,26 +20,14 @@ func init() {
 	Cmd.AddCommand(subsync.Cmd)
 }
 
-// filterByExtensions filters given array against valid extensions array
-func filterByExtensions(paths []string, extensions []string) []string {
-	filteredPaths := make([]string, 0)
-	for _, p := range paths {
-		ext := strings.Replace(path.Ext(p), ".", "", 1)
-		isValid := util.StringInSlice(ext, extensions)
-		if isValid {
-			filteredPaths = append(filteredPaths, p)
-		}
-	}
-	return filteredPaths
-}
-
 // Cmd loads sub-commands for media management
 var Cmd = &cobra.Command{
 	Use:   "media",
 	Short: "Set of utilities for media management",
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		// Set user from process user or from command flag
-		owner, err := user.Current()
+		var err error
+		owner, _ := user.Current()
 		ownerName, _ := cmd.Flags().GetString("user")
 		if ownerName != "" {
 			owner, err = user.Lookup(ownerName)

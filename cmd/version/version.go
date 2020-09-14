@@ -3,8 +3,8 @@ package version
 import (
 	"fmt"
 
+	"github.com/jeremiergz/nas-cli/cmd/info"
 	"github.com/spf13/cobra"
-	"gitlab.com/jeremiergz/nas-cli/cmd/info"
 )
 
 var (

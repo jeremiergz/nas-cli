@@ -1,4 +1,4 @@
-module gitlab.com/jeremiergz/nas-cli
+module github.com/jeremiergz/nas-cli
 
 go 1.15
 

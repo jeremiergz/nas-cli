@@ -7,8 +7,8 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/jeremiergz/nas-cli/util"
 	PTN "github.com/middelink/go-parse-torrent-name"
-	"gitlab.com/jeremiergz/nas-cli/util"
 )
 
 // Episode holds information about an episode

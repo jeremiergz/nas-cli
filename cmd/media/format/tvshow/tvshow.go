@@ -8,11 +8,11 @@ import (
 	"strings"
 
 	gotree "github.com/DiSiqueira/GoTree"
+	"github.com/jeremiergz/nas-cli/util"
+	"github.com/jeremiergz/nas-cli/util/console"
+	"github.com/jeremiergz/nas-cli/util/media"
 	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
-	"gitlab.com/jeremiergz/nas-cli/util"
-	"gitlab.com/jeremiergz/nas-cli/util/console"
-	"gitlab.com/jeremiergz/nas-cli/util/media"
 )
 
 func init() {

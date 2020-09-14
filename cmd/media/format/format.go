@@ -5,10 +5,10 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/jeremiergz/nas-cli/cmd/media/format/movie"
+	"github.com/jeremiergz/nas-cli/cmd/media/format/tvshow"
+	"github.com/jeremiergz/nas-cli/util/media"
 	"github.com/spf13/cobra"
-	"gitlab.com/jeremiergz/nas-cli/cmd/media/format/movie"
-	"gitlab.com/jeremiergz/nas-cli/cmd/media/format/tvshow"
-	"gitlab.com/jeremiergz/nas-cli/util/media"
 )
 
 func init() {

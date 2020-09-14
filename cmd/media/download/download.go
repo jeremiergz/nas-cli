@@ -11,9 +11,9 @@ import (
 	"github.com/cavaliercoder/grab"
 	"github.com/cheggaaa/pb/termutil"
 	"github.com/cheggaaa/pb/v3"
+	"github.com/jeremiergz/nas-cli/util"
+	"github.com/jeremiergz/nas-cli/util/media"
 	"github.com/spf13/cobra"
-	"gitlab.com/jeremiergz/nas-cli/util"
-	"gitlab.com/jeremiergz/nas-cli/util/media"
 )
 
 func init() {

@@ -11,11 +11,11 @@ import (
 	"strings"
 
 	gotree "github.com/DiSiqueira/GoTree"
+	"github.com/jeremiergz/nas-cli/util"
+	"github.com/jeremiergz/nas-cli/util/console"
+	"github.com/jeremiergz/nas-cli/util/media"
 	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
-	"gitlab.com/jeremiergz/nas-cli/util"
-	"gitlab.com/jeremiergz/nas-cli/util/console"
-	"gitlab.com/jeremiergz/nas-cli/util/media"
 )
 
 var subsyncCommand string = "subsync"
@@ -41,19 +41,22 @@ func printAll(videos []string, subtitles []string) {
 }
 
 // process attempts to synchronize given subtitle with given video file
-func process(video string, videoLang string, srt string, srtLang string, outFile string) error {
+func process(video string, videoLang string, subtitle string, subtitleLang string, outFile string) error {
+	videoPath := path.Join(media.WD, video)
+	subtitlePath := path.Join(media.WD, subtitle)
+	outFilePath := path.Join(media.WD, outFile)
 	options := []string{
 		"sync",
 		"--ref",
-		video,
+		videoPath,
 		"--ref-lang",
 		videoLang,
 		"--sub",
-		srt,
+		subtitlePath,
 		"--sub-lang",
-		srtLang,
+		subtitleLang,
 		"--out",
-		outFile,
+		outFilePath,
 	}
 	subsync := exec.Command(subsyncCommand, options...)
 	subsync.Stderr = os.Stderr
@@ -61,8 +64,8 @@ func process(video string, videoLang string, srt string, srtLang string, outFile
 	if err != nil {
 		return err
 	}
-	os.Chown(outFile, media.UID, media.GID)
-	os.Chmod(outFile, util.FileMode)
+	os.Chown(outFilePath, media.UID, media.GID)
+	os.Chmod(outFilePath, util.FileMode)
 	console.Success(outFile)
 	return nil
 }
@@ -115,10 +118,7 @@ var Cmd = &cobra.Command{
 					videoFileExtension := path.Ext(videoFile)
 					outFile := strings.Replace(videoFile, videoFileExtension, fmt.Sprintf(".%s.srt", subtitleLang), 1)
 					subtitleFile := subtitleFiles[index]
-					videoFilePath := path.Join(media.WD, videoFile)
-					subtitleFilePath := path.Join(media.WD, subtitleFile)
-					outFilePath := path.Join(media.WD, outFile)
-					err := process(videoFilePath, videoLang, subtitleFilePath, subtitleLang, outFilePath)
+					err := process(videoFile, videoLang, subtitleFile, subtitleLang, outFile)
 					if err != nil {
 						return err
 					}
