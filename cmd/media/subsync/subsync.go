@@ -31,7 +31,8 @@ func init() {
 func printAll(videos []string, subtitles []string) {
 	rootTree := gotree.New(media.WD)
 	for index, video := range videos {
-		subTree := rootTree.Add(strconv.FormatInt(int64(index+1), 10))
+		fileIndex := strconv.FormatInt(int64(index+1), 10)
+		subTree := rootTree.Add(fileIndex)
 		subtitle := subtitles[index]
 		subTree.Add(subtitle)
 		subTree.Add(video)
