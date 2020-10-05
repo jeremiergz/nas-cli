@@ -59,10 +59,12 @@ func process(video string, videoLang string, subtitle string, subtitleLang strin
 		"--out",
 		outFilePath,
 	}
+	console.Info(fmt.Sprintf("%s %s", subsyncCommand, strings.Join(options, " ")))
 	subsync := exec.Command(subsyncCommand, options...)
-	subsync.Stderr = os.Stderr
+	subsync.Stdout = os.Stdout
 	err := subsync.Run()
 	if err != nil {
+		console.Error(err.Error())
 		return err
 	}
 	os.Chown(outFilePath, media.UID, media.GID)
@@ -115,14 +117,21 @@ var Cmd = &cobra.Command{
 					return nil
 				}
 			} else {
+				hasError := false
 				for index, videoFile := range videoFiles {
 					videoFileExtension := path.Ext(videoFile)
 					outFile := strings.Replace(videoFile, videoFileExtension, fmt.Sprintf(".%s.srt", subtitleLang), 1)
 					subtitleFile := subtitleFiles[index]
 					err := process(videoFile, videoLang, subtitleFile, subtitleLang, outFile)
 					if err != nil {
-						return err
+						hasError = true
 					}
+					if index+1 != len(videoFiles) || hasError {
+						fmt.Println()
+					}
+				}
+				if hasError {
+					return fmt.Errorf("an error occurred")
 				}
 			}
 		}
