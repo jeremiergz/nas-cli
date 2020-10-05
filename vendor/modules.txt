@@ -40,15 +40,15 @@ github.com/juju/ansiterm/tabwriter
 # github.com/lunixbochs/vtclean v1.0.0
 ## explicit
 github.com/lunixbochs/vtclean
-# github.com/magiconair/properties v1.8.2
+# github.com/magiconair/properties v1.8.4
 ## explicit
 github.com/magiconair/properties
-# github.com/manifoldco/promptui v0.7.0
+# github.com/manifoldco/promptui v0.8.0
 ## explicit
 github.com/manifoldco/promptui
 github.com/manifoldco/promptui/list
 github.com/manifoldco/promptui/screenbuf
-# github.com/mattn/go-colorable v0.1.7
+# github.com/mattn/go-colorable v0.1.8
 ## explicit
 github.com/mattn/go-colorable
 # github.com/mattn/go-isatty v0.0.12
@@ -65,7 +65,7 @@ github.com/mitchellh/mapstructure
 # github.com/pelletier/go-toml v1.8.1
 ## explicit
 github.com/pelletier/go-toml
-# github.com/spf13/afero v1.3.5
+# github.com/spf13/afero v1.4.0
 ## explicit
 github.com/spf13/afero
 github.com/spf13/afero/mem
@@ -86,7 +86,7 @@ github.com/spf13/pflag
 github.com/spf13/viper
 # github.com/subosito/gotenv v1.2.0
 github.com/subosito/gotenv
-# golang.org/x/sys v0.0.0-20200909081042-eff7692f9009
+# golang.org/x/sys v0.0.0-20201005172224-997123666555
 ## explicit
 golang.org/x/sys/internal/unsafeheader
 golang.org/x/sys/unix
