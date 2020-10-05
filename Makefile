@@ -10,6 +10,7 @@ NEXT_VERSION_BASE		:= $(shell date +%y.%m)
 VERSION_BASE			:= $(shell echo ${TAG} | cut -c1-5)
 VERSION_PATCH			:= $(shell echo ${TAG} | cut -c7-7)
 LDFLAGS					:= -ldflags "-X github.com/jeremiergz/nas-cli/cmd/info.BuildDate=${BUILD_DATE} -X github.com/jeremiergz/nas-cli/cmd/info.GitCommit=${GIT_COMMIT} -X github.com/jeremiergz/nas-cli/cmd/info.Version=${TAG}"
+SHELL					:= /bin/bash
 
 ifeq (${VERSION_BASE}, ${NEXT_VERSION_BASE})
 	NEXT_VERSION_PATCH	:= $(shell echo $$((${VERSION_PATCH} + 1)))
