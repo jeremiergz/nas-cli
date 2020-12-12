@@ -19,7 +19,7 @@ func init() {
 	Cmd.MarkFlagFilename("directory")
 }
 
-var tvShowFmtRegexp = regexp.MustCompile(`(^.+)(\s-\s)\d+x\d+\.(.+)$`)
+var tvShowFmtRegexp = regexp.MustCompile(`(^.+)(\s-\s)S\d+E\d+\.(.+)$`)
 
 // findSeasonIndex in seasons array
 func findSeasonIndex(name string, seasons []media.Season) int {

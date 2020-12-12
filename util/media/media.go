@@ -73,8 +73,8 @@ func ParseTitle(filename string) (*PTN.TorrentInfo, error) {
 }
 
 // ToEpisodeName returns formatted TV show episode name from given parameters
-func ToEpisodeName(title string, season int, episode int, container string) string {
-	return fmt.Sprintf("%s - %dx%02d.%s", title, season, episode, container)
+func ToEpisodeName(title string, season int, episode int, extension string) string {
+	return fmt.Sprintf("%s - S%02dE%02d.%s", title, season, episode, extension)
 }
 
 // ToMovieName returns formatted movie name from given parameters
