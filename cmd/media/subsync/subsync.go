@@ -46,6 +46,7 @@ func process(video string, videoLang string, subtitle string, subtitleLang strin
 	videoPath := path.Join(media.WD, video)
 	subtitlePath := path.Join(media.WD, subtitle)
 	outFilePath := path.Join(media.WD, outFile)
+
 	options := []string{
 		"sync",
 		"--ref",
@@ -59,6 +60,7 @@ func process(video string, videoLang string, subtitle string, subtitleLang strin
 		"--out",
 		outFilePath,
 	}
+
 	console.Info(fmt.Sprintf("%s %s", subsyncCommand, strings.Join(options, " ")))
 	subsync := exec.Command(subsyncCommand, options...)
 	subsync.Stdout = os.Stdout
@@ -75,13 +77,13 @@ func process(video string, videoLang string, subtitle string, subtitleLang strin
 
 // Cmd formats given media type according to personal conventions
 var Cmd = &cobra.Command{
-	Use:   "subsync",
+	Use:   "subsync <directory>",
 	Short: "Synchronize subtitle using SubSync tool",
 	Args:  cobra.MinimumNArgs(1),
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		_, err := exec.LookPath(subsyncCommand)
 		if err != nil {
-			return fmt.Errorf("command not found: subsync")
+			return fmt.Errorf("command not found: %s", subsyncCommand)
 		}
 		// Exit if directory retrieved from args does not exist
 		media.WD, _ = filepath.Abs(args[0])
