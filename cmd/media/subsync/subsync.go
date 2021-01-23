@@ -42,7 +42,7 @@ func printAll(videos []string, subtitles []string) {
 }
 
 // process attempts to synchronize given subtitle with given video file
-func process(video string, videoLang string, subtitle string, subtitleLang string, outFile string) error {
+func process(video string, videoLang string, subtitle string, subtitleLang string, outFile string, deepTry bool) error {
 	videoPath := path.Join(media.WD, video)
 	subtitlePath := path.Join(media.WD, subtitle)
 	outFilePath := path.Join(media.WD, outFile)
@@ -59,6 +59,10 @@ func process(video string, videoLang string, subtitle string, subtitleLang strin
 		subtitleLang,
 		"--out",
 		outFilePath,
+	}
+
+	if deepTry {
+		options = append(options, "--ref-stream-by-lang", "eng")
 	}
 
 	console.Info(fmt.Sprintf("%s %s", subsyncCommand, strings.Join(options, " ")))
@@ -124,8 +128,9 @@ var Cmd = &cobra.Command{
 					videoFileExtension := path.Ext(videoFile)
 					outFile := strings.Replace(videoFile, videoFileExtension, fmt.Sprintf(".%s.srt", subtitleLang), 1)
 					subtitleFile := subtitleFiles[index]
-					err := process(videoFile, videoLang, subtitleFile, subtitleLang, outFile)
+					err := process(videoFile, videoLang, subtitleFile, subtitleLang, outFile, false)
 					if err != nil {
+						err = process(videoFile, videoLang, subtitleFile, subtitleLang, outFile, true)
 						hasError = true
 					}
 					if index+1 != len(videoFiles) || hasError {
