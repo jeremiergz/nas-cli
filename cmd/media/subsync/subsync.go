@@ -18,6 +18,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
+type result struct {
+	isSuccessful bool
+	message      string
+}
+
 var subsyncCommand string = "subsync"
 
 func init() {
@@ -42,7 +47,7 @@ func printAll(videos []string, subtitles []string) {
 }
 
 // process attempts to synchronize given subtitle with given video file
-func process(video string, videoLang string, subtitle string, subtitleLang string, outFile string, deepTry bool) error {
+func process(video string, videoLang string, subtitle string, subtitleLang string, outFile string) bool {
 	videoPath := path.Join(media.WD, video)
 	subtitlePath := path.Join(media.WD, subtitle)
 	outFilePath := path.Join(media.WD, outFile)
@@ -61,22 +66,26 @@ func process(video string, videoLang string, subtitle string, subtitleLang strin
 		outFilePath,
 	}
 
-	if deepTry {
-		options = append(options, "--ref-stream-by-lang", "eng")
+	runCommand := func(opts []string) error {
+		console.Info(fmt.Sprintf("%s %s", subsyncCommand, strings.Join(opts, " ")))
+		subsync := exec.Command(subsyncCommand, opts...)
+		subsync.Stdout = os.Stdout
+		return subsync.Run()
 	}
 
-	console.Info(fmt.Sprintf("%s %s", subsyncCommand, strings.Join(options, " ")))
-	subsync := exec.Command(subsyncCommand, options...)
-	subsync.Stdout = os.Stdout
-	err := subsync.Run()
+	err := runCommand(options)
+
 	if err != nil {
-		console.Error(err.Error())
-		return err
+		options = append(options, "--ref-stream-by-lang", "eng")
+		err = runCommand(options)
+		if err != nil {
+			return false
+		}
 	}
+
 	os.Chown(outFilePath, media.UID, media.GID)
 	os.Chmod(outFilePath, util.FileMode)
-	console.Success(outFile)
-	return nil
+	return true
 }
 
 // Cmd formats given media type according to personal conventions
@@ -124,20 +133,29 @@ var Cmd = &cobra.Command{
 				}
 			} else {
 				hasError := false
+				results := []result{}
 				for index, videoFile := range videoFiles {
 					videoFileExtension := path.Ext(videoFile)
 					outFile := strings.Replace(videoFile, videoFileExtension, fmt.Sprintf(".%s.srt", subtitleLang), 1)
 					subtitleFile := subtitleFiles[index]
-					err := process(videoFile, videoLang, subtitleFile, subtitleLang, outFile, false)
-					if err != nil {
-						err = process(videoFile, videoLang, subtitleFile, subtitleLang, outFile, true)
+					ok := process(videoFile, videoLang, subtitleFile, subtitleLang, outFile)
+					results = append(results, result{
+						isSuccessful: ok,
+						message:      outFile,
+					})
+					if !ok {
 						hasError = true
 					}
-					if index+1 != len(videoFiles) || hasError {
-						fmt.Println()
+				}
+				for _, result := range results {
+					if result.isSuccessful {
+						console.Success(result.message)
+					} else {
+						console.Error(result.message)
 					}
 				}
 				if hasError {
+					fmt.Println()
 					return fmt.Errorf("an error occurred")
 				}
 			}
