@@ -27,6 +27,12 @@ type Movie struct {
 	Year      int
 }
 
+// Result is struct defining result of a process
+type Result struct {
+	IsSuccessful bool
+	Message      string
+}
+
 // Season holds information about a season
 type Season struct {
 	Name     string

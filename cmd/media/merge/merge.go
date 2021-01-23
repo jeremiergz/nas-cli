@@ -18,6 +18,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
+type backup struct {
+	newPath string
+	oldPath string
+}
+
 type subtitles map[string]map[string]string
 
 var mergeCommand string = "mkvmerge"
@@ -64,33 +69,47 @@ func listSubtitles(videos []string, extension string, languages []string) subtit
 }
 
 // process merges language tracks into video file
-func process(video string, subtitles subtitles, outFile string) error {
+func process(video string, subtitles subtitles, outFile string) bool {
 	videoPath := path.Join(media.WD, video)
+	videoBackupPath := path.Join(media.WD, fmt.Sprintf("%s%s%s", "_", video, ".bak"))
 	outFilePath := path.Join(media.WD, outFile)
+
+	os.Rename(videoPath, videoBackupPath)
+
+	backups := []backup{
+		{newPath: videoBackupPath, oldPath: videoPath},
+	}
 
 	options := []string{
 		"--output",
 		outFilePath,
 	}
 	for lang, subtitleFile := range subtitles[video] {
-		subtitleFilePath, _ := filepath.Abs(path.Join(media.WD, subtitleFile))
-		options = append(options, "--language", fmt.Sprintf("0:%s", lang), subtitleFilePath)
+		subtitleFilePath := path.Join(media.WD, subtitleFile)
+		subtitleFileBackupPath := path.Join(media.WD, fmt.Sprintf("%s%s%s", "_", subtitleFile, ".bak"))
+		os.Rename(subtitleFilePath, subtitleFileBackupPath)
+		backups = append(backups, backup{newPath: subtitleFileBackupPath, oldPath: subtitleFilePath})
+		options = append(options, "--language", fmt.Sprintf("0:%s", lang), subtitleFileBackupPath)
 	}
-	options = append(options, videoPath)
+	options = append(options, videoBackupPath)
 
 	console.Info(fmt.Sprintf("%s %s", mergeCommand, strings.Join(options, " ")))
 	merge := exec.Command(mergeCommand, options...)
 	merge.Stdout = os.Stdout
 	err := merge.Run()
+
+	fmt.Println()
+
 	if err != nil {
-		console.Error(err.Error())
-		return err
+		for _, backupFile := range backups {
+			os.Rename(backupFile.oldPath, backupFile.newPath)
+		}
+		return false
 	}
+
 	os.Chown(outFilePath, media.UID, media.GID)
 	os.Chmod(outFilePath, util.FileMode)
-	fmt.Println()
-	console.Success(outFile)
-	return nil
+	return true
 }
 
 // Cmd formats given media type according to personal conventions
@@ -138,18 +157,28 @@ var Cmd = &cobra.Command{
 				}
 			} else {
 				hasError := false
+				results := []media.Result{}
 				for index, videoFile := range videoFiles {
 					videoFileExtension := strings.Replace(path.Ext(videoFile), ".", "", 1)
 					outFile := media.ToEpisodeName(tvShow, season, index+1, videoFileExtension)
-					err := process(videoFile, subtitleFiles, outFile)
-					if err != nil {
+					ok := process(videoFile, subtitleFiles, outFile)
+					results = append(results, media.Result{
+						IsSuccessful: ok,
+						Message:      outFile,
+					})
+					if !ok {
 						hasError = true
 					}
-					if index+1 != len(videoFiles) || hasError {
-						fmt.Println()
+				}
+				for _, result := range results {
+					if result.IsSuccessful {
+						console.Success(result.Message)
+					} else {
+						console.Error(result.Message)
 					}
 				}
 				if hasError {
+					fmt.Println()
 					return fmt.Errorf("an error occurred")
 				}
 			}

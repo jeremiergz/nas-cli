@@ -18,11 +18,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type result struct {
-	isSuccessful bool
-	message      string
-}
-
 var subsyncCommand string = "subsync"
 
 func init() {
@@ -133,25 +128,25 @@ var Cmd = &cobra.Command{
 				}
 			} else {
 				hasError := false
-				results := []result{}
+				results := []media.Result{}
 				for index, videoFile := range videoFiles {
 					videoFileExtension := path.Ext(videoFile)
 					outFile := strings.Replace(videoFile, videoFileExtension, fmt.Sprintf(".%s.srt", subtitleLang), 1)
 					subtitleFile := subtitleFiles[index]
 					ok := process(videoFile, videoLang, subtitleFile, subtitleLang, outFile)
-					results = append(results, result{
-						isSuccessful: ok,
-						message:      outFile,
+					results = append(results, media.Result{
+						IsSuccessful: ok,
+						Message:      outFile,
 					})
 					if !ok {
 						hasError = true
 					}
 				}
 				for _, result := range results {
-					if result.isSuccessful {
-						console.Success(result.message)
+					if result.IsSuccessful {
+						console.Success(result.Message)
 					} else {
-						console.Error(result.message)
+						console.Error(result.Message)
 					}
 				}
 				if hasError {
