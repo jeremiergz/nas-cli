@@ -52,18 +52,21 @@ github.com/manifoldco/promptui/screenbuf
 github.com/mattn/go-colorable
 # github.com/mattn/go-isatty v0.0.12
 github.com/mattn/go-isatty
-# github.com/mattn/go-runewidth v0.0.9
+# github.com/mattn/go-runewidth v0.0.10
 ## explicit
 github.com/mattn/go-runewidth
 # github.com/middelink/go-parse-torrent-name v0.0.0-20190301154245-3ff4efacd4c4
 ## explicit
 github.com/middelink/go-parse-torrent-name
-# github.com/mitchellh/mapstructure v1.4.0
+# github.com/mitchellh/mapstructure v1.4.1
 ## explicit
 github.com/mitchellh/mapstructure
 # github.com/pelletier/go-toml v1.8.1
 ## explicit
 github.com/pelletier/go-toml
+# github.com/rivo/uniseg v0.2.0
+## explicit
+github.com/rivo/uniseg
 # github.com/spf13/afero v1.5.1
 ## explicit
 github.com/spf13/afero
@@ -84,11 +87,11 @@ github.com/spf13/pflag
 github.com/spf13/viper
 # github.com/subosito/gotenv v1.2.0
 github.com/subosito/gotenv
-# golang.org/x/sys v0.0.0-20201218084310-7d0127a74742
+# golang.org/x/sys v0.0.0-20210122235752-a8b976e07c7b
 ## explicit
 golang.org/x/sys/internal/unsafeheader
 golang.org/x/sys/unix
-# golang.org/x/text v0.3.4
+# golang.org/x/text v0.3.5
 ## explicit
 golang.org/x/text/transform
 golang.org/x/text/unicode/norm
