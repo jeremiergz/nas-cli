@@ -34,11 +34,10 @@ func init() {
 }
 
 // printAll prints files as a tree
-func printAll(videos []string, subtitles subtitles, languages []string) {
+func printAll(videos []string, subtitles subtitles, outFiles map[string]string, languages []string) {
 	rootTree := gotree.New(media.WD)
-	for index, video := range videos {
-		fileIndex := strconv.FormatInt(int64(index+1), 10)
-		subTree := rootTree.Add(fileIndex)
+	for _, video := range videos {
+		subTree := rootTree.Add(outFiles[video])
 		for _, lang := range languages {
 			if subtitles[video][lang] != "" {
 				subtitle := subtitles[video][lang]
@@ -139,12 +138,19 @@ var Cmd = &cobra.Command{
 
 		videoFiles := media.List(media.WD, videoExtensions, nil)
 		sort.Strings(videoFiles)
+
+		outFiles := map[string]string{}
+		for index, videoFile := range videoFiles {
+			videoFileExtension := strings.Replace(path.Ext(videoFile), ".", "", 1)
+			outFiles[videoFile] = media.ToEpisodeName(tvShow, season, index+1, videoFileExtension)
+		}
+
 		subtitleFiles := listSubtitles(videoFiles, subtitleExtension, languages)
 
 		if len(videoFiles) == 0 {
 			console.Success("No video file to process")
 		} else {
-			printAll(videoFiles, subtitleFiles, languages)
+			printAll(videoFiles, subtitleFiles, outFiles, languages)
 			prompt := promptui.Prompt{
 				Label:     "Process",
 				IsConfirm: true,
@@ -158,9 +164,8 @@ var Cmd = &cobra.Command{
 			} else {
 				hasError := false
 				results := []media.Result{}
-				for index, videoFile := range videoFiles {
-					videoFileExtension := strings.Replace(path.Ext(videoFile), ".", "", 1)
-					outFile := media.ToEpisodeName(tvShow, season, index+1, videoFileExtension)
+				for _, videoFile := range videoFiles {
+					outFile := outFiles[videoFile]
 					ok := process(videoFile, subtitleFiles, outFile)
 					results = append(results, media.Result{
 						IsSuccessful: ok,
