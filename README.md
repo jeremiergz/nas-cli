@@ -1,11 +1,11 @@
 # NAS CLI
 
-[![pipeline status](https://github.com/jeremiergz/nas-cli/workflows/Build%20&%20Test%20&%20Release/badge.svg?branch=master)](https://github.com/jeremiergz/nas-cli/actions)
-[![license](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](https://github.com/jeremiergz/nas-cli/blob/master/LICENSE)
+[![pipeline status](https://github.com/jeremiergz/nas-cli/workflows/Build%20&%20Test%20&%20Release/badge.svg?branch=main)](https://github.com/jeremiergz/nas-cli/actions)
+[![license](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](https://github.com/jeremiergz/nas-cli/blob/main/LICENSE)
 
 CLI application for managing my NAS.
 
-<img alt="logo" src="https://github.com/jeremiergz/nas-cli/blob/master/logo.png?raw=true" width="50" />
+<img alt="logo" src="https://github.com/jeremiergz/nas-cli/blob/main/logo.png?raw=true" width="50" />
 
 ## Authors
 
@@ -13,4 +13,4 @@ CLI application for managing my NAS.
 
 ## License
 
-This project is licensed under the Apache License 2.0 - see the [LICENSE](https://github.com/jeremiergz/nas-cli/blob/master/LICENSE) file for details.
+This project is licensed under the Apache License 2.0 - see the [LICENSE](https://github.com/jeremiergz/nas-cli/blob/main/LICENSE) file for details.
