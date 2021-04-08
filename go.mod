@@ -1,6 +1,6 @@
 module github.com/jeremiergz/nas-cli
 
-go 1.15
+go 1.16
 
 require (
 	github.com/DiSiqueira/GoTree v1.0.0
