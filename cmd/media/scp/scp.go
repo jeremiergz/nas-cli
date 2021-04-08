@@ -14,18 +14,10 @@ import (
 	"github.com/spf13/viper"
 )
 
-const (
-	ConfigKeyMovies  string = "scp.movies"
-	ConfigKeyTVShows string = "scp.tvshows"
-	scpCommand       string = "scp"
-)
+const scpCommand string = "scp"
 
 var (
-	assets     []string
-	ConfigKeys = []string{
-		ConfigKeyMovies,
-		ConfigKeyTVShows,
-	}
+	assets    []string
 	nasDomain string
 	recursive bool
 	subpath   string

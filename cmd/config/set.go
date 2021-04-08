@@ -5,26 +5,24 @@ import (
 	"os"
 	"path"
 
+	configutil "github.com/jeremiergz/nas-cli/util/config"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
 var SetCmd = &cobra.Command{
-	Use:   "set <key> <value>",
-	Short: "Set configuration entry",
-	Args:  cobra.ExactArgs(2),
+	Use:       "set <key> <value>",
+	Short:     "Set configuration entry",
+	Args:      cobra.ExactArgs(2),
+	ValidArgs: configutil.ConfigKeys,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		key := args[0]
 		value := args[1]
 
-		if err := preflightChecks(key); err != nil {
-			return err
-		}
-
 		viper.Set(key, value)
 
-		tempFilePath := path.Join(WD, configFileNameWithoutDot)
-		destFilePath := path.Join(WD, configFileName)
+		tempFilePath := path.Join(configDir, configFileNameWithoutDot)
+		destFilePath := path.Join(configDir, configFileName)
 
 		err := viper.WriteConfigAs(tempFilePath)
 		if err != nil {
