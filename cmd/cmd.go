@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"github.com/jeremiergz/nas-cli/cmd/completion"
+	"github.com/jeremiergz/nas-cli/cmd/config"
 	"github.com/jeremiergz/nas-cli/cmd/info"
 	"github.com/jeremiergz/nas-cli/cmd/media"
 	"github.com/jeremiergz/nas-cli/cmd/version"
@@ -12,6 +13,7 @@ import (
 func init() {
 	cobra.OnInitialize(initConfig)
 	Cmd.AddCommand(completion.Cmd)
+	Cmd.AddCommand(config.Cmd)
 	Cmd.AddCommand(info.Cmd)
 	Cmd.AddCommand(media.Cmd)
 	Cmd.AddCommand(version.Cmd)
@@ -19,12 +21,14 @@ func init() {
 
 func initConfig() {
 	viper.AutomaticEnv()
+	if err := viper.ReadInConfig(); err != nil {
+		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
+			panic(err)
+		}
+	}
 }
 
-var (
-	// Cmd adds all child commands and sets global flags
-	Cmd = &cobra.Command{
-		Use:   "nas-cli",
-		Short: "CLI application for managing my NAS",
-	}
-)
+var Cmd = &cobra.Command{
+	Use:   "nas-cli",
+	Short: "CLI application for managing my NAS",
+}
