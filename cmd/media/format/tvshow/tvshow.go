@@ -16,6 +16,7 @@ import (
 )
 
 func init() {
+	Cmd.MarkFlagDirname("directory")
 	Cmd.MarkFlagFilename("directory")
 }
 
@@ -167,7 +168,6 @@ func process(wd string, tvShows []media.TVShow, owner, group int) error {
 	return nil
 }
 
-// Cmd is the TV Shows-specific format command
 var Cmd = &cobra.Command{
 	Use:   "tvshows <directory>",
 	Short: "TV Shows batch formatting",

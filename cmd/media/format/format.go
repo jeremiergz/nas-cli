@@ -18,7 +18,6 @@ func init() {
 	Cmd.AddCommand(tvshow.Cmd)
 }
 
-// Cmd formats given media type according to personal conventions
 var Cmd = &cobra.Command{
 	Use:   "format",
 	Short: "Batch media formatting depending on their type",

@@ -18,7 +18,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var subsyncCommand string = "subsync"
+const subsyncCommand string = "subsync"
 
 func init() {
 	Cmd.Flags().StringArray("sub-ext", []string{"srt"}, "filter subtitles by extension")
@@ -83,7 +83,6 @@ func process(video string, videoLang string, subtitle string, subtitleLang strin
 	return true
 }
 
-// Cmd formats given media type according to personal conventions
 var Cmd = &cobra.Command{
 	Use:   "subsync <directory>",
 	Short: "Synchronize subtitle using SubSync tool",

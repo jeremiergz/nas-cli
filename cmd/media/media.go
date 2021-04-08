@@ -22,7 +22,6 @@ func init() {
 	Cmd.AddCommand(subsync.Cmd)
 }
 
-// Cmd loads sub-commands for media management
 var Cmd = &cobra.Command{
 	Use:   "media",
 	Short: "Set of utilities for media management",

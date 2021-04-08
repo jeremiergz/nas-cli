@@ -18,6 +18,7 @@ import (
 )
 
 func init() {
+	Cmd.MarkFlagDirname("directory")
 	Cmd.MarkFlagFilename("directory")
 }
 
@@ -109,7 +110,6 @@ func process(wd string, movies []media.Movie, owner, group int) error {
 	return nil
 }
 
-// Cmd is the movies-specific format command
 var Cmd = &cobra.Command{
 	Use:   "movies <directory>",
 	Short: "Movies batch formatting",

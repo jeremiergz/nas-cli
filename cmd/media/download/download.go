@@ -21,7 +21,6 @@ func init() {
 	Cmd.Flags().BoolP("tv-show", "t", false, "format filename to TV show type")
 }
 
-// Cmd downloads & formats medium from provided URL
 var Cmd = &cobra.Command{
 	Use:   "download <url> [directory]",
 	Short: "Download medium",

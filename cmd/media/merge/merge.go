@@ -25,7 +25,7 @@ type backup struct {
 
 type subtitles map[string]map[string]string
 
-var mergeCommand string = "mkvmerge"
+const mergeCommand string = "mkvmerge"
 
 func init() {
 	Cmd.Flags().StringArrayP("languages", "l", []string{"eng", "fre"}, "language tracks to merge")
@@ -111,7 +111,6 @@ func process(video string, subtitles subtitles, outFile string) bool {
 	return true
 }
 
-// Cmd formats given media type according to personal conventions
 var Cmd = &cobra.Command{
 	Use:   "merge <directory> <name> <season>",
 	Short: "Merge tracks using MKVMerge tool",

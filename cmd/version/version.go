@@ -7,13 +7,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var (
-	// Cmd prints application version
-	Cmd = &cobra.Command{
-		Use:   "version",
-		Short: "Print application version",
-		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Println(cmd.Parent().Name(), info.Version)
-		},
-	}
-)
+var Cmd = &cobra.Command{
+	Use:   "version",
+	Short: "Print application version",
+	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Println(cmd.Parent().Name(), info.Version)
+	},
+}

@@ -23,7 +23,6 @@ var (
 	// Version is the Calendar Versioning string, overriden as ldflag
 	Version = ""
 
-	// Cmd prints application information
 	Cmd = &cobra.Command{
 		Use:   "info",
 		Short: "Print application information",
