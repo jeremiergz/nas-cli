@@ -61,12 +61,12 @@ install:
 
 release:
 	@echo ➜ creating release v${NEXT_VERSION}
-	@git checkout master
+	@git checkout main
 	@git rebase develop
 	@git tag --annotate "${NEXT_VERSION}" --message "Release v${NEXT_VERSION}"
 	@git push --follow-tags
 	@git checkout develop
-	@git rebase master
+	@git rebase main
 	@git push
 	@echo ✔ successfully created release v${NEXT_VERSION}
 
