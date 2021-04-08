@@ -22,6 +22,7 @@ var TVShowCmd = &cobra.Command{
 		if tvShowsDest == "" {
 			return fmt.Errorf("%s configuration entry is missing", config.ConfigKeyTVShows)
 		}
+
 		return process(tvShowsDest, subpath)
 	},
 }

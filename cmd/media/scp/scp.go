@@ -10,6 +10,7 @@ import (
 
 	"github.com/jeremiergz/nas-cli/util/config"
 	"github.com/jeremiergz/nas-cli/util/console"
+	"github.com/jeremiergz/nas-cli/util/ssh"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -49,6 +50,24 @@ func process(destination string, subdestination string) error {
 	if err != nil {
 		return err
 	}
+
+	conn, err := ssh.Connect()
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+
+	commands := []string{
+		fmt.Sprintf("cd \"%s\"", destination),
+		"find . -type d -exec chmod 755 {} +",
+		"find . -type f -exec chmod 644 {} +",
+		"chown -R media:media ./*",
+	}
+	_, err = conn.SendCommands(commands...)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 

@@ -22,6 +22,7 @@ var MovieCmd = &cobra.Command{
 		if moviesDest == "" {
 			return fmt.Errorf("%s configuration entry is missing", config.ConfigKeyMovies)
 		}
+
 		return process(moviesDest, subpath)
 	},
 }

@@ -5,12 +5,6 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
-)
-
-const (
-	configFileName           string = ".nascliconfig"
-	configFileNameWithoutDot string = "nascliconfig"
 )
 
 var (
@@ -18,9 +12,6 @@ var (
 )
 
 func init() {
-	viper.SetConfigName(configFileName)
-	viper.AddConfigPath("$HOME")
-	viper.SetConfigType("ini")
 	Cmd.AddCommand(GetCmd)
 	Cmd.AddCommand(ListCmd)
 	Cmd.AddCommand(SetCmd)

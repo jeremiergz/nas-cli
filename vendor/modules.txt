@@ -9,14 +9,13 @@ github.com/cavaliercoder/grab
 # github.com/cheggaaa/pb v2.0.7+incompatible
 ## explicit
 github.com/cheggaaa/pb/termutil
-# github.com/cheggaaa/pb/v3 v3.0.7
+# github.com/cheggaaa/pb/v3 v3.0.8
 ## explicit
 github.com/cheggaaa/pb/v3
 github.com/cheggaaa/pb/v3/termutil
 # github.com/chzyer/readline v0.0.0-20180603132655-2972be24d48e
 github.com/chzyer/readline
 # github.com/fatih/color v1.10.0
-## explicit
 github.com/fatih/color
 # github.com/fsnotify/fsnotify v1.4.9
 ## explicit
@@ -53,7 +52,6 @@ github.com/mattn/go-colorable
 # github.com/mattn/go-isatty v0.0.12
 github.com/mattn/go-isatty
 # github.com/mattn/go-runewidth v0.0.12
-## explicit
 github.com/mattn/go-runewidth
 # github.com/middelink/go-parse-torrent-name v0.0.0-20190301154245-3ff4efacd4c4
 ## explicit
@@ -65,7 +63,6 @@ github.com/mitchellh/mapstructure
 ## explicit
 github.com/pelletier/go-toml
 # github.com/rivo/uniseg v0.2.0
-## explicit
 github.com/rivo/uniseg
 # github.com/spf13/afero v1.6.0
 ## explicit
@@ -87,8 +84,20 @@ github.com/spf13/pflag
 github.com/spf13/viper
 # github.com/subosito/gotenv v1.2.0
 github.com/subosito/gotenv
-# golang.org/x/sys v0.0.0-20210403161142-5e06dd20ab57
+# golang.org/x/crypto v0.0.0-20210322153248-0c34fe9e7dc2
 ## explicit
+golang.org/x/crypto/blowfish
+golang.org/x/crypto/chacha20
+golang.org/x/crypto/curve25519
+golang.org/x/crypto/ed25519
+golang.org/x/crypto/ed25519/internal/edwards25519
+golang.org/x/crypto/internal/subtle
+golang.org/x/crypto/poly1305
+golang.org/x/crypto/ssh
+golang.org/x/crypto/ssh/internal/bcrypt_pbkdf
+golang.org/x/crypto/ssh/knownhosts
+# golang.org/x/sys v0.0.0-20210403161142-5e06dd20ab57
+golang.org/x/sys/cpu
 golang.org/x/sys/internal/unsafeheader
 golang.org/x/sys/unix
 # golang.org/x/text v0.3.6
