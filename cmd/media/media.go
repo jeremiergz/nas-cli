@@ -8,6 +8,7 @@ import (
 	"github.com/jeremiergz/nas-cli/cmd/media/download"
 	"github.com/jeremiergz/nas-cli/cmd/media/format"
 	"github.com/jeremiergz/nas-cli/cmd/media/merge"
+	"github.com/jeremiergz/nas-cli/cmd/media/scp"
 	"github.com/jeremiergz/nas-cli/cmd/media/subsync"
 	"github.com/jeremiergz/nas-cli/util/media"
 	"github.com/spf13/cobra"
@@ -19,6 +20,7 @@ func init() {
 	Cmd.AddCommand(download.Cmd)
 	Cmd.AddCommand(format.Cmd)
 	Cmd.AddCommand(merge.Cmd)
+	Cmd.AddCommand(scp.Cmd)
 	Cmd.AddCommand(subsync.Cmd)
 }
 
