@@ -13,18 +13,21 @@ import (
 	"github.com/jeremiergz/nas-cli/util/ssh"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"golang.org/x/sync/errgroup"
 )
 
 const scpCommand string = "scp"
 
 var (
 	assets    []string
+	delete    bool
 	nasDomain string
 	recursive bool
 	subpath   string
 )
 
 func init() {
+	Cmd.PersistentFlags().BoolP("delete", "d", false, "remove source files after upload")
 	Cmd.PersistentFlags().BoolP("recursive", "r", false, "find files and folders recursively")
 	Cmd.AddCommand(MovieCmd)
 	Cmd.AddCommand(TVShowCmd)
@@ -57,18 +60,30 @@ func process(destination string, subdestination string) error {
 	}
 	defer conn.Close()
 
+	g := new(errgroup.Group)
+
 	commands := []string{
 		fmt.Sprintf("cd \"%s\"", destination),
 		"find . -type d -exec chmod 755 {} +",
 		"find . -type f -exec chmod 644 {} +",
 		"chown -R media:media ./*",
 	}
-	_, err = conn.SendCommands(commands...)
-	if err != nil {
+	g.Go(func() error {
+		_, err = conn.SendCommands(commands...)
 		return err
+	})
+
+	if delete {
+		for _, asset := range assets {
+			func(a string) {
+				g.Go(func() error {
+					return os.RemoveAll(a)
+				})
+			}(asset)
+		}
 	}
 
-	return nil
+	return g.Wait()
 }
 
 var Cmd = &cobra.Command{
@@ -89,15 +104,17 @@ var Cmd = &cobra.Command{
 		assets = append(args[:len(args)-1], args[len(args):]...)
 		subpath = args[len(args)-1]
 
+		delete, _ = cmd.Flags().GetBool("delete")
 		recursive, _ = cmd.Flags().GetBool("recursive")
 
 		// Exit if files/folders retrieved from assets do not exist
-		for _, asset := range assets {
-			asset, _ := filepath.Abs(asset)
-			_, err = os.Stat(asset)
+		for index, asset := range assets {
+			assetPath, _ := filepath.Abs(asset)
+			_, err = os.Stat(assetPath)
 			if err != nil {
 				return fmt.Errorf("%s does not exist", asset)
 			}
+			assets[index] = assetPath
 		}
 		return nil
 	},
