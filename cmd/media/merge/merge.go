@@ -81,7 +81,7 @@ func process(video string, subtitles subtitles, outFile string) bool {
 
 	options := []string{
 		"--output",
-		outFilePath,
+		fmt.Sprintf("\"%s\"", outFilePath),
 	}
 	for lang, subtitleFile := range subtitles[video] {
 		subtitleFilePath := path.Join(media.WD, subtitleFile)

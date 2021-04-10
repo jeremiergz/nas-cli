@@ -50,15 +50,15 @@ func process(video string, videoLang string, subtitle string, subtitleLang strin
 	options := []string{
 		"sync",
 		"--ref",
-		videoPath,
+		fmt.Sprintf("\"%s\"", videoPath),
 		"--ref-lang",
-		videoLang,
+		fmt.Sprintf("\"%s\"", videoLang),
 		"--sub",
-		subtitlePath,
+		fmt.Sprintf("\"%s\"", subtitlePath),
 		"--sub-lang",
-		subtitleLang,
+		fmt.Sprintf("\"%s\"", subtitleLang),
 		"--out",
-		outFilePath,
+		fmt.Sprintf("\"%s\"", outFilePath),
 	}
 
 	runCommand := func(opts []string) error {

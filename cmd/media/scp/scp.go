@@ -40,7 +40,7 @@ func process(destination string, subdestination string) error {
 		args = append(args, "-r")
 	}
 	args = append(args, assets...)
-	args = append(args, fmt.Sprintf("%s:%s", nasDomain, path.Join(destination, subdestination)))
+	args = append(args, fmt.Sprintf("%s:%s", nasDomain, fmt.Sprintf("\"%s\"", path.Join(destination, subdestination))))
 
 	console.Info(fmt.Sprintf("%s %s", scpCommand, strings.Join(args, " ")))
 	runCommand := func(opts []string) error {
