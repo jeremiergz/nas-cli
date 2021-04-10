@@ -1,6 +1,8 @@
 package scp
 
 import (
+	"bytes"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -39,19 +41,25 @@ func process(destination string, subdestination string) error {
 	if recursive {
 		args = append(args, "-r")
 	}
-	args = append(args, assets...)
-	args = append(args, fmt.Sprintf("\"%s:%s\"", nasDomain, path.Join(destination, subdestination)))
+	for _, asset := range assets {
+		args = append(args, fmt.Sprintf("\"%s\"", asset))
+	}
+	fullDestination := fmt.Sprintf("\"%s\"", path.Join(destination, subdestination))
+	args = append(args, fmt.Sprintf("%s:%s", nasDomain, fullDestination))
 
-	console.Info(fmt.Sprintf("%s %s", scpCommand, strings.Join(args, " ")))
+	console.Info(fmt.Sprintf("%s %s\n", scpCommand, strings.Join(args, " ")))
+	var stderr bytes.Buffer
 	runCommand := func(opts []string) error {
 		scp := exec.Command(scpCommand, opts...)
+		scp.Stderr = &stderr
 		scp.Stdout = os.Stdout
 		return scp.Run()
 	}
 
 	err := runCommand(args)
 	if err != nil {
-		return err
+		commandErr := errors.New(fmt.Sprintf("%s: %s", err.Error(), stderr.String()))
+		return commandErr
 	}
 
 	conn, err := ssh.Connect()

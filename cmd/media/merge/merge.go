@@ -92,12 +92,10 @@ func process(video string, subtitles subtitles, outFile string) bool {
 	}
 	options = append(options, videoBackupPath)
 
-	console.Info(fmt.Sprintf("%s %s", mergeCommand, strings.Join(options, " ")))
+	console.Info(fmt.Sprintf("%s %s\n", mergeCommand, strings.Join(options, " ")))
 	merge := exec.Command(mergeCommand, options...)
 	merge.Stdout = os.Stdout
 	err := merge.Run()
-
-	fmt.Println()
 
 	if err != nil {
 		for _, backupFile := range backups {
