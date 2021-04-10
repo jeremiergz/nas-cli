@@ -41,9 +41,7 @@ func process(destination string, subdestination string) error {
 	if recursive {
 		args = append(args, "-r")
 	}
-	for _, asset := range assets {
-		args = append(args, fmt.Sprintf("\"%s\"", asset))
-	}
+	args = append(args, assets...)
 	fullDestination := fmt.Sprintf("\"%s\"", path.Join(destination, subdestination))
 	args = append(args, fmt.Sprintf("%s:%s", nasDomain, fullDestination))
 
