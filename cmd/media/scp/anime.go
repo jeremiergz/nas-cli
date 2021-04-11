@@ -13,16 +13,16 @@ func init() {
 	Cmd.MarkFlagFilename("assets")
 }
 
-var MovieCmd = &cobra.Command{
-	Use:   "movies <assets> <subpath>",
-	Short: "Movies uploading",
+var AnimeCmd = &cobra.Command{
+	Use:   "animes <assets> <subpath>",
+	Short: "Animes uploading",
 	Args:  cobra.MinimumNArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		moviesDest := viper.GetString(config.ConfigKeySCPMovies)
-		if moviesDest == "" {
-			return fmt.Errorf("%s configuration entry is missing", config.ConfigKeySCPMovies)
+		animesDest := viper.GetString(config.ConfigKeySCPAnimes)
+		if animesDest == "" {
+			return fmt.Errorf("%s configuration entry is missing", config.ConfigKeySCPAnimes)
 		}
 
-		return process(moviesDest, subpath)
+		return process(animesDest, subpath)
 	},
 }

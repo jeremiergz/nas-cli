@@ -10,8 +10,9 @@ import (
 
 const (
 	ConfigKeyNASDomain     string = "nas.domain"
-	ConfigKeyMovies        string = "scp.movies"
-	ConfigKeyTVShows       string = "scp.tvshows"
+	ConfigKeySCPAnimes     string = "scp.animes"
+	ConfigKeySCPMovies     string = "scp.movies"
+	ConfigKeySCPTVShows    string = "scp.tvshows"
 	ConfigKeySSHHost       string = "ssh.host"
 	ConfigKeySSHKnownHosts string = "ssh.knownhosts"
 	ConfigKeySSHPort       string = "ssh.port"
@@ -24,8 +25,9 @@ var (
 	configDir  string
 	ConfigKeys = []string{
 		ConfigKeyNASDomain,
-		ConfigKeyMovies,
-		ConfigKeyTVShows,
+		ConfigKeySCPAnimes,
+		ConfigKeySCPMovies,
+		ConfigKeySCPTVShows,
 		ConfigKeySSHHost,
 		ConfigKeySSHKnownHosts,
 		ConfigKeySSHPort,

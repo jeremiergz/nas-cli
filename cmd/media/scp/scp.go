@@ -31,6 +31,7 @@ var (
 func init() {
 	Cmd.PersistentFlags().BoolP("delete", "d", false, "remove source files after upload")
 	Cmd.PersistentFlags().BoolP("recursive", "r", false, "find files and folders recursively")
+	Cmd.AddCommand(AnimeCmd)
 	Cmd.AddCommand(MovieCmd)
 	Cmd.AddCommand(TVShowCmd)
 }
