@@ -1,7 +1,8 @@
 # github.com/DiSiqueira/GoTree v1.0.0
 ## explicit
 github.com/DiSiqueira/GoTree
-# github.com/VividCortex/ewma v1.1.1
+# github.com/VividCortex/ewma v1.2.0
+## explicit
 github.com/VividCortex/ewma
 # github.com/cavaliercoder/grab v2.0.0+incompatible
 ## explicit
@@ -84,7 +85,7 @@ github.com/spf13/pflag
 github.com/spf13/viper
 # github.com/subosito/gotenv v1.2.0
 github.com/subosito/gotenv
-# golang.org/x/crypto v0.0.0-20210322153248-0c34fe9e7dc2
+# golang.org/x/crypto v0.0.0-20210421170649-83a5a9bb288b
 ## explicit
 golang.org/x/crypto/blowfish
 golang.org/x/crypto/chacha20
@@ -99,7 +100,8 @@ golang.org/x/crypto/ssh/knownhosts
 # golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 ## explicit
 golang.org/x/sync/errgroup
-# golang.org/x/sys v0.0.0-20210403161142-5e06dd20ab57
+# golang.org/x/sys v0.0.0-20210426230700-d19ff857e887
+## explicit
 golang.org/x/sys/cpu
 golang.org/x/sys/internal/unsafeheader
 golang.org/x/sys/unix
