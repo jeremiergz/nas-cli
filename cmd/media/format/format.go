@@ -5,8 +5,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/jeremiergz/nas-cli/cmd/media/format/movie"
-	"github.com/jeremiergz/nas-cli/cmd/media/format/tvshow"
 	"github.com/jeremiergz/nas-cli/util/media"
 	"github.com/spf13/cobra"
 )
@@ -14,8 +12,8 @@ import (
 func init() {
 	Cmd.PersistentFlags().Bool("dry-run", false, "print result without processing it")
 	Cmd.PersistentFlags().StringArrayP("ext", "e", []string{"avi", "mkv", "mp4"}, "filter files by extension")
-	Cmd.AddCommand(movie.Cmd)
-	Cmd.AddCommand(tvshow.Cmd)
+	Cmd.AddCommand(MovieCmd)
+	Cmd.AddCommand(TVShowCmd)
 }
 
 var Cmd = &cobra.Command{

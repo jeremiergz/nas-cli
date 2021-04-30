@@ -1,4 +1,4 @@
-package tvshow
+package format
 
 import (
 	"fmt"
@@ -16,9 +16,9 @@ import (
 )
 
 func init() {
-	Cmd.MarkFlagDirname("directory")
-	Cmd.MarkFlagFilename("directory")
-	Cmd.Flags().StringArrayP("name", "n", nil, "override TV show name")
+	TVShowCmd.MarkFlagDirname("directory")
+	TVShowCmd.MarkFlagFilename("directory")
+	TVShowCmd.Flags().StringArrayP("name", "n", nil, "override TV show name")
 }
 
 var tvShowFmtRegexp = regexp.MustCompile(`(^.+)(\s-\s)S\d+E\d+\.(.+)$`)
@@ -98,8 +98,8 @@ func loadTVShows(wd string, extensions []string) ([]*media.TVShow, error) {
 	return tvShows, nil
 }
 
-// printAll prints given TV shows as a tree
-func printAll(wd string, tvShows []*media.TVShow) {
+// printAllTVShows prints given TV shows as a tree
+func printAllTVShows(wd string, tvShows []*media.TVShow) {
 	rootTree := gotree.New(wd)
 	for _, tvShow := range tvShows {
 		tvShowTree := rootTree.Add(tvShow.Name)
@@ -128,8 +128,8 @@ func prepareDirectory(targetDirectory string, owner, group int) {
 	os.Chown(targetDirectory, owner, group)
 }
 
-// process processes listed TV shows by prompting user
-func process(wd string, tvShows []*media.TVShow, owner, group int) error {
+// processTVShows processes listed TV shows by prompting user
+func processTVShows(wd string, tvShows []*media.TVShow, owner, group int) error {
 	for _, tvShow := range tvShows {
 		fmt.Println()
 		prompt := promptui.Prompt{
@@ -174,7 +174,7 @@ func process(wd string, tvShows []*media.TVShow, owner, group int) error {
 	return nil
 }
 
-var Cmd = &cobra.Command{
+var TVShowCmd = &cobra.Command{
 	Use:   "tvshows <directory>",
 	Short: "TV Shows batch formatting",
 	Args:  cobra.MinimumNArgs(1),
@@ -199,9 +199,9 @@ var Cmd = &cobra.Command{
 		if len(tvShows) == 0 {
 			console.Success("Nothing to process")
 		} else {
-			printAll(media.WD, tvShows)
+			printAllTVShows(media.WD, tvShows)
 			if !dryRun {
-				process(media.WD, tvShows, media.UID, media.GID)
+				processTVShows(media.WD, tvShows, media.UID, media.GID)
 			}
 		}
 		return nil

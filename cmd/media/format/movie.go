@@ -1,4 +1,4 @@
-package movie
+package format
 
 import (
 	"fmt"
@@ -18,8 +18,8 @@ import (
 )
 
 func init() {
-	Cmd.MarkFlagDirname("directory")
-	Cmd.MarkFlagFilename("directory")
+	MovieCmd.MarkFlagDirname("directory")
+	MovieCmd.MarkFlagFilename("directory")
 }
 
 var movieFmtRegexp = regexp.MustCompile(`(^.+)\s\(([0-9]{4})\)\.(.+)$`)
@@ -45,8 +45,8 @@ func loadMovies(wd string, extensions []string) ([]media.Movie, error) {
 	return movies, nil
 }
 
-// printAll prints given movies array as a tree
-func printAll(wd string, movies []media.Movie) {
+// printAllMovies prints given movies array as a tree
+func printAllMovies(wd string, movies []media.Movie) {
 	moviesTree := gotree.New(wd)
 	for _, m := range movies {
 		moviesTree.Add(fmt.Sprintf("%s  %s", m.Fullname, m.Basename))
@@ -57,8 +57,8 @@ func printAll(wd string, movies []media.Movie) {
 	fmt.Println(toPrint)
 }
 
-// process processes listed movies by prompting user
-func process(wd string, movies []media.Movie, owner, group int) error {
+// processMovies processes listed movies by prompting user
+func processMovies(wd string, movies []media.Movie, owner, group int) error {
 	for _, m := range movies {
 		fmt.Println()
 		// Ask if current movie must be processed
@@ -110,7 +110,7 @@ func process(wd string, movies []media.Movie, owner, group int) error {
 	return nil
 }
 
-var Cmd = &cobra.Command{
+var MovieCmd = &cobra.Command{
 	Use:   "movies <directory>",
 	Short: "Movies batch formatting",
 	Args:  cobra.MinimumNArgs(1),
@@ -124,9 +124,9 @@ var Cmd = &cobra.Command{
 		if len(movies) == 0 {
 			console.Success("Nothing to process")
 		} else {
-			printAll(media.WD, movies)
+			printAllMovies(media.WD, movies)
 			if !dryRun {
-				err := process(media.WD, movies, media.UID, media.GID)
+				err := processMovies(media.WD, movies, media.UID, media.GID)
 				if err != nil {
 					return err
 				}
