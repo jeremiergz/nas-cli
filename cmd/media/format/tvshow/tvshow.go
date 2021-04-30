@@ -18,12 +18,13 @@ import (
 func init() {
 	Cmd.MarkFlagDirname("directory")
 	Cmd.MarkFlagFilename("directory")
+	Cmd.Flags().StringArrayP("name", "n", nil, "override TV show name")
 }
 
 var tvShowFmtRegexp = regexp.MustCompile(`(^.+)(\s-\s)S\d+E\d+\.(.+)$`)
 
 // findSeasonIndex in seasons array
-func findSeasonIndex(name string, seasons []media.Season) int {
+func findSeasonIndex(name string, seasons []*media.Season) int {
 	seasonIndex := -1
 	for i, season := range seasons {
 		if season.Name == name {
@@ -35,7 +36,7 @@ func findSeasonIndex(name string, seasons []media.Season) int {
 }
 
 // findTVShowIndex in TV Shows array
-func findTVShowIndex(name string, tvShows []media.TVShow) int {
+func findTVShowIndex(name string, tvShows []*media.TVShow) int {
 	tvShowIndex := -1
 	for i, tvShow := range tvShows {
 		if tvShow.Name == name {
@@ -47,43 +48,48 @@ func findTVShowIndex(name string, tvShows []media.TVShow) int {
 }
 
 // loadTVShows lists TV shows in folder that must be processed
-func loadTVShows(wd string, extensions []string) ([]media.TVShow, error) {
+func loadTVShows(wd string, extensions []string) ([]*media.TVShow, error) {
 	toProcess := media.List(wd, extensions, tvShowFmtRegexp)
-	tvShows := []media.TVShow{}
+	tvShows := []*media.TVShow{}
 	for _, basename := range toProcess {
 		e, err := media.ParseTitle(basename)
 		e.Title = strings.Title(e.Title)
 		if err == nil {
-			episode := media.Episode{
-				Basename:  basename,
-				Extension: e.Container,
-				Fullname:  media.ToEpisodeName(e.Title, e.Season, e.Episode, e.Container),
-			}
 			var tvShow *media.TVShow
 			tvShowIndex := findTVShowIndex(e.Title, tvShows)
 			if tvShowIndex == -1 {
 				tvShow = &media.TVShow{
 					Name:    e.Title,
-					Seasons: []media.Season{},
+					Seasons: []*media.Season{},
 				}
 			} else {
-				tvShow = &tvShows[tvShowIndex]
+				tvShow = tvShows[tvShowIndex]
 			}
 			seasonName := media.ToSeasonName(e.Season)
 			seasonIndex := findSeasonIndex(seasonName, tvShow.Seasons)
+			episode := media.Episode{
+				Basename:  basename,
+				Extension: e.Container,
+				Index:     e.Episode,
+			}
+			var season *media.Season
 			if seasonIndex == -1 {
-				season := media.Season{
+				season = &media.Season{
+					Episodes: []*media.Episode{},
+					Index:    e.Season,
 					Name:     seasonName,
-					Episodes: []media.Episode{},
+					TVShow:   tvShow,
 				}
-				season.Episodes = append(season.Episodes, episode)
+				episode.Season = season
+				season.Episodes = append(season.Episodes, &episode)
 				tvShow.Seasons = append(tvShow.Seasons, season)
 			} else {
-				season := &tvShow.Seasons[seasonIndex]
-				season.Episodes = append(season.Episodes, episode)
+				season := tvShow.Seasons[seasonIndex]
+				episode.Season = season
+				season.Episodes = append(season.Episodes, &episode)
 			}
 			if tvShowIndex == -1 {
-				tvShows = append(tvShows, *tvShow)
+				tvShows = append(tvShows, tvShow)
 			}
 		} else {
 			return nil, err
@@ -93,7 +99,7 @@ func loadTVShows(wd string, extensions []string) ([]media.TVShow, error) {
 }
 
 // printAll prints given TV shows as a tree
-func printAll(wd string, tvShows []media.TVShow) {
+func printAll(wd string, tvShows []*media.TVShow) {
 	rootTree := gotree.New(wd)
 	for _, tvShow := range tvShows {
 		tvShowTree := rootTree.Add(tvShow.Name)
@@ -105,7 +111,7 @@ func printAll(wd string, tvShows []media.TVShow) {
 			}
 			seasonsTree := tvShowTree.Add(fmt.Sprintf("%s (%d %s)", season.Name, filesCount, fileString))
 			for _, episode := range season.Episodes {
-				seasonsTree.Add(fmt.Sprintf("%s  %s", episode.Fullname, episode.Basename))
+				seasonsTree.Add(fmt.Sprintf("%s  %s", episode.Name(), episode.Basename))
 			}
 		}
 	}
@@ -123,7 +129,7 @@ func prepareDirectory(targetDirectory string, owner, group int) {
 }
 
 // process processes listed TV shows by prompting user
-func process(wd string, tvShows []media.TVShow, owner, group int) error {
+func process(wd string, tvShows []*media.TVShow, owner, group int) error {
 	for _, tvShow := range tvShows {
 		fmt.Println()
 		prompt := promptui.Prompt{
@@ -157,11 +163,11 @@ func process(wd string, tvShows []media.TVShow, owner, group int) error {
 			prepareDirectory(seasonPath, owner, group)
 			for _, episode := range season.Episodes {
 				oldPath := path.Join(wd, episode.Basename)
-				newPath := path.Join(seasonPath, episode.Fullname)
+				newPath := path.Join(seasonPath, episode.Name())
 				os.Rename(oldPath, newPath)
 				os.Chown(newPath, owner, group)
 				os.Chmod(newPath, util.FileMode)
-				console.Success(episode.Fullname)
+				console.Success(episode.Name())
 			}
 		}
 	}
@@ -174,7 +180,18 @@ var Cmd = &cobra.Command{
 	Args:  cobra.MinimumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		extensions, _ := cmd.Flags().GetStringArray("ext")
+		tvShowNames, _ := cmd.Flags().GetStringArray("name")
 		tvShows, err := loadTVShows(media.WD, extensions)
+
+		if len(tvShowNames) > 0 {
+			if len(tvShowNames) != len(tvShows) {
+				return fmt.Errorf("names must be provided for all TV shows")
+			}
+			for index, tvShowName := range tvShowNames {
+				tvShows[index].Name = tvShowName
+			}
+		}
+
 		dryRun, _ := cmd.Flags().GetBool("dry-run")
 		if err != nil {
 			return err

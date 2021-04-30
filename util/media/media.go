@@ -11,11 +11,31 @@ import (
 	PTN "github.com/middelink/go-parse-torrent-name"
 )
 
+// TVShow is the type of data that will be formatted as a TV show
+type TVShow struct {
+	Name    string
+	Seasons []*Season
+}
+
+// Season holds information about a season
+type Season struct {
+	Episodes []*Episode
+	Index    int
+	Name     string
+	TVShow   *TVShow
+}
+
 // Episode holds information about an episode
 type Episode struct {
 	Basename  string
 	Extension string
-	Fullname  string
+	Index     int
+	Season    *Season
+}
+
+// Name returns formatted TV show episode name from given parameters
+func (e *Episode) Name() string {
+	return ToEpisodeName(e.Season.TVShow.Name, e.Season.Index, e.Index, e.Extension)
 }
 
 // Movie is the type of data that will be formatted as a movie
@@ -31,18 +51,6 @@ type Movie struct {
 type Result struct {
 	IsSuccessful bool
 	Message      string
-}
-
-// Season holds information about a season
-type Season struct {
-	Name     string
-	Episodes []Episode
-}
-
-// TVShow is the type of data that will be formatted as a TV show
-type TVShow struct {
-	Name    string
-	Seasons []Season
 }
 
 var (
