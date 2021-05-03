@@ -9,6 +9,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 
 	gotree "github.com/DiSiqueira/GoTree"
 	"github.com/jeremiergz/nas-cli/util"
@@ -19,8 +20,8 @@ import (
 )
 
 type backup struct {
-	newPath string
-	oldPath string
+	currentPath  string
+	originalPath string
 }
 
 type subtitles map[string]map[string]string
@@ -28,7 +29,8 @@ type subtitles map[string]map[string]string
 const mergeCommand string = "mkvmerge"
 
 func init() {
-	Cmd.Flags().StringArrayP("languages", "l", []string{"eng", "fre"}, "language tracks to merge")
+	Cmd.Flags().BoolP("keep", "k", true, "keep original files")
+	Cmd.Flags().StringArrayP("language", "l", []string{"eng", "fre"}, "language tracks to merge")
 	Cmd.Flags().String("sub-ext", "srt", "subtitles extension")
 	Cmd.Flags().StringArrayP("video-ext", "e", []string{"avi", "mkv", "mp4"}, "filter video files by extension")
 }
@@ -68,7 +70,7 @@ func listSubtitles(videos []string, extension string, languages []string) subtit
 }
 
 // process merges language tracks into video file
-func process(video string, subtitles subtitles, outFile string) bool {
+func process(video string, subtitles subtitles, outFile string, keepOriginalFiles bool) bool {
 	videoPath := path.Join(media.WD, video)
 	videoBackupPath := path.Join(media.WD, fmt.Sprintf("%s%s%s", "_", video, ".bak"))
 	outFilePath := path.Join(media.WD, outFile)
@@ -76,7 +78,7 @@ func process(video string, subtitles subtitles, outFile string) bool {
 	os.Rename(videoPath, videoBackupPath)
 
 	backups := []backup{
-		{newPath: videoBackupPath, oldPath: videoPath},
+		{currentPath: videoBackupPath, originalPath: videoPath},
 	}
 
 	options := []string{
@@ -87,7 +89,7 @@ func process(video string, subtitles subtitles, outFile string) bool {
 		subtitleFilePath := path.Join(media.WD, subtitleFile)
 		subtitleFileBackupPath := path.Join(media.WD, fmt.Sprintf("%s%s%s", "_", subtitleFile, ".bak"))
 		os.Rename(subtitleFilePath, subtitleFileBackupPath)
-		backups = append(backups, backup{newPath: subtitleFileBackupPath, oldPath: subtitleFilePath})
+		backups = append(backups, backup{currentPath: subtitleFileBackupPath, originalPath: subtitleFilePath})
 		options = append(options, "--language", fmt.Sprintf("0:%s", lang), subtitleFileBackupPath)
 	}
 	options = append(options, videoBackupPath)
@@ -98,14 +100,33 @@ func process(video string, subtitles subtitles, outFile string) bool {
 	err := merge.Run()
 
 	if err != nil {
+		wg := sync.WaitGroup{}
 		for _, backupFile := range backups {
-			os.Rename(backupFile.oldPath, backupFile.newPath)
+			wg.Add(1)
+			go func(b backup) {
+				defer wg.Done()
+				os.Rename(b.currentPath, b.originalPath)
+			}(backupFile)
 		}
+		wg.Wait()
 		return false
 	}
 
 	os.Chown(outFilePath, media.UID, media.GID)
 	os.Chmod(outFilePath, util.FileMode)
+
+	if !keepOriginalFiles {
+		wg := sync.WaitGroup{}
+		for _, backupFile := range backups {
+			wg.Add(1)
+			go func(b backup) {
+				defer wg.Done()
+				os.Remove(b.currentPath)
+			}(backupFile)
+		}
+		wg.Wait()
+	}
+
 	return true
 }
 
@@ -129,7 +150,8 @@ var Cmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		tvShow := args[1]
 		season, _ := strconv.Atoi(args[2])
-		languages, _ := cmd.Flags().GetStringArray("languages")
+		keep, _ := cmd.Flags().GetBool("keep")
+		languages, _ := cmd.Flags().GetStringArray("language")
 		subtitleExtension, _ := cmd.Flags().GetString("sub-ext")
 		videoExtensions, _ := cmd.Flags().GetStringArray("video-ext")
 
@@ -163,7 +185,7 @@ var Cmd = &cobra.Command{
 				results := []media.Result{}
 				for _, videoFile := range videoFiles {
 					outFile := outFiles[videoFile]
-					ok := process(videoFile, subtitleFiles, outFile)
+					ok := process(videoFile, subtitleFiles, outFile, keep)
 					results = append(results, media.Result{
 						IsSuccessful: ok,
 						Message:      outFile,
