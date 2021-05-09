@@ -23,6 +23,7 @@ const subsyncCommand string = "subsync"
 func init() {
 	Cmd.Flags().StringArray("sub-ext", []string{"srt"}, "filter subtitles by extension")
 	Cmd.Flags().StringArrayP("video-ext", "e", []string{"avi", "mkv", "mp4"}, "filter video files by extension")
+	Cmd.Flags().String("stream", "eng", "stream ISO 639-3 language code")
 	Cmd.Flags().String("sub-lang", "eng", "subtitle ISO 639-3 language code")
 	Cmd.Flags().String("video-lang", "eng", "video ISO 639-3 language code")
 }
@@ -42,12 +43,12 @@ func printAll(videos []string, subtitles []string) {
 }
 
 // process attempts to synchronize given subtitle with given video file
-func process(video string, videoLang string, subtitle string, subtitleLang string, outFile string) bool {
+func process(video string, videoLang string, subtitle string, subtitleLang string, streamLang string, outFile string) bool {
 	videoPath := path.Join(media.WD, video)
 	subtitlePath := path.Join(media.WD, subtitle)
 	outFilePath := path.Join(media.WD, outFile)
 
-	options := []string{
+	baseOptions := []string{
 		"sync",
 		"--ref",
 		videoPath,
@@ -61,6 +62,13 @@ func process(video string, videoLang string, subtitle string, subtitleLang strin
 		outFilePath,
 	}
 
+	runOptions := []string{}
+	runOptions = append(runOptions, baseOptions...)
+
+	if streamLang != "" {
+		runOptions = append(runOptions, "--ref-stream-by-lang", streamLang)
+	}
+
 	runCommand := func(opts []string) error {
 		console.Info(fmt.Sprintf("%s %s", subsyncCommand, strings.Join(opts, " ")))
 		subsync := exec.Command(subsyncCommand, opts...)
@@ -68,11 +76,15 @@ func process(video string, videoLang string, subtitle string, subtitleLang strin
 		return subsync.Run()
 	}
 
-	err := runCommand(options)
+	err := runCommand(runOptions)
 
 	if err != nil {
-		options = append(options, "--ref-stream-by-lang", "eng")
-		err = runCommand(options)
+		rerunOptions := []string{}
+		rerunOptions = append(rerunOptions, baseOptions...)
+		if streamLang == "" {
+			rerunOptions = append(rerunOptions, "--ref-stream-by-lang", "eng")
+		}
+		err = runCommand(rerunOptions)
 		if err != nil {
 			return false
 		}
@@ -101,6 +113,7 @@ var Cmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
+		streamLang, _ := cmd.Flags().GetString("stream")
 		subtitleExtensions, _ := cmd.Flags().GetStringArray("sub-ext")
 		subtitleLang, _ := cmd.Flags().GetString("sub-lang")
 		videoExtensions, _ := cmd.Flags().GetStringArray("video-ext")
@@ -132,7 +145,7 @@ var Cmd = &cobra.Command{
 					videoFileExtension := path.Ext(videoFile)
 					outFile := strings.Replace(videoFile, videoFileExtension, fmt.Sprintf(".%s.srt", subtitleLang), 1)
 					subtitleFile := subtitleFiles[index]
-					ok := process(videoFile, videoLang, subtitleFile, subtitleLang, outFile)
+					ok := process(videoFile, videoLang, subtitleFile, subtitleLang, streamLang, outFile)
 					results = append(results, media.Result{
 						IsSuccessful: ok,
 						Message:      outFile,
