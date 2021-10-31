@@ -34,15 +34,9 @@ github.com/hashicorp/hcl/json/scanner
 github.com/hashicorp/hcl/json/token
 # github.com/inconshreveable/mousetrap v1.0.0
 github.com/inconshreveable/mousetrap
-# github.com/juju/ansiterm v0.0.0-20210929141451-8b71cc96ebdc
-## explicit
-github.com/juju/ansiterm
-github.com/juju/ansiterm/tabwriter
-# github.com/lunixbochs/vtclean v1.0.0
-github.com/lunixbochs/vtclean
 # github.com/magiconair/properties v1.8.5
 github.com/magiconair/properties
-# github.com/manifoldco/promptui v0.8.0
+# github.com/manifoldco/promptui v0.9.0
 ## explicit
 github.com/manifoldco/promptui
 github.com/manifoldco/promptui/list
@@ -102,7 +96,7 @@ golang.org/x/crypto/ssh/knownhosts
 # golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 ## explicit
 golang.org/x/sync/errgroup
-# golang.org/x/sys v0.0.0-20211023085530-d6a326fbbf70
+# golang.org/x/sys v0.0.0-20211031064116-611d5d643895
 ## explicit
 golang.org/x/sys/cpu
 golang.org/x/sys/internal/unsafeheader
@@ -111,6 +105,8 @@ golang.org/x/sys/unix
 ## explicit
 golang.org/x/text/transform
 golang.org/x/text/unicode/norm
+# gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c
+## explicit
 # gopkg.in/ini.v1 v1.63.2
 gopkg.in/ini.v1
 # gopkg.in/yaml.v2 v2.4.0
