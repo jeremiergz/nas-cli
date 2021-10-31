@@ -7,7 +7,6 @@ import (
 	"path"
 	"path/filepath"
 	"sort"
-	"strconv"
 	"strings"
 	"sync"
 
@@ -131,9 +130,9 @@ func process(video string, subtitles subtitles, outFile string, keepOriginalFile
 }
 
 var Cmd = &cobra.Command{
-	Use:   "merge <directory> <name> <season>",
+	Use:   "merge <directory>",
 	Short: "Merge tracks using MKVMerge tool",
-	Args:  cobra.MinimumNArgs(3),
+	Args:  cobra.MinimumNArgs(1),
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		_, err := exec.LookPath(mergeCommand)
 		if err != nil {
@@ -148,8 +147,6 @@ var Cmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		tvShow := args[1]
-		season, _ := strconv.Atoi(args[2])
 		keep, _ := cmd.Flags().GetBool("keep")
 		languages, _ := cmd.Flags().GetStringArray("language")
 		subtitleExtension, _ := cmd.Flags().GetString("sub-ext")
@@ -159,9 +156,10 @@ var Cmd = &cobra.Command{
 		sort.Strings(videoFiles)
 
 		outFiles := map[string]string{}
-		for index, videoFile := range videoFiles {
+		for _, videoFile := range videoFiles {
 			videoFileExtension := strings.Replace(path.Ext(videoFile), ".", "", 1)
-			outFiles[videoFile] = media.ToEpisodeName(tvShow, season, index+1, videoFileExtension)
+			e, _ := media.ParseTitle(videoFile)
+			outFiles[videoFile] = media.ToEpisodeName(e.Title, e.Season, e.Episode, videoFileExtension)
 		}
 
 		subtitleFiles := listSubtitles(videoFiles, subtitleExtension, languages)
@@ -194,6 +192,8 @@ var Cmd = &cobra.Command{
 						hasError = true
 					}
 				}
+
+				fmt.Println()
 				for _, result := range results {
 					if result.IsSuccessful {
 						console.Success(result.Message)
