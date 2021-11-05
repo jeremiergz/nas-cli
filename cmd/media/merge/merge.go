@@ -30,6 +30,7 @@ const mergeCommand string = "mkvmerge"
 func init() {
 	Cmd.Flags().BoolP("keep", "k", true, "keep original files")
 	Cmd.Flags().StringArrayP("language", "l", []string{"eng", "fre"}, "language tracks to merge")
+	Cmd.Flags().StringP("name", "n", "", "override name")
 	Cmd.Flags().String("sub-ext", "srt", "subtitles extension")
 	Cmd.Flags().StringArrayP("video-ext", "e", []string{"avi", "mkv", "mp4"}, "filter video files by extension")
 }
@@ -149,6 +150,7 @@ var Cmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		keep, _ := cmd.Flags().GetBool("keep")
 		languages, _ := cmd.Flags().GetStringArray("language")
+		name, _ := cmd.Flags().GetString("name")
 		subtitleExtension, _ := cmd.Flags().GetString("sub-ext")
 		videoExtensions, _ := cmd.Flags().GetStringArray("video-ext")
 
@@ -159,6 +161,11 @@ var Cmd = &cobra.Command{
 		for _, videoFile := range videoFiles {
 			videoFileExtension := strings.Replace(path.Ext(videoFile), ".", "", 1)
 			e, _ := media.ParseTitle(videoFile)
+			if name != "" {
+				e.Title = name
+			} else {
+				e.Title = strings.Title(e.Title)
+			}
 			outFiles[videoFile] = media.ToEpisodeName(e.Title, e.Season, e.Episode, videoFileExtension)
 		}
 
