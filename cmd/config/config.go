@@ -26,6 +26,7 @@ var Cmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("could not find user home directory")
 		}
+
 		return nil
 	},
 }

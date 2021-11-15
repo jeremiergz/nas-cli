@@ -204,6 +204,7 @@ var TVShowCmd = &cobra.Command{
 				processTVShows(media.WD, tvShows, media.UID, media.GID)
 			}
 		}
+
 		return nil
 	},
 }

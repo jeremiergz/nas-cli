@@ -12,13 +12,15 @@ var Cmd = &cobra.Command{
 	Short:     "Generate completion scripts",
 	Args:      cobra.ExactValidArgs(1),
 	ValidArgs: []string{"bash", "zsh"},
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		rootCmd := cmd.Parent()
 		switch args[0] {
 		case "bash":
-			rootCmd.GenBashCompletion(os.Stdout)
+			return rootCmd.GenBashCompletion(os.Stdout)
 		case "zsh":
-			rootCmd.GenZshCompletion(os.Stdout)
+			return rootCmd.GenZshCompletion(os.Stdout)
 		}
+
+		return nil
 	},
 }

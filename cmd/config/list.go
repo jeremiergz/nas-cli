@@ -32,6 +32,7 @@ var ListCmd = &cobra.Command{
 			}
 			fmt.Println(strings.Join(toPrint, ""))
 		}
+
 		return nil
 	},
 }

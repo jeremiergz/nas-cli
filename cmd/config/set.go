@@ -14,8 +14,8 @@ var SetCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		key := args[0]
 		value := args[1]
-
 		viper.Set(key, value)
+
 		return config.Save()
 	},
 }

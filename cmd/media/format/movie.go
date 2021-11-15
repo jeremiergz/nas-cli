@@ -132,6 +132,7 @@ var MovieCmd = &cobra.Command{
 				}
 			}
 		}
+
 		return nil
 	},
 }

@@ -50,6 +50,7 @@ var Cmd = &cobra.Command{
 		} else {
 			media.WD, _ = os.Getwd()
 		}
+
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -113,6 +114,7 @@ var Cmd = &cobra.Command{
 				}
 				os.Chown(res.Filename, media.UID, media.GID)
 				os.Chmod(res.Filename, util.FileMode)
+
 				return nil
 			}
 		}
