@@ -134,17 +134,12 @@ var Cmd = &cobra.Command{
 	Use:   "merge <directory>",
 	Short: "Merge tracks using MKVMerge tool",
 	Args:  cobra.MinimumNArgs(1),
-	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+	PreRunE: func(cmd *cobra.Command, args []string) error {
 		_, err := exec.LookPath(mergeCommand)
 		if err != nil {
 			return fmt.Errorf("command not found: %s", mergeCommand)
 		}
-		// Exit if directory retrieved from args does not exist
-		media.WD, _ = filepath.Abs(args[0])
-		stats, err := os.Stat(media.WD)
-		if err != nil || !stats.IsDir() {
-			return fmt.Errorf("%s is not a valid directory", media.WD)
-		}
+
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {

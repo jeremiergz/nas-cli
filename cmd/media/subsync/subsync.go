@@ -5,7 +5,6 @@ import (
 	"os"
 	"os/exec"
 	"path"
-	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
@@ -99,17 +98,12 @@ var Cmd = &cobra.Command{
 	Use:   "subsync <directory>",
 	Short: "Synchronize subtitle using SubSync tool",
 	Args:  cobra.MinimumNArgs(1),
-	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+	PreRunE: func(cmd *cobra.Command, args []string) error {
 		_, err := exec.LookPath(subsyncCommand)
 		if err != nil {
 			return fmt.Errorf("command not found: %s", subsyncCommand)
 		}
-		// Exit if directory retrieved from args does not exist
-		media.WD, _ = filepath.Abs(args[0])
-		stats, err := os.Stat(media.WD)
-		if err != nil || !stats.IsDir() {
-			return fmt.Errorf("%s is not a valid directory", media.WD)
-		}
+
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -167,6 +161,7 @@ var Cmd = &cobra.Command{
 				}
 			}
 		}
+
 		return nil
 	},
 }

@@ -2,7 +2,6 @@ package scp
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -57,7 +56,7 @@ func process(destination string, subdestination string) error {
 
 	err := runCommand(args)
 	if err != nil {
-		commandErr := errors.New(fmt.Sprintf("%s: %s", err.Error(), stderr.String()))
+		commandErr := fmt.Errorf("%s: %s", err.Error(), stderr.String())
 		return commandErr
 	}
 
@@ -97,7 +96,7 @@ var Cmd = &cobra.Command{
 	Use:   "scp",
 	Short: "Upload files/folders using scp command",
 	Args:  cobra.MinimumNArgs(1),
-	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+	PreRunE: func(cmd *cobra.Command, args []string) error {
 		_, err := exec.LookPath(scpCommand)
 		if err != nil {
 			return fmt.Errorf("command not found: %s", scpCommand)
@@ -123,6 +122,7 @@ var Cmd = &cobra.Command{
 			}
 			assets[index] = assetPath
 		}
+
 		return nil
 	},
 }
