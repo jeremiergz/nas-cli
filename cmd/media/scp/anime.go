@@ -14,9 +14,10 @@ func init() {
 }
 
 var AnimeCmd = &cobra.Command{
-	Use:   "animes <assets> <subpath>",
-	Short: "Animes uploading",
-	Args:  cobra.MinimumNArgs(2),
+	Use:     "animes <assets> <subpath>",
+	Aliases: []string{"ani", "a"},
+	Short:   "Animes uploading",
+	Args:    cobra.MinimumNArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		animesDest := viper.GetString(config.ConfigKeySCPAnimes)
 		if animesDest == "" {

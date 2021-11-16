@@ -175,9 +175,10 @@ func processTVShows(wd string, tvShows []*media.TVShow, owner, group int) error 
 }
 
 var TVShowCmd = &cobra.Command{
-	Use:   "tvshows <directory>",
-	Short: "TV Shows batch formatting",
-	Args:  cobra.MinimumNArgs(1),
+	Use:     "tvshows <directory>",
+	Aliases: []string{"tv", "t"},
+	Short:   "TV Shows batch formatting",
+	Args:    cobra.MinimumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		extensions, _ := cmd.Flags().GetStringArray("ext")
 		tvShowNames, _ := cmd.Flags().GetStringArray("name")

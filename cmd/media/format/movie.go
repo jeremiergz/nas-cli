@@ -111,9 +111,10 @@ func processMovies(wd string, movies []media.Movie, owner, group int) error {
 }
 
 var MovieCmd = &cobra.Command{
-	Use:   "movies <directory>",
-	Short: "Movies batch formatting",
-	Args:  cobra.MinimumNArgs(1),
+	Use:     "movies <directory>",
+	Aliases: []string{"mov", "m"},
+	Short:   "Movies batch formatting",
+	Args:    cobra.MinimumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		extensions, _ := cmd.Flags().GetStringArray("ext")
 		movies, err := loadMovies(media.WD, extensions)

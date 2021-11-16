@@ -114,9 +114,10 @@ func process(video string, subtitles subtitles, outFile string, keepOriginalFile
 }
 
 var TVShowCmd = &cobra.Command{
-	Use:   "tvshows <directory>",
-	Short: "Merge TV Shows tracks",
-	Args:  cobra.MinimumNArgs(1),
+	Use:     "tvshows <directory>",
+	Aliases: []string{"tv", "t"},
+	Short:   "Merge TV Shows tracks",
+	Args:    cobra.MinimumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		keep, _ := cmd.Flags().GetBool("keep")
 		languages, _ := cmd.Flags().GetStringArray("language")

@@ -14,9 +14,10 @@ func init() {
 }
 
 var TVShowCmd = &cobra.Command{
-	Use:   "tvshows <assets> <subpath>",
-	Short: "TV Shows uploading",
-	Args:  cobra.MinimumNArgs(2),
+	Use:     "tvshows <assets> <subpath>",
+	Aliases: []string{"tv", "t"},
+	Short:   "TV Shows uploading",
+	Args:    cobra.MinimumNArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		tvShowsDest := viper.GetString(config.ConfigKeySCPTVShows)
 		if tvShowsDest == "" {

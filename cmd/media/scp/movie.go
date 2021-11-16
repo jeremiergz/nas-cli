@@ -14,9 +14,10 @@ func init() {
 }
 
 var MovieCmd = &cobra.Command{
-	Use:   "movies <assets> <subpath>",
-	Short: "Movies uploading",
-	Args:  cobra.MinimumNArgs(2),
+	Use:     "movies <assets> <subpath>",
+	Aliases: []string{"mov", "m"},
+	Short:   "Movies uploading",
+	Args:    cobra.MinimumNArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		moviesDest := viper.GetString(config.ConfigKeySCPMovies)
 		if moviesDest == "" {
