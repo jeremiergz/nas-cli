@@ -73,8 +73,19 @@ func process(destination string, subdestination string) error {
 		fmt.Sprintf("cd \"%s\"", destination),
 		"find . -type d -exec chmod 755 {} +",
 		"find . -type f -exec chmod 644 {} +",
-		"chown -R media:media ./*",
 	}
+
+	var user string
+	if user = viper.GetString(config.ConfigKeySCPUser); user == "" {
+		user = "media"
+	}
+	var group string
+	if group = viper.GetString(config.ConfigKeySCPGroup); group == "" {
+		group = "media"
+	}
+
+	commands = append(commands, fmt.Sprintf("chown -R %s:%s ./*", user, group))
+
 	g.Go(func() error {
 		_, err = conn.SendCommands(commands...)
 		return err
