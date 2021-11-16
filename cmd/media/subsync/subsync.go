@@ -27,7 +27,7 @@ func init() {
 	Cmd.Flags().String("video-lang", "eng", "video ISO 639-3 language code")
 }
 
-// printAll prints files as a tree
+// Prints files as a tree
 func printAll(videos []string, subtitles []string) {
 	rootTree := gotree.New(media.WD)
 	for index, video := range videos {
@@ -41,7 +41,7 @@ func printAll(videos []string, subtitles []string) {
 	fmt.Println(toPrint)
 }
 
-// process attempts to synchronize given subtitle with given video file
+// Attempts to synchronize given subtitle with given video file
 func process(video string, videoLang string, subtitle string, subtitleLang string, streamLang string, outFile string) bool {
 	videoPath := path.Join(media.WD, video)
 	subtitlePath := path.Join(media.WD, subtitle)
@@ -91,6 +91,7 @@ func process(video string, videoLang string, subtitle string, subtitleLang strin
 
 	os.Chown(outFilePath, media.UID, media.GID)
 	os.Chmod(outFilePath, util.FileMode)
+
 	return true
 }
 

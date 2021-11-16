@@ -24,7 +24,7 @@ func init() {
 
 var movieFmtRegexp = regexp.MustCompile(`(^.+)\s\(([0-9]{4})\)\.(.+)$`)
 
-// loadMovies lists movies in folder that must be processed
+// Lists movies in folder that must be processed
 func loadMovies(wd string, extensions []string) ([]media.Movie, error) {
 	toProcess := media.List(wd, extensions, movieFmtRegexp)
 	movies := []media.Movie{}
@@ -42,10 +42,11 @@ func loadMovies(wd string, extensions []string) ([]media.Movie, error) {
 			return nil, err
 		}
 	}
+
 	return movies, nil
 }
 
-// printAllMovies prints given movies array as a tree
+// Prints given movies array as a tree
 func printAllMovies(wd string, movies []media.Movie) {
 	moviesTree := gotree.New(wd)
 	for _, m := range movies {
@@ -57,7 +58,7 @@ func printAllMovies(wd string, movies []media.Movie) {
 	fmt.Println(toPrint)
 }
 
-// processMovies processes listed movies by prompting user
+// Processes listed movies by prompting user
 func processMovies(wd string, movies []media.Movie, owner, group int) error {
 	for _, m := range movies {
 		fmt.Println()
@@ -107,6 +108,7 @@ func processMovies(wd string, movies []media.Movie, owner, group int) error {
 		os.Chmod(newFilepath, util.FileMode)
 		console.Success(newMovieName)
 	}
+
 	return nil
 }
 

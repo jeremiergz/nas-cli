@@ -36,7 +36,7 @@ func init() {
 	Cmd.AddCommand(TVShowCmd)
 }
 
-// process uploads files & folders to configured destination
+// Uploads files & folders to configured destination
 func process(destination string, subdestination string) error {
 	args := []string{}
 	if recursive {

@@ -6,7 +6,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// Cmd prints completion script for given shell
 var Cmd = &cobra.Command{
 	Use:       "completion <bash|zsh>",
 	Short:     "Generate completion scripts",
