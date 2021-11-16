@@ -104,7 +104,7 @@ var Cmd = &cobra.Command{
 			return fmt.Errorf("command not found: %s", subsyncCommand)
 		}
 
-		return nil
+		return media.InitializeWD(args[0])
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		streamLang, _ := cmd.Flags().GetString("stream")

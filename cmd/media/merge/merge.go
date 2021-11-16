@@ -140,7 +140,7 @@ var Cmd = &cobra.Command{
 			return fmt.Errorf("command not found: %s", mergeCommand)
 		}
 
-		return nil
+		return media.InitializeWD(args[0])
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		keep, _ := cmd.Flags().GetBool("keep")

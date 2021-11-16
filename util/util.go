@@ -4,6 +4,8 @@ import (
 	"io"
 	"net/http"
 	"os"
+
+	"github.com/spf13/cobra"
 )
 
 const (
@@ -16,6 +18,26 @@ const (
 	// FileMode is the default mode to apply to files
 	FileMode os.FileMode = 0644
 )
+
+// Runs ParentPersistentPreRun if defined
+func CallParentPersistentPreRun(cmd *cobra.Command, args []string) {
+	if parent := cmd.Parent(); parent != nil {
+		if parent.PersistentPreRun != nil {
+			parent.PersistentPreRun(parent, args)
+		}
+	}
+}
+
+// Runs ParentPersistentPreRunE if defined
+func CallParentPersistentPreRunE(cmd *cobra.Command, args []string) error {
+	if parent := cmd.Parent(); parent != nil {
+		if parent.PersistentPreRunE != nil {
+			return parent.PersistentPreRunE(parent, args)
+		}
+	}
+
+	return nil
+}
 
 // DownloadFile downloads given URL to a local path
 func DownloadFile(filePath string, url string) error {

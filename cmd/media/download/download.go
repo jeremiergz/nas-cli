@@ -31,6 +31,7 @@ var Cmd = &cobra.Command{
 		if movie && tvShow {
 			return fmt.Errorf("movie & tv-show flags are mutually exclusive")
 		}
+
 		// Exit if URL is not valid
 		targetURL := args[0]
 		parsedURL, err := url.ParseRequestURI(args[0])
@@ -40,6 +41,7 @@ var Cmd = &cobra.Command{
 		if parsedURL.Scheme != "http" && parsedURL.Scheme != "https" {
 			return fmt.Errorf("URL scheme must be http or https")
 		}
+
 		// Exit if directory retrieved from args does not exist
 		if len(args) > 1 {
 			media.WD, _ = filepath.Abs(args[1])

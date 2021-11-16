@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/jeremiergz/nas-cli/util"
 	"github.com/jeremiergz/nas-cli/util/config"
 	"github.com/jeremiergz/nas-cli/util/console"
 	"github.com/jeremiergz/nas-cli/util/ssh"
@@ -96,8 +97,13 @@ var Cmd = &cobra.Command{
 	Use:   "scp",
 	Short: "Upload files/folders using scp command",
 	Args:  cobra.MinimumNArgs(1),
-	PreRunE: func(cmd *cobra.Command, args []string) error {
-		_, err := exec.LookPath(scpCommand)
+	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+		err := util.CallParentPersistentPreRunE(cmd, args)
+		if err != nil {
+			return err
+		}
+
+		_, err = exec.LookPath(scpCommand)
 		if err != nil {
 			return fmt.Errorf("command not found: %s", scpCommand)
 		}

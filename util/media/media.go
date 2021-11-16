@@ -3,7 +3,9 @@ package media
 import (
 	"fmt"
 	"io/ioutil"
+	"os"
 	"path"
+	"path/filepath"
 	"regexp"
 	"strings"
 
@@ -63,6 +65,17 @@ var (
 	// WD is the working directory's absolute path
 	WD string
 )
+
+// Verifies that given path exists and sets WD variable
+func InitializeWD(path string) error {
+	WD, _ = filepath.Abs(path)
+	stats, err := os.Stat(WD)
+	if err != nil || !stats.IsDir() {
+		return fmt.Errorf("%s is not a valid directory", WD)
+	}
+
+	return nil
+}
 
 // List lists files in directory with filter on extensions and RegExp
 func List(wd string, extensions []string, regExp *regexp.Regexp) []string {

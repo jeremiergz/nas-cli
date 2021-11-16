@@ -2,9 +2,7 @@ package media
 
 import (
 	"fmt"
-	"os"
 	"os/user"
-	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -34,13 +32,6 @@ var Cmd = &cobra.Command{
 	Short: "Set of utilities for media management",
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		var err error
-
-		// Exit if directory retrieved from args does not exist
-		media.WD, _ = filepath.Abs(args[0])
-		stats, err := os.Stat(media.WD)
-		if err != nil || !stats.IsDir() {
-			return fmt.Errorf("%s is not a valid directory", media.WD)
-		}
 
 		selectedUser, _ := user.Current()
 		selectedGroup := &user.Group{Gid: selectedUser.Gid}
