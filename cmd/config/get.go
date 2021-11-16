@@ -11,8 +11,15 @@ import (
 var GetCmd = &cobra.Command{
 	Use:       "get <key>",
 	Short:     "Get configuration entry value",
-	Args:      cobra.ExactArgs(1),
 	ValidArgs: config.ConfigKeys,
+	Args: func(cmd *cobra.Command, args []string) error {
+		err := cobra.ExactArgs(1)(cmd, args)
+		if err != nil {
+			return err
+		}
+
+		return cobra.OnlyValidArgs(cmd, args)
+	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		key := args[0]
 

@@ -9,8 +9,20 @@ import (
 var SetCmd = &cobra.Command{
 	Use:       "set <key> <value>",
 	Short:     "Set configuration entry",
-	Args:      cobra.ExactArgs(2),
 	ValidArgs: config.ConfigKeys,
+	Args: func(cmd *cobra.Command, args []string) error {
+		err := cobra.ExactArgs(2)(cmd, args)
+		if err != nil {
+			return err
+		}
+
+		err = cobra.OnlyValidArgs(cmd, []string{args[0]})
+		if err != nil {
+			return err
+		}
+
+		return nil
+	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		key := args[0]
 		value := args[1]
