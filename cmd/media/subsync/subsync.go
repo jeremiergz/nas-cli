@@ -114,9 +114,9 @@ var Cmd = &cobra.Command{
 		videoExtensions, _ := cmd.Flags().GetStringArray("video-ext")
 		videoLang, _ := cmd.Flags().GetString("video-lang")
 		subtitleFiles := media.List(media.WD, subtitleExtensions, nil)
-		sort.Strings(subtitleFiles)
+		sort.Sort(util.Alphabetic(subtitleFiles))
 		videoFiles := media.List(media.WD, videoExtensions, nil)
-		sort.Strings(videoFiles)
+		sort.Sort(util.Alphabetic(videoFiles))
 		if len(subtitleFiles) == 0 {
 			console.Success("No subtitle file to process")
 		} else if len(videoFiles) == 0 {

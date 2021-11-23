@@ -4,6 +4,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/spf13/cobra"
 )
@@ -18,6 +19,16 @@ const (
 	// FileMode is the default mode to apply to files
 	FileMode os.FileMode = 0644
 )
+
+type Alphabetic []string
+
+func (list Alphabetic) Len() int { return len(list) }
+
+func (list Alphabetic) Swap(i, j int) { list[i], list[j] = list[j], list[i] }
+
+func (list Alphabetic) Less(i, j int) bool {
+	return []rune(strings.ToLower(list[i]))[0] < []rune(strings.ToLower(list[j]))[0]
+}
 
 // Runs ParentPersistentPreRun if defined
 func CallParentPersistentPreRun(cmd *cobra.Command, args []string) {
