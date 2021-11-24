@@ -1,7 +1,8 @@
 package completion
 
 import (
-	"os"
+	"bytes"
+	"strings"
 
 	"github.com/spf13/cobra"
 )
@@ -13,13 +14,16 @@ var Cmd = &cobra.Command{
 	Args:      cobra.ExactValidArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		rootCmd := cmd.Parent()
+		buf := new(bytes.Buffer)
 		switch args[0] {
 		case "bash":
-			return rootCmd.GenBashCompletion(os.Stdout)
+			rootCmd.GenBashCompletion(buf)
 
 		case "zsh":
-			return rootCmd.GenZshCompletion(os.Stdout)
+			rootCmd.GenZshCompletion(buf)
 		}
+
+		cmd.Println(strings.TrimSpace(buf.String()))
 
 		return nil
 	},

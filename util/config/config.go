@@ -20,7 +20,6 @@ const (
 	ConfigKeySSHPort       string = "ssh.port"
 	ConfigKeySSHPrivateKey string = "ssh.privatekey"
 	ConfigKeySSHUsername   string = "ssh.username"
-	FileName               string = ".nascliconfig"
 )
 
 var (
@@ -38,6 +37,7 @@ var (
 		ConfigKeySSHPrivateKey,
 		ConfigKeySSHUsername,
 	}
+	FileName string = ".nascliconfig"
 )
 
 func init() {

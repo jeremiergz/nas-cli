@@ -1,8 +1,6 @@
 package config
 
 import (
-	"fmt"
-
 	"github.com/jeremiergz/nas-cli/util/config"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -24,7 +22,7 @@ var GetCmd = &cobra.Command{
 		key := args[0]
 
 		value := viper.GetString(key)
-		fmt.Println(value)
+		cmd.Println(value)
 
 		return nil
 	},

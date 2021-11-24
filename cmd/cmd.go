@@ -5,11 +5,6 @@ import (
 	"os/user"
 	"path"
 
-	"github.com/jeremiergz/nas-cli/cmd/completion"
-	"github.com/jeremiergz/nas-cli/cmd/config"
-	"github.com/jeremiergz/nas-cli/cmd/info"
-	"github.com/jeremiergz/nas-cli/cmd/media"
-	"github.com/jeremiergz/nas-cli/cmd/version"
 	configutil "github.com/jeremiergz/nas-cli/util/config"
 	"github.com/jeremiergz/nas-cli/util/console"
 	"github.com/spf13/cobra"
@@ -18,11 +13,6 @@ import (
 
 func init() {
 	cobra.OnInitialize(initConfig)
-	Cmd.AddCommand(completion.Cmd)
-	Cmd.AddCommand(config.Cmd)
-	Cmd.AddCommand(info.Cmd)
-	Cmd.AddCommand(media.Cmd)
-	Cmd.AddCommand(version.Cmd)
 }
 
 func initConfig() {
@@ -67,7 +57,7 @@ func initConfig() {
 	}
 }
 
-var Cmd = &cobra.Command{
+var Root = &cobra.Command{
 	Use:   "nas-cli",
 	Short: "CLI application for managing my NAS",
 }
