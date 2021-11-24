@@ -22,6 +22,7 @@ func init() {
 	Cmd.PersistentFlags().StringArrayP("language", "l", []string{"eng", "fre"}, "language tracks to merge")
 	Cmd.PersistentFlags().String("sub-ext", "srt", "subtitles extension")
 	Cmd.PersistentFlags().StringArrayP("video-ext", "e", []string{"avi", "mkv", "mp4"}, "filter video files by extension")
+	Cmd.PersistentFlags().BoolP("yes", "y", false, "automatic yes to prompts")
 	Cmd.AddCommand(TVShowCmd)
 }
 

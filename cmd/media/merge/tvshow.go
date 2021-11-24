@@ -177,6 +177,8 @@ var TVShowCmd = &cobra.Command{
 		tvShowNames, _ := cmd.Flags().GetStringArray("name")
 		subtitleExtension, _ := cmd.Flags().GetString("sub-ext")
 		videoExtensions, _ := cmd.Flags().GetStringArray("video-ext")
+		yes, _ := cmd.Flags().GetBool("yes")
+
 		tvShows, err := media.LoadTVShows(media.WD, videoExtensions, &subtitleExtension, languages)
 
 		if len(tvShowNames) > 0 {
@@ -199,12 +201,17 @@ var TVShowCmd = &cobra.Command{
 			printAllTVShows(media.WD, tvShows)
 			if !dryRun {
 				fmt.Println()
-				prompt := promptui.Prompt{
-					Label:     "Process",
-					IsConfirm: true,
-					Default:   "y",
+
+				var err error
+				if !yes {
+					prompt := promptui.Prompt{
+						Label:     "Process",
+						IsConfirm: true,
+						Default:   "y",
+					}
+					_, err = prompt.Run()
 				}
-				_, err := prompt.Run()
+
 				if err != nil {
 					if err.Error() == "^C" {
 						return nil

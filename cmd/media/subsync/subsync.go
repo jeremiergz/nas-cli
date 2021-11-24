@@ -25,6 +25,7 @@ func init() {
 	Cmd.Flags().String("stream", "eng", "stream ISO 639-3 language code")
 	Cmd.Flags().String("sub-lang", "eng", "subtitle ISO 639-3 language code")
 	Cmd.Flags().String("video-lang", "eng", "video ISO 639-3 language code")
+	Cmd.Flags().BoolP("yes", "y", false, "automatic yes to prompts")
 }
 
 // Prints files as a tree
@@ -113,22 +114,30 @@ var Cmd = &cobra.Command{
 		subtitleLang, _ := cmd.Flags().GetString("sub-lang")
 		videoExtensions, _ := cmd.Flags().GetStringArray("video-ext")
 		videoLang, _ := cmd.Flags().GetString("video-lang")
+		yes, _ := cmd.Flags().GetBool("yes")
+
 		subtitleFiles := media.List(media.WD, subtitleExtensions, nil)
 		sort.Sort(util.Alphabetic(subtitleFiles))
 		videoFiles := media.List(media.WD, videoExtensions, nil)
 		sort.Sort(util.Alphabetic(videoFiles))
+
 		if len(subtitleFiles) == 0 {
 			console.Success("No subtitle file to process")
 		} else if len(videoFiles) == 0 {
 			console.Success("No video file to process")
 		} else {
 			printAll(videoFiles, subtitleFiles)
-			prompt := promptui.Prompt{
-				Label:     "Process",
-				IsConfirm: true,
-				Default:   "y",
+
+			var err error
+			if !yes {
+				prompt := promptui.Prompt{
+					Label:     "Process",
+					IsConfirm: true,
+					Default:   "y",
+				}
+				_, err = prompt.Run()
 			}
-			_, err := prompt.Run()
+
 			if err != nil {
 				if err.Error() == "^C" {
 					return nil
@@ -149,6 +158,7 @@ var Cmd = &cobra.Command{
 						hasError = true
 					}
 				}
+
 				for _, result := range results {
 					if result.IsSuccessful {
 						console.Success(result.Message)
@@ -156,6 +166,7 @@ var Cmd = &cobra.Command{
 						console.Error(result.Message)
 					}
 				}
+
 				if hasError {
 					fmt.Println()
 					return fmt.Errorf("an error occurred")

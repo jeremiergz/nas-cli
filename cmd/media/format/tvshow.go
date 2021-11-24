@@ -18,6 +18,7 @@ func init() {
 	TVShowCmd.MarkFlagDirname("directory")
 	TVShowCmd.MarkFlagFilename("directory")
 	TVShowCmd.Flags().StringArrayP("name", "n", nil, "override TV show name")
+	TVShowCmd.Flags().BoolP("yes", "y", false, "automatic yes to prompts")
 }
 
 // Prints given TV shows as a tree
@@ -44,37 +45,45 @@ func printAllTVShows(wd string, tvShows []*media.TVShow) {
 }
 
 // Processes listed TV shows by prompting user
-func processTVShows(wd string, tvShows []*media.TVShow, owner, group int) error {
+func processTVShows(wd string, tvShows []*media.TVShow, owner, group int, ask bool) error {
 	for _, tvShow := range tvShows {
 		fmt.Println()
-		prompt := promptui.Prompt{
-			Label:     fmt.Sprintf("Process %s", tvShow.Name),
-			IsConfirm: true,
-			Default:   "y",
+
+		var err error
+		if ask {
+			prompt := promptui.Prompt{
+				Label:     fmt.Sprintf("Process %s", tvShow.Name),
+				IsConfirm: true,
+				Default:   "y",
+			}
+			_, err = prompt.Run()
 		}
-		_, err := prompt.Run()
 		if err != nil {
 			if err.Error() == "^C" {
 				return nil
 			}
 			continue
 		}
+
 		tvShowPath := path.Join(wd, tvShow.Name)
 		media.PrepareDirectory(tvShowPath, owner, group)
 
 		for _, season := range tvShow.Seasons {
-			prompt := promptui.Prompt{
-				Label:     season.Name,
-				IsConfirm: true,
-				Default:   "y",
+			if ask {
+				prompt := promptui.Prompt{
+					Label:     season.Name,
+					IsConfirm: true,
+					Default:   "y",
+				}
+				_, err = prompt.Run()
 			}
-			_, err := prompt.Run()
 			if err != nil {
 				if err.Error() == "^C" {
 					return nil
 				}
 				continue
 			}
+
 			seasonPath := path.Join(tvShowPath, season.Name)
 			media.PrepareDirectory(seasonPath, owner, group)
 
@@ -100,6 +109,8 @@ var TVShowCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		extensions, _ := cmd.Flags().GetStringArray("ext")
 		tvShowNames, _ := cmd.Flags().GetStringArray("name")
+		yes, _ := cmd.Flags().GetBool("yes")
+
 		tvShows, err := media.LoadTVShows(media.WD, extensions, nil, nil)
 
 		if len(tvShowNames) > 0 {
@@ -120,7 +131,7 @@ var TVShowCmd = &cobra.Command{
 		} else {
 			printAllTVShows(media.WD, tvShows)
 			if !dryRun {
-				processTVShows(media.WD, tvShows, media.UID, media.GID)
+				processTVShows(media.WD, tvShows, media.UID, media.GID, !yes)
 			}
 		}
 
