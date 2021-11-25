@@ -174,6 +174,7 @@ var TVShowCmd = &cobra.Command{
 	Args:    cobra.MinimumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		delete, _ := cmd.Flags().GetBool("delete")
+		dryRun, _ := cmd.Flags().GetBool("dry-run")
 		languages, _ := cmd.Flags().GetStringArray("language")
 		tvShowNames, _ := cmd.Flags().GetStringArray("name")
 		subtitleExtension, _ := cmd.Flags().GetString("sub-ext")
@@ -191,7 +192,6 @@ var TVShowCmd = &cobra.Command{
 			}
 		}
 
-		dryRun, _ := cmd.Flags().GetBool("dry-run")
 		if err != nil {
 			return err
 		}
@@ -200,6 +200,7 @@ var TVShowCmd = &cobra.Command{
 			console.Success("No video file to process")
 		} else {
 			printAllTVShows(media.WD, tvShows)
+
 			if !dryRun {
 				fmt.Println()
 
@@ -232,6 +233,7 @@ var TVShowCmd = &cobra.Command{
 							console.Error(result.Message)
 						}
 					}
+
 					if hasError {
 						fmt.Println()
 						return fmt.Errorf("an error occurred")
