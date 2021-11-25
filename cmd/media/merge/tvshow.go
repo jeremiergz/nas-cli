@@ -115,6 +115,7 @@ func processTVShows(wd string, tvShows []*media.TVShow, keepOriginalFiles bool, 
 							}
 							options = append(options, videoBackupPath)
 
+							fmt.Println()
 							console.Info(fmt.Sprintf("%s %s\n", mergeCommand, strings.Join(options, " ")))
 							merge := exec.Command(mergeCommand, options...)
 							merge.Stdout = os.Stdout
