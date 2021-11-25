@@ -29,6 +29,7 @@ define generate_binary
 	OUTPUT=${OUTPUT_DIR}/${BINARY}$$SUFFIX; \
 	go build -mod vendor ${LDFLAGS} -o $$OUTPUT; \
 	SHASUM=$$(sha256sum $$OUTPUT | awk '{print $$1}'); \
+	echo "$$SHASUM  ${BINARY}$$SUFFIX" > $$OUTPUT.sha256; \
 	echo ✔ successfully built [sha256: $$SHASUM] $$OUTPUT
 endef
 
