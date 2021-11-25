@@ -103,3 +103,13 @@ jobs:
           asset_name: nas-cli-${{ matrix.target }}
           asset_path: build/nas-cli-${{ matrix.target }}
           upload_url: ${{ needs.release-create.outputs.upload_url }}
+      - name: Upload Release Shasums
+        id: upload-release-shasum
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          asset_content_type: text/plain
+          asset_name: nas-cli-${{ matrix.target }}.sha256
+          asset_path: build/nas-cli-${{ matrix.target }}.sha256
+          upload_url: ${{ needs.release-create.outputs.upload_url }}
