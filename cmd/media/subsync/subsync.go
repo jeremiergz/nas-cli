@@ -109,6 +109,7 @@ var Cmd = &cobra.Command{
 		return media.InitializeWD(args[0])
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
+		dryRun, _ := cmd.Flags().GetBool("dry-run")
 		streamLang, _ := cmd.Flags().GetString("stream")
 		subtitleExtensions, _ := cmd.Flags().GetStringArray("sub-ext")
 		subtitleLang, _ := cmd.Flags().GetString("sub-lang")
@@ -128,48 +129,51 @@ var Cmd = &cobra.Command{
 		} else {
 			printAll(videoFiles, subtitleFiles)
 
-			var err error
-			if !yes {
-				prompt := promptui.Prompt{
-					Label:     "Process",
-					IsConfirm: true,
-					Default:   "y",
-				}
-				_, err = prompt.Run()
-			}
-
-			if err != nil {
-				if err.Error() == "^C" {
-					return nil
-				}
-			} else {
-				hasError := false
-				results := []media.Result{}
-				for index, videoFile := range videoFiles {
-					videoFileExtension := path.Ext(videoFile)
-					outFile := strings.Replace(videoFile, videoFileExtension, fmt.Sprintf(".%s.srt", subtitleLang), 1)
-					subtitleFile := subtitleFiles[index]
-					ok := process(videoFile, videoLang, subtitleFile, subtitleLang, streamLang, outFile)
-					results = append(results, media.Result{
-						IsSuccessful: ok,
-						Message:      outFile,
-					})
-					if !ok {
-						hasError = true
+			if !dryRun {
+				var err error
+				if !yes {
+					prompt := promptui.Prompt{
+						Label:     "Process",
+						IsConfirm: true,
+						Default:   "y",
 					}
+					_, err = prompt.Run()
 				}
 
-				for _, result := range results {
-					if result.IsSuccessful {
-						console.Success(result.Message)
-					} else {
-						console.Error(result.Message)
+				if err != nil {
+					if err.Error() == "^C" {
+						return nil
 					}
-				}
-
-				if hasError {
+				} else {
+					hasError := false
+					results := []media.Result{}
 					fmt.Println()
-					return fmt.Errorf("an error occurred")
+					for index, videoFile := range videoFiles {
+						videoFileExtension := path.Ext(videoFile)
+						outFile := strings.Replace(videoFile, videoFileExtension, fmt.Sprintf(".%s.srt", subtitleLang), 1)
+						subtitleFile := subtitleFiles[index]
+						ok := process(videoFile, videoLang, subtitleFile, subtitleLang, streamLang, outFile)
+						results = append(results, media.Result{
+							IsSuccessful: ok,
+							Message:      outFile,
+						})
+						if !ok {
+							hasError = true
+						}
+					}
+
+					for _, result := range results {
+						if result.IsSuccessful {
+							console.Success(result.Message)
+						} else {
+							console.Error(result.Message)
+						}
+					}
+
+					if hasError {
+						fmt.Println()
+						return fmt.Errorf("an error occurred")
+					}
 				}
 			}
 		}
