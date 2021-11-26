@@ -99,8 +99,13 @@ func List(wd string, extensions []string, regExp *regexp.Regexp) []string {
 }
 
 // Lists TV shows in folder that must be processed
-func LoadTVShows(wd string, extensions []string, subtitlesExt *string, subtitlesLangs []string) ([]*TVShow, error) {
-	toProcess := List(wd, extensions, tvShowFmtRegexp)
+func LoadTVShows(wd string, extensions []string, subtitlesExt *string, subtitlesLangs []string, anyFiles bool) ([]*TVShow, error) {
+	var selectedRegexp *regexp.Regexp
+	if !anyFiles {
+		selectedRegexp = tvShowFmtRegexp
+	}
+
+	toProcess := List(wd, extensions, selectedRegexp)
 	tvShows := []*TVShow{}
 	for _, basename := range toProcess {
 		e, err := ParseTitle(basename)

@@ -181,7 +181,7 @@ var TVShowCmd = &cobra.Command{
 		videoExtensions, _ := cmd.Flags().GetStringArray("video-ext")
 		yes, _ := cmd.Flags().GetBool("yes")
 
-		tvShows, err := media.LoadTVShows(media.WD, videoExtensions, &subtitleExtension, languages)
+		tvShows, err := media.LoadTVShows(media.WD, videoExtensions, &subtitleExtension, languages, true)
 
 		if len(tvShowNames) > 0 {
 			if len(tvShowNames) != len(tvShows) {

@@ -111,7 +111,7 @@ var TVShowCmd = &cobra.Command{
 		tvShowNames, _ := cmd.Flags().GetStringArray("name")
 		yes, _ := cmd.Flags().GetBool("yes")
 
-		tvShows, err := media.LoadTVShows(media.WD, extensions, nil, nil)
+		tvShows, err := media.LoadTVShows(media.WD, extensions, nil, nil, false)
 
 		if len(tvShowNames) > 0 {
 			if len(tvShowNames) != len(tvShows) {
