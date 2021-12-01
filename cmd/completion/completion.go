@@ -2,6 +2,7 @@ package completion
 
 import (
 	"bytes"
+	"fmt"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -24,7 +25,7 @@ func NewCompletionCmd() *cobra.Command {
 				rootCmd.GenZshCompletion(buf)
 			}
 
-			cmd.Println(strings.TrimSpace(buf.String()))
+			fmt.Println(strings.TrimSpace(buf.String()))
 
 			return nil
 		},

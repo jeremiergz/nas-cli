@@ -1,6 +1,8 @@
 package version
 
 import (
+	"fmt"
+
 	"github.com/spf13/cobra"
 
 	"github.com/jeremiergz/nas-cli/cmd/info"
@@ -11,7 +13,7 @@ func NewVersionCmd() *cobra.Command {
 		Use:   "version",
 		Short: "Print application version",
 		Run: func(cmd *cobra.Command, args []string) {
-			cmd.Println(cmd.Parent().Name(), info.Version)
+			fmt.Println(cmd.Parent().Name(), info.Version)
 		},
 	}
 

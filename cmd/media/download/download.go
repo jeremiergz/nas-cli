@@ -86,7 +86,7 @@ func NewDownloadCmd() *cobra.Command {
 				return err
 			}
 			res := client.Do(req)
-			cmd.Println(path.Join(destination, basename))
+			fmt.Println(path.Join(destination, basename))
 			ticker := time.NewTicker(time.Second)
 			defer ticker.Stop()
 

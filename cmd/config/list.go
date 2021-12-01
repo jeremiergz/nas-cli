@@ -16,7 +16,7 @@ func NewListCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if err := viper.ReadInConfig(); err != nil {
 				if _, ok := err.(viper.ConfigFileNotFoundError); ok {
-					cmd.Println("no configuration entries")
+					fmt.Println("no configuration entries")
 				} else {
 					return err
 				}
@@ -31,7 +31,7 @@ func NewListCmd() *cobra.Command {
 					}
 					toPrint = append(toPrint, fmt.Sprintf(format, key, viper.GetString(key)))
 				}
-				cmd.Println(strings.Join(toPrint, ""))
+				fmt.Println(strings.Join(toPrint, ""))
 			}
 
 			return nil

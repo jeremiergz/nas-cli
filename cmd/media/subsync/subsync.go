@@ -21,7 +21,7 @@ import (
 const subsyncCommand string = "subsync"
 
 // Prints files as a tree
-func printAll(cmd *cobra.Command, videos []string, subtitles []string) {
+func printAll(videos []string, subtitles []string) {
 	rootTree := gotree.New(media.WD)
 	for index, video := range videos {
 		fileIndex := strconv.FormatInt(int64(index+1), 10)
@@ -31,7 +31,7 @@ func printAll(cmd *cobra.Command, videos []string, subtitles []string) {
 		subTree.Add(video)
 	}
 	toPrint := rootTree.Print()
-	cmd.Println(toPrint)
+	fmt.Println(toPrint)
 }
 
 // Attempts to synchronize given subtitle with given video file
@@ -121,7 +121,7 @@ func NewSubsyncCmd() *cobra.Command {
 			} else if len(videoFiles) == 0 {
 				console.Success("No video file to process")
 			} else {
-				printAll(cmd, videoFiles, subtitleFiles)
+				printAll(videoFiles, subtitleFiles)
 
 				if !dryRun {
 					var err error
@@ -141,7 +141,7 @@ func NewSubsyncCmd() *cobra.Command {
 					} else {
 						hasError := false
 						results := []media.Result{}
-						cmd.Println()
+						fmt.Println()
 						for index, videoFile := range videoFiles {
 							videoFileExtension := path.Ext(videoFile)
 							outFile := strings.Replace(videoFile, videoFileExtension, fmt.Sprintf(".%s.srt", subtitleLang), 1)
@@ -165,7 +165,7 @@ func NewSubsyncCmd() *cobra.Command {
 						}
 
 						if hasError {
-							cmd.Println()
+							fmt.Println()
 							return fmt.Errorf("an error occurred")
 						}
 					}

@@ -41,7 +41,7 @@ func hasSubtitlesInTVShow(tvShow *media.TVShow) bool {
 }
 
 // Prints given TV shows and their subtitles as a tree
-func printAllTVShows(cmd *cobra.Command, wd string, tvShows []*media.TVShow) {
+func printAllTVShows(wd string, tvShows []*media.TVShow) {
 	rootTree := gotree.New(wd)
 	for _, tvShow := range tvShows {
 		tvShowTree := rootTree.Add(tvShow.Name)
@@ -63,11 +63,11 @@ func printAllTVShows(cmd *cobra.Command, wd string, tvShows []*media.TVShow) {
 	toPrint := rootTree.Print()
 	lastSpaceRegexp := regexp.MustCompile(`\s$`)
 	toPrint = lastSpaceRegexp.ReplaceAllString(toPrint, "")
-	cmd.Println(toPrint)
+	fmt.Println(toPrint)
 }
 
 // Merges TV show language tracks into one video file
-func processTVShows(cmd *cobra.Command, wd string, tvShows []*media.TVShow, keepOriginalFiles bool, owner, group int) (bool, []media.Result) {
+func processTVShows(wd string, tvShows []*media.TVShow, keepOriginalFiles bool, owner, group int) (bool, []media.Result) {
 	ok := true
 	results := []media.Result{}
 
@@ -112,7 +112,7 @@ func processTVShows(cmd *cobra.Command, wd string, tvShows []*media.TVShow, keep
 							}
 							options = append(options, videoBackupPath)
 
-							cmd.Println()
+							fmt.Println()
 							console.Info(fmt.Sprintf("%s %s\n", mergeCommand, strings.Join(options, " ")))
 							merge := exec.Command(mergeCommand, options...)
 							merge.Stdout = os.Stdout
@@ -197,10 +197,10 @@ func NewTVShowCmd() *cobra.Command {
 			if len(tvShows) == 0 {
 				console.Success("No video file to process")
 			} else {
-				printAllTVShows(cmd, media.WD, tvShows)
+				printAllTVShows(media.WD, tvShows)
 
 				if !dryRun {
-					cmd.Println()
+					fmt.Println()
 
 					var err error
 					if !yes {
@@ -218,12 +218,12 @@ func NewTVShowCmd() *cobra.Command {
 						}
 					} else {
 						hasError := false
-						ok, results := processTVShows(cmd, media.WD, tvShows, !delete, media.UID, media.GID)
+						ok, results := processTVShows(media.WD, tvShows, !delete, media.UID, media.GID)
 						if !ok {
 							hasError = true
 						}
 
-						cmd.Println()
+						fmt.Println()
 						for _, result := range results {
 							if result.IsSuccessful {
 								console.Success(result.Message)
@@ -233,7 +233,7 @@ func NewTVShowCmd() *cobra.Command {
 						}
 
 						if hasError {
-							cmd.Println()
+							fmt.Println()
 							return fmt.Errorf("an error occurred")
 						}
 					}

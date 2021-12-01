@@ -42,7 +42,7 @@ func loadMovies(wd string, extensions []string) ([]media.Movie, error) {
 }
 
 // Prints given movies array as a tree
-func printAllMovies(cmd *cobra.Command, wd string, movies []media.Movie) {
+func printAllMovies(wd string, movies []media.Movie) {
 	moviesTree := gotree.New(wd)
 	for _, m := range movies {
 		moviesTree.Add(fmt.Sprintf("%s  %s", m.Fullname, m.Basename))
@@ -50,13 +50,13 @@ func printAllMovies(cmd *cobra.Command, wd string, movies []media.Movie) {
 	toPrint := moviesTree.Print()
 	lastSpaceRegexp := regexp.MustCompile(`\s$`)
 	toPrint = lastSpaceRegexp.ReplaceAllString(toPrint, "")
-	cmd.Println(toPrint)
+	fmt.Println(toPrint)
 }
 
 // Processes listed movies by prompting user
-func processMovies(cmd *cobra.Command, wd string, movies []media.Movie, owner, group int) error {
+func processMovies(wd string, movies []media.Movie, owner, group int) error {
 	for _, m := range movies {
-		cmd.Println()
+		fmt.Println()
 		// Ask if current movie must be processed
 		prompt := promptui.Prompt{
 			Label:     fmt.Sprintf("Rename %s", m.Basename),
@@ -123,9 +123,9 @@ func NewMovieCmd() *cobra.Command {
 			if len(movies) == 0 {
 				console.Success("Nothing to process")
 			} else {
-				printAllMovies(cmd, media.WD, movies)
+				printAllMovies(media.WD, movies)
 				if !dryRun {
-					err := processMovies(cmd, media.WD, movies, media.UID, media.GID)
+					err := processMovies(media.WD, movies, media.UID, media.GID)
 					if err != nil {
 						return err
 					}

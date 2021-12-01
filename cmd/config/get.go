@@ -1,6 +1,8 @@
 package config
 
 import (
+	"fmt"
+
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
@@ -24,7 +26,7 @@ func NewGetCmd() *cobra.Command {
 			key := args[0]
 
 			value := viper.GetString(key)
-			cmd.Println(value)
+			fmt.Println(value)
 
 			return nil
 		},

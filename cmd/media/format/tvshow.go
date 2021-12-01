@@ -16,7 +16,7 @@ import (
 )
 
 // Prints given TV shows as a tree
-func printAllTVShows(cmd *cobra.Command, wd string, tvShows []*media.TVShow) {
+func printAllTVShows(wd string, tvShows []*media.TVShow) {
 	rootTree := gotree.New(wd)
 	for _, tvShow := range tvShows {
 		tvShowTree := rootTree.Add(tvShow.Name)
@@ -35,13 +35,13 @@ func printAllTVShows(cmd *cobra.Command, wd string, tvShows []*media.TVShow) {
 	toPrint := rootTree.Print()
 	lastSpaceRegexp := regexp.MustCompile(`\s$`)
 	toPrint = lastSpaceRegexp.ReplaceAllString(toPrint, "")
-	cmd.Println(toPrint)
+	fmt.Println(toPrint)
 }
 
 // Processes listed TV shows by prompting user
-func processTVShows(cmd *cobra.Command, wd string, tvShows []*media.TVShow, owner, group int, ask bool) error {
+func processTVShows(wd string, tvShows []*media.TVShow, owner, group int, ask bool) error {
 	for _, tvShow := range tvShows {
-		cmd.Println()
+		fmt.Println()
 
 		var err error
 		if ask {
@@ -124,9 +124,9 @@ func NewTVShowCmd() *cobra.Command {
 			if len(tvShows) == 0 {
 				console.Success("Nothing to process")
 			} else {
-				printAllTVShows(cmd, media.WD, tvShows)
+				printAllTVShows(media.WD, tvShows)
 				if !dryRun {
-					processTVShows(cmd, media.WD, tvShows, media.UID, media.GID, !yes)
+					processTVShows(media.WD, tvShows, media.UID, media.GID, !yes)
 				}
 			}
 

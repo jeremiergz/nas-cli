@@ -2,6 +2,7 @@ package test
 
 import (
 	"bytes"
+	"io"
 	"os"
 	"path"
 	"strings"
@@ -62,9 +63,15 @@ func AssertSameTVShowTree(t *testing.T, expected map[string]map[string][]string,
 
 func ExecuteCommand(t *testing.T, root *cobra.Command, args []string) (c *cobra.Command, output string) {
 	t.Helper()
-	buf := new(bytes.Buffer)
-	root.SetOut(buf)
-	root.SetErr(buf)
+
+	reader, writer, _ := os.Pipe()
+	defer reader.Close()
+
+	os.Stdout = writer
+	root.SetOut(writer)
+	os.Stderr = writer
+	root.SetErr(writer)
+
 	root.SetArgs(args)
 	c, err := root.ExecuteC()
 
@@ -72,7 +79,18 @@ func ExecuteCommand(t *testing.T, root *cobra.Command, args []string) (c *cobra.
 		t.Errorf("Unexpected error: %v", err)
 	}
 
-	return c, strings.TrimSpace(buf.String())
+	out := make(chan string)
+	go func() {
+		var buf bytes.Buffer
+		io.Copy(&buf, reader)
+		out <- buf.String()
+	}()
+
+	writer.Close()
+
+	output = <-out
+
+	return c, strings.TrimSpace(output)
 }
 
 func ExecuteCommandE(t *testing.T, root *cobra.Command, args []string) (c *cobra.Command, output string, err error) {

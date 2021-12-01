@@ -29,11 +29,11 @@ func NewInfoCmd() *cobra.Command {
 		Use:   "info",
 		Short: "Print application information",
 		Run: func(cmd *cobra.Command, args []string) {
-			cmd.Println("BuildDate:", BuildDate)
-			cmd.Println("Compiler: ", Compiler)
-			cmd.Println("GitCommit:", GitCommit)
-			cmd.Println("Platform: ", Platform)
-			cmd.Println("Version:  ", Version)
+			fmt.Println("BuildDate:", BuildDate)
+			fmt.Println("Compiler: ", Compiler)
+			fmt.Println("GitCommit:", GitCommit)
+			fmt.Println("Platform: ", Platform)
+			fmt.Println("Version:  ", Version)
 		},
 	}
 
