@@ -1,10 +1,15 @@
 package info
 
 import (
+	"encoding/json"
 	"fmt"
 	"runtime"
+	"strings"
 
 	"github.com/spf13/cobra"
+	"gopkg.in/yaml.v2"
+
+	"github.com/jeremiergz/nas-cli/util/output"
 )
 
 var (
@@ -28,14 +33,36 @@ func NewInfoCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "info",
 		Short: "Print application information",
+		PreRunE: func(cmd *cobra.Command, args []string) error {
+			return output.OnlyValidOutputs()
+		},
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Println("BuildDate:", BuildDate)
-			fmt.Println("Compiler: ", Compiler)
-			fmt.Println("GitCommit:", GitCommit)
-			fmt.Println("Platform: ", Platform)
-			fmt.Println("Version:  ", Version)
+			info := map[string]string{
+				"buildDate": BuildDate,
+				"compiler":  Compiler,
+				"gitCommit": GitCommit,
+				"platform":  Platform,
+				"version":   Version,
+			}
+
+			switch output.Format {
+			case "json":
+				out, _ := json.Marshal(info)
+				fmt.Println(strings.TrimSpace(string(out)))
+
+			case "text":
+				for key, value := range info {
+					fmt.Printf("%-10s %s\n", strings.Title(key)+":", value)
+				}
+
+			case "yaml":
+				out, _ := yaml.Marshal(info)
+				fmt.Println(strings.TrimSpace(string(out)))
+			}
 		},
 	}
+
+	output.AddOutputFlag(cmd)
 
 	return cmd
 }

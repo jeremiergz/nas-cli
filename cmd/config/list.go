@@ -1,18 +1,24 @@
 package config
 
 import (
+	"encoding/json"
 	"fmt"
 	"sort"
 	"strings"
 
+	"github.com/jeremiergz/nas-cli/util/output"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"gopkg.in/yaml.v2"
 )
 
 func NewListCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "list",
 		Short: "List configuration entries",
+		PreRunE: func(cmd *cobra.Command, args []string) error {
+			return output.OnlyValidOutputs()
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if err := viper.ReadInConfig(); err != nil {
 				if _, ok := err.(viper.ConfigFileNotFoundError); ok {
@@ -21,22 +27,35 @@ func NewListCmd() *cobra.Command {
 					return err
 				}
 			} else {
-				keys := viper.AllKeys()
-				sort.Strings(keys)
-				toPrint := []string{}
-				for index, key := range keys {
-					format := "%s=%s\n"
-					if index == len(keys)-1 {
-						format = "%s=%s"
+				switch output.Format {
+				case "json":
+					out, _ := json.Marshal(viper.AllSettings())
+					fmt.Println(strings.TrimSpace(string(out)))
+
+				case "text":
+					keys := viper.AllKeys()
+					sort.Strings(keys)
+					toPrint := []string{}
+					for index, key := range keys {
+						format := "%s=%s\n"
+						if index == len(keys)-1 {
+							format = "%s=%s"
+						}
+						toPrint = append(toPrint, fmt.Sprintf(format, key, viper.GetString(key)))
 					}
-					toPrint = append(toPrint, fmt.Sprintf(format, key, viper.GetString(key)))
+					fmt.Println(strings.Join(toPrint, ""))
+
+				case "yaml":
+					out, _ := yaml.Marshal(viper.AllSettings())
+					fmt.Println(strings.TrimSpace(string(out)))
 				}
-				fmt.Println(strings.Join(toPrint, ""))
 			}
 
 			return nil
 		},
 	}
+
+	output.AddOutputFlag(cmd)
 
 	return cmd
 }
