@@ -40,3 +40,4 @@ build/
 *.so
 *.test
 nas-cli*
+!nas-cli.rb
