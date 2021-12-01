@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"runtime"
+	"sort"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -51,9 +52,12 @@ func NewInfoCmd() *cobra.Command {
 				fmt.Println(strings.TrimSpace(string(out)))
 
 			case "text":
+				toPrint := []string{}
 				for key, value := range info {
-					fmt.Printf("%-10s %s\n", strings.Title(key)+":", value)
+					toPrint = append(toPrint, fmt.Sprintf("%-10s %s", strings.Title(key)+":", value))
 				}
+				sort.Strings(toPrint)
+				fmt.Println(strings.Join(toPrint, "\n"))
 
 			case "yaml":
 				out, _ := yaml.Marshal(info)

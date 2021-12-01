@@ -34,16 +34,13 @@ func NewListCmd() *cobra.Command {
 
 				case "text":
 					keys := viper.AllKeys()
-					sort.Strings(keys)
 					toPrint := []string{}
-					for index, key := range keys {
-						format := "%s=%s\n"
-						if index == len(keys)-1 {
-							format = "%s=%s"
-						}
+					for _, key := range keys {
+						format := "%s=%s"
 						toPrint = append(toPrint, fmt.Sprintf(format, key, viper.GetString(key)))
 					}
-					fmt.Println(strings.Join(toPrint, ""))
+					sort.Strings(toPrint)
+					fmt.Println(strings.Join(toPrint, "\n"))
 
 				case "yaml":
 					out, _ := yaml.Marshal(viper.AllSettings())
