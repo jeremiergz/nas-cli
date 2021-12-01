@@ -1,9 +1,7 @@
 package completion
 
 import (
-	"bytes"
-	"fmt"
-	"strings"
+	"os"
 
 	"github.com/spf13/cobra"
 )
@@ -16,16 +14,14 @@ func NewCompletionCmd() *cobra.Command {
 		Args:      cobra.ExactValidArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			rootCmd := cmd.Parent()
-			buf := new(bytes.Buffer)
+
 			switch args[0] {
 			case "bash":
-				rootCmd.GenBashCompletion(buf)
+				rootCmd.GenBashCompletion(os.Stdout)
 
 			case "zsh":
-				rootCmd.GenZshCompletion(buf)
+				rootCmd.GenZshCompletion(os.Stdout)
 			}
-
-			fmt.Println(strings.TrimSpace(buf.String()))
 
 			return nil
 		},
