@@ -6,10 +6,11 @@ import (
 	"os"
 	"strings"
 
-	"github.com/jeremiergz/nas-cli/util/config"
 	"github.com/spf13/viper"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/knownhosts"
+
+	"github.com/jeremiergz/nas-cli/util/config"
 )
 
 type SSHConnection struct {
@@ -43,7 +44,7 @@ func Connect() (*SSHConnection, error) {
 	if err != nil {
 		return nil, fmt.Errorf("unable to parse private key: %v", err)
 	}
-	hostKeyCallback, err := knownhosts.New(sshKnownHosts)
+	hostKeyCallback, _ := knownhosts.New(sshKnownHosts)
 	sshConfig := &ssh.ClientConfig{
 		User: username,
 		Auth: []ssh.AuthMethod{

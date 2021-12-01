@@ -5,14 +5,17 @@ import (
 	"testing"
 
 	"github.com/jeremiergz/nas-cli/cmd"
+	configutil "github.com/jeremiergz/nas-cli/util/config"
 	"github.com/jeremiergz/nas-cli/util/test"
 )
 
-func init() {
-	cmd.Root.AddCommand(Cmd)
-}
-
 func TestInfoCmd(t *testing.T) {
+	tempDir := t.TempDir()
+	configutil.Dir = tempDir
+
+	rootCmd := cmd.NewRootCmd()
+	rootCmd.AddCommand(NewInfoCmd())
+
 	tests := []string{
 		fmt.Sprintf("BuildDate: %s", BuildDate),
 		fmt.Sprintf("Compiler:  %s", Compiler),
@@ -21,7 +24,7 @@ func TestInfoCmd(t *testing.T) {
 		fmt.Sprintf("Version:   %s", Version),
 	}
 
-	_, output := test.ExecuteCommand(t, cmd.Root, []string{"info"})
+	_, output := test.ExecuteCommand(t, rootCmd, []string{"info"})
 
 	for _, try := range tests {
 		test.AssertContains(t, try, output)

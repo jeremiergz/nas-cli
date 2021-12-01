@@ -9,27 +9,19 @@ import (
 	"strconv"
 	"strings"
 
-	gotree "github.com/DiSiqueira/GoTree"
+	"github.com/disiqueira/gotree/v3"
+	"github.com/manifoldco/promptui"
+	"github.com/spf13/cobra"
+
 	"github.com/jeremiergz/nas-cli/util"
 	"github.com/jeremiergz/nas-cli/util/console"
 	"github.com/jeremiergz/nas-cli/util/media"
-	"github.com/manifoldco/promptui"
-	"github.com/spf13/cobra"
 )
 
 const subsyncCommand string = "subsync"
 
-func init() {
-	Cmd.Flags().StringArray("sub-ext", []string{"srt"}, "filter subtitles by extension")
-	Cmd.Flags().StringArrayP("video-ext", "e", []string{"avi", "mkv", "mp4"}, "filter video files by extension")
-	Cmd.Flags().String("stream", "eng", "stream ISO 639-3 language code")
-	Cmd.Flags().String("sub-lang", "eng", "subtitle ISO 639-3 language code")
-	Cmd.Flags().String("video-lang", "eng", "video ISO 639-3 language code")
-	Cmd.Flags().BoolP("yes", "y", false, "automatic yes to prompts")
-}
-
 // Prints files as a tree
-func printAll(videos []string, subtitles []string) {
+func printAll(cmd *cobra.Command, videos []string, subtitles []string) {
 	rootTree := gotree.New(media.WD)
 	for index, video := range videos {
 		fileIndex := strconv.FormatInt(int64(index+1), 10)
@@ -39,7 +31,7 @@ func printAll(videos []string, subtitles []string) {
 		subTree.Add(video)
 	}
 	toPrint := rootTree.Print()
-	fmt.Println(toPrint)
+	cmd.Println(toPrint)
 }
 
 // Attempts to synchronize given subtitle with given video file
@@ -73,6 +65,7 @@ func process(video string, videoLang string, subtitle string, subtitleLang strin
 		console.Info(fmt.Sprintf("%s %s", subsyncCommand, strings.Join(opts, " ")))
 		subsync := exec.Command(subsyncCommand, opts...)
 		subsync.Stdout = os.Stdout
+
 		return subsync.Run()
 	}
 
@@ -96,88 +89,99 @@ func process(video string, videoLang string, subtitle string, subtitleLang strin
 	return true
 }
 
-var Cmd = &cobra.Command{
-	Use:   "subsync <directory>",
-	Short: "Synchronize subtitle using SubSync tool",
-	Args:  cobra.MinimumNArgs(1),
-	PreRunE: func(cmd *cobra.Command, args []string) error {
-		_, err := exec.LookPath(subsyncCommand)
-		if err != nil {
-			return fmt.Errorf("command not found: %s", subsyncCommand)
-		}
+func NewSubsyncCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "subsync <directory>",
+		Short: "Synchronize subtitle using SubSync tool",
+		Args:  cobra.MinimumNArgs(1),
+		PreRunE: func(cmd *cobra.Command, args []string) error {
+			_, err := exec.LookPath(subsyncCommand)
+			if err != nil {
+				return fmt.Errorf("command not found: %s", subsyncCommand)
+			}
 
-		return media.InitializeWD(args[0])
-	},
-	RunE: func(cmd *cobra.Command, args []string) error {
-		dryRun, _ := cmd.Flags().GetBool("dry-run")
-		streamLang, _ := cmd.Flags().GetString("stream")
-		subtitleExtensions, _ := cmd.Flags().GetStringArray("sub-ext")
-		subtitleLang, _ := cmd.Flags().GetString("sub-lang")
-		videoExtensions, _ := cmd.Flags().GetStringArray("video-ext")
-		videoLang, _ := cmd.Flags().GetString("video-lang")
-		yes, _ := cmd.Flags().GetBool("yes")
+			return media.InitializeWD(args[0])
+		},
+		RunE: func(cmd *cobra.Command, args []string) error {
+			dryRun, _ := cmd.Flags().GetBool("dry-run")
+			streamLang, _ := cmd.Flags().GetString("stream")
+			subtitleExtensions, _ := cmd.Flags().GetStringArray("sub-ext")
+			subtitleLang, _ := cmd.Flags().GetString("sub-lang")
+			videoExtensions, _ := cmd.Flags().GetStringArray("video-ext")
+			videoLang, _ := cmd.Flags().GetString("video-lang")
+			yes, _ := cmd.Flags().GetBool("yes")
 
-		subtitleFiles := media.List(media.WD, subtitleExtensions, nil)
-		sort.Sort(util.Alphabetic(subtitleFiles))
-		videoFiles := media.List(media.WD, videoExtensions, nil)
-		sort.Sort(util.Alphabetic(videoFiles))
+			subtitleFiles := media.List(media.WD, subtitleExtensions, nil)
+			sort.Sort(util.Alphabetic(subtitleFiles))
+			videoFiles := media.List(media.WD, videoExtensions, nil)
+			sort.Sort(util.Alphabetic(videoFiles))
 
-		if len(subtitleFiles) == 0 {
-			console.Success("No subtitle file to process")
-		} else if len(videoFiles) == 0 {
-			console.Success("No video file to process")
-		} else {
-			printAll(videoFiles, subtitleFiles)
+			if len(subtitleFiles) == 0 {
+				console.Success("No subtitle file to process")
+			} else if len(videoFiles) == 0 {
+				console.Success("No video file to process")
+			} else {
+				printAll(cmd, videoFiles, subtitleFiles)
 
-			if !dryRun {
-				var err error
-				if !yes {
-					prompt := promptui.Prompt{
-						Label:     "Process",
-						IsConfirm: true,
-						Default:   "y",
-					}
-					_, err = prompt.Run()
-				}
-
-				if err != nil {
-					if err.Error() == "^C" {
-						return nil
-					}
-				} else {
-					hasError := false
-					results := []media.Result{}
-					fmt.Println()
-					for index, videoFile := range videoFiles {
-						videoFileExtension := path.Ext(videoFile)
-						outFile := strings.Replace(videoFile, videoFileExtension, fmt.Sprintf(".%s.srt", subtitleLang), 1)
-						subtitleFile := subtitleFiles[index]
-						ok := process(videoFile, videoLang, subtitleFile, subtitleLang, streamLang, outFile)
-						results = append(results, media.Result{
-							IsSuccessful: ok,
-							Message:      outFile,
-						})
-						if !ok {
-							hasError = true
+				if !dryRun {
+					var err error
+					if !yes {
+						prompt := promptui.Prompt{
+							Label:     "Process",
+							IsConfirm: true,
+							Default:   "y",
 						}
+						_, err = prompt.Run()
 					}
 
-					for _, result := range results {
-						if result.IsSuccessful {
-							console.Success(result.Message)
-						} else {
-							console.Error(result.Message)
+					if err != nil {
+						if err.Error() == "^C" {
+							return nil
 						}
-					}
+					} else {
+						hasError := false
+						results := []media.Result{}
+						cmd.Println()
+						for index, videoFile := range videoFiles {
+							videoFileExtension := path.Ext(videoFile)
+							outFile := strings.Replace(videoFile, videoFileExtension, fmt.Sprintf(".%s.srt", subtitleLang), 1)
+							subtitleFile := subtitleFiles[index]
+							ok := process(videoFile, videoLang, subtitleFile, subtitleLang, streamLang, outFile)
+							results = append(results, media.Result{
+								IsSuccessful: ok,
+								Message:      outFile,
+							})
+							if !ok {
+								hasError = true
+							}
+						}
 
-					if hasError {
-						fmt.Println()
-						return fmt.Errorf("an error occurred")
+						for _, result := range results {
+							if result.IsSuccessful {
+								console.Success(result.Message)
+							} else {
+								console.Error(result.Message)
+							}
+						}
+
+						if hasError {
+							cmd.Println()
+							return fmt.Errorf("an error occurred")
+						}
 					}
 				}
 			}
-		}
 
-		return nil
-	},
+			return nil
+		},
+	}
+
+	cmd.Flags().StringArray("sub-ext", []string{"srt"}, "filter subtitles by extension")
+	cmd.Flags().StringArrayP("video-ext", "e", []string{"avi", "mkv", "mp4"}, "filter video files by extension")
+	cmd.Flags().String("stream", "eng", "stream ISO 639-3 language code")
+	cmd.Flags().String("sub-lang", "eng", "subtitle ISO 639-3 language code")
+	cmd.Flags().String("video-lang", "eng", "video ISO 639-3 language code")
+	cmd.Flags().BoolP("yes", "y", false, "automatic yes to prompts")
+
+	return cmd
 }

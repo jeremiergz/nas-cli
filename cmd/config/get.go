@@ -1,29 +1,34 @@
 package config
 
 import (
-	"github.com/jeremiergz/nas-cli/util/config"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+
+	"github.com/jeremiergz/nas-cli/util/config"
 )
 
-var GetCmd = &cobra.Command{
-	Use:       "get <key>",
-	Short:     "Get configuration entry value",
-	ValidArgs: config.ConfigKeys,
-	Args: func(cmd *cobra.Command, args []string) error {
-		err := cobra.ExactArgs(1)(cmd, args)
-		if err != nil {
-			return err
-		}
+func NewGetCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:       "get <key>",
+		Short:     "Get configuration entry value",
+		ValidArgs: config.ConfigKeys,
+		Args: func(cmd *cobra.Command, args []string) error {
+			err := cobra.ExactArgs(1)(cmd, args)
+			if err != nil {
+				return err
+			}
 
-		return cobra.OnlyValidArgs(cmd, args)
-	},
-	RunE: func(cmd *cobra.Command, args []string) error {
-		key := args[0]
+			return cobra.OnlyValidArgs(cmd, args)
+		},
+		RunE: func(cmd *cobra.Command, args []string) error {
+			key := args[0]
 
-		value := viper.GetString(key)
-		cmd.Println(value)
+			value := viper.GetString(key)
+			cmd.Println(value)
 
-		return nil
-	},
+			return nil
+		},
+	}
+
+	return cmd
 }

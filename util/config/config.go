@@ -23,7 +23,6 @@ const (
 )
 
 var (
-	configDir  string
 	ConfigKeys = []string{
 		ConfigKeyNASDomain,
 		ConfigKeySCPAnimes,
@@ -37,16 +36,19 @@ var (
 		ConfigKeySSHPrivateKey,
 		ConfigKeySSHUsername,
 	}
+	Dir      string
 	FileName string = ".nascliconfig"
 )
 
 func init() {
-	configDir, _ = os.UserHomeDir()
+	Dir, _ = os.UserHomeDir()
 }
 
 func Save() error {
-	tempFilePath := path.Join(configDir, fmt.Sprintf("%s%s", FileName, ".bak.ini"))
-	destFilePath := path.Join(configDir, FileName)
+	tempFilePath := path.Join(Dir, fmt.Sprintf("%s%s", FileName, ".bak.ini"))
+	destFilePath := path.Join(Dir, FileName)
+
+	fmt.Println(Dir, FileName, viper.AllSettings())
 
 	err := viper.WriteConfigAs(tempFilePath)
 	if err != nil {

@@ -11,16 +11,15 @@ import (
 	"github.com/jeremiergz/nas-cli/cmd/version"
 )
 
-func init() {
-	cmd.Root.AddCommand(completion.Cmd)
-	cmd.Root.AddCommand(config.Cmd)
-	cmd.Root.AddCommand(info.Cmd)
-	cmd.Root.AddCommand(media.Cmd)
-	cmd.Root.AddCommand(version.Cmd)
-}
-
 func main() {
-	if err := cmd.Root.Execute(); err != nil {
+	rootCmd := cmd.NewRootCmd()
+	rootCmd.AddCommand(completion.NewCompletionCmd())
+	rootCmd.AddCommand(config.NewConfigCmd())
+	rootCmd.AddCommand(info.NewInfoCmd())
+	rootCmd.AddCommand(media.NewMediaCmd())
+	rootCmd.AddCommand(version.NewVersionCmd())
+
+	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
 	}
 }

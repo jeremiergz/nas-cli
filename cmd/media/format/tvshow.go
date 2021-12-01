@@ -6,23 +6,17 @@ import (
 	"path"
 	"regexp"
 
-	gotree "github.com/DiSiqueira/GoTree"
+	"github.com/disiqueira/gotree/v3"
+	"github.com/manifoldco/promptui"
+	"github.com/spf13/cobra"
+
 	"github.com/jeremiergz/nas-cli/util"
 	"github.com/jeremiergz/nas-cli/util/console"
 	"github.com/jeremiergz/nas-cli/util/media"
-	"github.com/manifoldco/promptui"
-	"github.com/spf13/cobra"
 )
 
-func init() {
-	TVShowCmd.MarkFlagDirname("directory")
-	TVShowCmd.MarkFlagFilename("directory")
-	TVShowCmd.Flags().StringArrayP("name", "n", nil, "override TV show name")
-	TVShowCmd.Flags().BoolP("yes", "y", false, "automatic yes to prompts")
-}
-
 // Prints given TV shows as a tree
-func printAllTVShows(wd string, tvShows []*media.TVShow) {
+func printAllTVShows(cmd *cobra.Command, wd string, tvShows []*media.TVShow) {
 	rootTree := gotree.New(wd)
 	for _, tvShow := range tvShows {
 		tvShowTree := rootTree.Add(tvShow.Name)
@@ -41,13 +35,13 @@ func printAllTVShows(wd string, tvShows []*media.TVShow) {
 	toPrint := rootTree.Print()
 	lastSpaceRegexp := regexp.MustCompile(`\s$`)
 	toPrint = lastSpaceRegexp.ReplaceAllString(toPrint, "")
-	fmt.Println(toPrint)
+	cmd.Println(toPrint)
 }
 
 // Processes listed TV shows by prompting user
-func processTVShows(wd string, tvShows []*media.TVShow, owner, group int, ask bool) error {
+func processTVShows(cmd *cobra.Command, wd string, tvShows []*media.TVShow, owner, group int, ask bool) error {
 	for _, tvShow := range tvShows {
-		fmt.Println()
+		cmd.Println()
 
 		var err error
 		if ask {
@@ -101,40 +95,49 @@ func processTVShows(wd string, tvShows []*media.TVShow, owner, group int, ask bo
 	return nil
 }
 
-var TVShowCmd = &cobra.Command{
-	Use:     "tvshows <directory>",
-	Aliases: []string{"tv", "t"},
-	Short:   "TV Shows batch formatting",
-	Args:    cobra.MinimumNArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		extensions, _ := cmd.Flags().GetStringArray("ext")
-		tvShowNames, _ := cmd.Flags().GetStringArray("name")
-		yes, _ := cmd.Flags().GetBool("yes")
+func NewTVShowCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:     "tvshows <directory>",
+		Aliases: []string{"tv", "t"},
+		Short:   "TV Shows batch formatting",
+		Args:    cobra.MinimumNArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			extensions, _ := cmd.Flags().GetStringArray("ext")
+			tvShowNames, _ := cmd.Flags().GetStringArray("name")
+			yes, _ := cmd.Flags().GetBool("yes")
 
-		tvShows, err := media.LoadTVShows(media.WD, extensions, nil, nil, false)
+			tvShows, err := media.LoadTVShows(media.WD, extensions, nil, nil, false)
 
-		if len(tvShowNames) > 0 {
-			if len(tvShowNames) != len(tvShows) {
-				return fmt.Errorf("names must be provided for all TV shows")
+			if len(tvShowNames) > 0 {
+				if len(tvShowNames) != len(tvShows) {
+					return fmt.Errorf("names must be provided for all TV shows")
+				}
+				for index, tvShowName := range tvShowNames {
+					tvShows[index].Name = tvShowName
+				}
 			}
-			for index, tvShowName := range tvShowNames {
-				tvShows[index].Name = tvShowName
-			}
-		}
 
-		dryRun, _ := cmd.Flags().GetBool("dry-run")
-		if err != nil {
-			return err
-		}
-		if len(tvShows) == 0 {
-			console.Success("Nothing to process")
-		} else {
-			printAllTVShows(media.WD, tvShows)
-			if !dryRun {
-				processTVShows(media.WD, tvShows, media.UID, media.GID, !yes)
+			dryRun, _ := cmd.Flags().GetBool("dry-run")
+			if err != nil {
+				return err
 			}
-		}
+			if len(tvShows) == 0 {
+				console.Success("Nothing to process")
+			} else {
+				printAllTVShows(cmd, media.WD, tvShows)
+				if !dryRun {
+					processTVShows(cmd, media.WD, tvShows, media.UID, media.GID, !yes)
+				}
+			}
 
-		return nil
-	},
+			return nil
+		},
+	}
+
+	cmd.MarkFlagDirname("directory")
+	cmd.MarkFlagFilename("directory")
+	cmd.Flags().StringArrayP("name", "n", nil, "override TV show name")
+	cmd.Flags().BoolP("yes", "y", false, "automatic yes to prompts")
+
+	return cmd
 }

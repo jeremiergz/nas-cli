@@ -2,15 +2,15 @@ package media
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
 	"regexp"
 	"strings"
 
+	ptn "github.com/middelink/go-parse-torrent-name"
+
 	"github.com/jeremiergz/nas-cli/util"
-	PTN "github.com/middelink/go-parse-torrent-name"
 )
 
 // TVShow is the type of data that will be formatted as a TV show
@@ -82,7 +82,7 @@ func InitializeWD(path string) error {
 
 // Lists files in directory with filter on extensions and RegExp
 func List(wd string, extensions []string, regExp *regexp.Regexp) []string {
-	files, _ := ioutil.ReadDir(wd)
+	files, _ := os.ReadDir(wd)
 	filesList := []string{}
 	for _, f := range files {
 		ext := strings.Replace(path.Ext(f.Name()), ".", "", 1)
@@ -157,8 +157,8 @@ func LoadTVShows(wd string, extensions []string, subtitlesExt *string, subtitles
 }
 
 // Returns parsed information from a file name
-func ParseTitle(filename string) (*PTN.TorrentInfo, error) {
-	return PTN.Parse((filename))
+func ParseTitle(filename string) (*ptn.TorrentInfo, error) {
+	return ptn.Parse((filename))
 }
 
 // Creates target directory, setting its mode to 755 and setting ownership

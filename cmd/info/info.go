@@ -22,8 +22,10 @@ var (
 
 	// Version is the Calendar Versioning string, overriden as ldflag
 	Version = "N/A"
+)
 
-	Cmd = &cobra.Command{
+func NewInfoCmd() *cobra.Command {
+	cmd := &cobra.Command{
 		Use:   "info",
 		Short: "Print application information",
 		Run: func(cmd *cobra.Command, args []string) {
@@ -34,4 +36,6 @@ var (
 			cmd.Println("Version:  ", Version)
 		},
 	}
-)
+
+	return cmd
+}

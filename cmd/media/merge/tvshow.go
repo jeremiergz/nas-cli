@@ -9,17 +9,14 @@ import (
 	"strings"
 	"sync"
 
-	gotree "github.com/DiSiqueira/GoTree"
+	"github.com/disiqueira/gotree/v3"
+	"github.com/manifoldco/promptui"
+	"github.com/spf13/cobra"
+
 	"github.com/jeremiergz/nas-cli/util"
 	"github.com/jeremiergz/nas-cli/util/console"
 	"github.com/jeremiergz/nas-cli/util/media"
-	"github.com/manifoldco/promptui"
-	"github.com/spf13/cobra"
 )
-
-func init() {
-	TVShowCmd.Flags().StringArrayP("name", "n", nil, "override TV show name")
-}
 
 // Checks whether given season has episodes with subtitles or not
 func hasSubtitlesInSeason(season *media.Season) bool {
@@ -44,7 +41,7 @@ func hasSubtitlesInTVShow(tvShow *media.TVShow) bool {
 }
 
 // Prints given TV shows and their subtitles as a tree
-func printAllTVShows(wd string, tvShows []*media.TVShow) {
+func printAllTVShows(cmd *cobra.Command, wd string, tvShows []*media.TVShow) {
 	rootTree := gotree.New(wd)
 	for _, tvShow := range tvShows {
 		tvShowTree := rootTree.Add(tvShow.Name)
@@ -66,11 +63,11 @@ func printAllTVShows(wd string, tvShows []*media.TVShow) {
 	toPrint := rootTree.Print()
 	lastSpaceRegexp := regexp.MustCompile(`\s$`)
 	toPrint = lastSpaceRegexp.ReplaceAllString(toPrint, "")
-	fmt.Println(toPrint)
+	cmd.Println(toPrint)
 }
 
 // Merges TV show language tracks into one video file
-func processTVShows(wd string, tvShows []*media.TVShow, keepOriginalFiles bool, owner, group int) (bool, []media.Result) {
+func processTVShows(cmd *cobra.Command, wd string, tvShows []*media.TVShow, keepOriginalFiles bool, owner, group int) (bool, []media.Result) {
 	ok := true
 	results := []media.Result{}
 
@@ -115,7 +112,7 @@ func processTVShows(wd string, tvShows []*media.TVShow, keepOriginalFiles bool, 
 							}
 							options = append(options, videoBackupPath)
 
-							fmt.Println()
+							cmd.Println()
 							console.Info(fmt.Sprintf("%s %s\n", mergeCommand, strings.Join(options, " ")))
 							merge := exec.Command(mergeCommand, options...)
 							merge.Stdout = os.Stdout
@@ -167,81 +164,87 @@ func processTVShows(wd string, tvShows []*media.TVShow, keepOriginalFiles bool, 
 	return ok, results
 }
 
-var TVShowCmd = &cobra.Command{
-	Use:     "tvshows <directory>",
-	Aliases: []string{"tv", "t"},
-	Short:   "Merge TV Shows tracks",
-	Args:    cobra.MinimumNArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		delete, _ := cmd.Flags().GetBool("delete")
-		dryRun, _ := cmd.Flags().GetBool("dry-run")
-		languages, _ := cmd.Flags().GetStringArray("language")
-		tvShowNames, _ := cmd.Flags().GetStringArray("name")
-		subtitleExtension, _ := cmd.Flags().GetString("sub-ext")
-		videoExtensions, _ := cmd.Flags().GetStringArray("video-ext")
-		yes, _ := cmd.Flags().GetBool("yes")
+func NewTVShowCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:     "tvshows <directory>",
+		Aliases: []string{"tv", "t"},
+		Short:   "Merge TV Shows tracks",
+		Args:    cobra.MinimumNArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			delete, _ := cmd.Flags().GetBool("delete")
+			dryRun, _ := cmd.Flags().GetBool("dry-run")
+			languages, _ := cmd.Flags().GetStringArray("language")
+			tvShowNames, _ := cmd.Flags().GetStringArray("name")
+			subtitleExtension, _ := cmd.Flags().GetString("sub-ext")
+			videoExtensions, _ := cmd.Flags().GetStringArray("video-ext")
+			yes, _ := cmd.Flags().GetBool("yes")
 
-		tvShows, err := media.LoadTVShows(media.WD, videoExtensions, &subtitleExtension, languages, true)
+			tvShows, err := media.LoadTVShows(media.WD, videoExtensions, &subtitleExtension, languages, true)
 
-		if len(tvShowNames) > 0 {
-			if len(tvShowNames) != len(tvShows) {
-				return fmt.Errorf("names must be provided for all TV shows")
-			}
-			for index, tvShowName := range tvShowNames {
-				tvShows[index].Name = tvShowName
-			}
-		}
-
-		if err != nil {
-			return err
-		}
-
-		if len(tvShows) == 0 {
-			console.Success("No video file to process")
-		} else {
-			printAllTVShows(media.WD, tvShows)
-
-			if !dryRun {
-				fmt.Println()
-
-				var err error
-				if !yes {
-					prompt := promptui.Prompt{
-						Label:     "Process",
-						IsConfirm: true,
-						Default:   "y",
-					}
-					_, err = prompt.Run()
+			if len(tvShowNames) > 0 {
+				if len(tvShowNames) != len(tvShows) {
+					return fmt.Errorf("names must be provided for all TV shows")
 				}
+				for index, tvShowName := range tvShowNames {
+					tvShows[index].Name = tvShowName
+				}
+			}
 
-				if err != nil {
-					if err.Error() == "^C" {
-						return nil
-					}
-				} else {
-					hasError := false
-					ok, results := processTVShows(media.WD, tvShows, !delete, media.UID, media.GID)
-					if !ok {
-						hasError = true
+			if err != nil {
+				return err
+			}
+
+			if len(tvShows) == 0 {
+				console.Success("No video file to process")
+			} else {
+				printAllTVShows(cmd, media.WD, tvShows)
+
+				if !dryRun {
+					cmd.Println()
+
+					var err error
+					if !yes {
+						prompt := promptui.Prompt{
+							Label:     "Process",
+							IsConfirm: true,
+							Default:   "y",
+						}
+						_, err = prompt.Run()
 					}
 
-					fmt.Println()
-					for _, result := range results {
-						if result.IsSuccessful {
-							console.Success(result.Message)
-						} else {
-							console.Error(result.Message)
+					if err != nil {
+						if err.Error() == "^C" {
+							return nil
+						}
+					} else {
+						hasError := false
+						ok, results := processTVShows(cmd, media.WD, tvShows, !delete, media.UID, media.GID)
+						if !ok {
+							hasError = true
+						}
+
+						cmd.Println()
+						for _, result := range results {
+							if result.IsSuccessful {
+								console.Success(result.Message)
+							} else {
+								console.Error(result.Message)
+							}
+						}
+
+						if hasError {
+							cmd.Println()
+							return fmt.Errorf("an error occurred")
 						}
 					}
-
-					if hasError {
-						fmt.Println()
-						return fmt.Errorf("an error occurred")
-					}
 				}
 			}
-		}
 
-		return nil
-	},
+			return nil
+		},
+	}
+
+	cmd.Flags().StringArrayP("name", "n", nil, "override TV show name")
+
+	return cmd
 }

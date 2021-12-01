@@ -8,19 +8,14 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/disiqueira/gotree/v3"
+	"github.com/manifoldco/promptui"
+	"github.com/spf13/cobra"
+
 	"github.com/jeremiergz/nas-cli/util"
 	"github.com/jeremiergz/nas-cli/util/console"
 	"github.com/jeremiergz/nas-cli/util/media"
-	"github.com/manifoldco/promptui"
-
-	gotree "github.com/DiSiqueira/GoTree"
-	"github.com/spf13/cobra"
 )
-
-func init() {
-	MovieCmd.MarkFlagDirname("directory")
-	MovieCmd.MarkFlagFilename("directory")
-}
 
 var movieFmtRegexp = regexp.MustCompile(`(^.+)\s\(([0-9]{4})\)\.(.+)$`)
 
@@ -47,7 +42,7 @@ func loadMovies(wd string, extensions []string) ([]media.Movie, error) {
 }
 
 // Prints given movies array as a tree
-func printAllMovies(wd string, movies []media.Movie) {
+func printAllMovies(cmd *cobra.Command, wd string, movies []media.Movie) {
 	moviesTree := gotree.New(wd)
 	for _, m := range movies {
 		moviesTree.Add(fmt.Sprintf("%s  %s", m.Fullname, m.Basename))
@@ -55,13 +50,13 @@ func printAllMovies(wd string, movies []media.Movie) {
 	toPrint := moviesTree.Print()
 	lastSpaceRegexp := regexp.MustCompile(`\s$`)
 	toPrint = lastSpaceRegexp.ReplaceAllString(toPrint, "")
-	fmt.Println(toPrint)
+	cmd.Println(toPrint)
 }
 
 // Processes listed movies by prompting user
-func processMovies(wd string, movies []media.Movie, owner, group int) error {
+func processMovies(cmd *cobra.Command, wd string, movies []media.Movie, owner, group int) error {
 	for _, m := range movies {
-		fmt.Println()
+		cmd.Println()
 		// Ask if current movie must be processed
 		prompt := promptui.Prompt{
 			Label:     fmt.Sprintf("Rename %s", m.Basename),
@@ -112,30 +107,37 @@ func processMovies(wd string, movies []media.Movie, owner, group int) error {
 	return nil
 }
 
-var MovieCmd = &cobra.Command{
-	Use:     "movies <directory>",
-	Aliases: []string{"mov", "m"},
-	Short:   "Movies batch formatting",
-	Args:    cobra.MinimumNArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		extensions, _ := cmd.Flags().GetStringArray("ext")
-		movies, err := loadMovies(media.WD, extensions)
-		dryRun, _ := cmd.Flags().GetBool("dry-run")
-		if err != nil {
-			return err
-		}
-		if len(movies) == 0 {
-			console.Success("Nothing to process")
-		} else {
-			printAllMovies(media.WD, movies)
-			if !dryRun {
-				err := processMovies(media.WD, movies, media.UID, media.GID)
-				if err != nil {
-					return err
+func NewMovieCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:     "movies <directory>",
+		Aliases: []string{"mov", "m"},
+		Short:   "Movies batch formatting",
+		Args:    cobra.MinimumNArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			extensions, _ := cmd.Flags().GetStringArray("ext")
+			movies, err := loadMovies(media.WD, extensions)
+			dryRun, _ := cmd.Flags().GetBool("dry-run")
+			if err != nil {
+				return err
+			}
+			if len(movies) == 0 {
+				console.Success("Nothing to process")
+			} else {
+				printAllMovies(cmd, media.WD, movies)
+				if !dryRun {
+					err := processMovies(cmd, media.WD, movies, media.UID, media.GID)
+					if err != nil {
+						return err
+					}
 				}
 			}
-		}
 
-		return nil
-	},
+			return nil
+		},
+	}
+
+	cmd.MarkFlagDirname("directory")
+	cmd.MarkFlagFilename("directory")
+
+	return cmd
 }
