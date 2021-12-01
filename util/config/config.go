@@ -48,8 +48,6 @@ func Save() error {
 	tempFilePath := path.Join(Dir, fmt.Sprintf("%s%s", FileName, ".bak.ini"))
 	destFilePath := path.Join(Dir, FileName)
 
-	fmt.Println(Dir, FileName, viper.AllSettings())
-
 	err := viper.WriteConfigAs(tempFilePath)
 	if err != nil {
 		return fmt.Errorf("could not write configuration: %s", err)
