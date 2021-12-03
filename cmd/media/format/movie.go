@@ -137,7 +137,6 @@ func NewMovieCmd() *cobra.Command {
 	}
 
 	cmd.MarkFlagDirname("directory")
-	cmd.MarkFlagFilename("directory")
 
 	return cmd
 }

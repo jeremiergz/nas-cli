@@ -120,8 +120,9 @@ func NewDownloadCmd() *cobra.Command {
 		},
 	}
 
+	cmd.MarkFlagDirname("directory")
 	cmd.Flags().BoolP("movie", "m", false, "format filename to movie type")
-	cmd.Flags().BoolP("tv-show", "t", false, "format filename to TV show type")
+	cmd.Flags().BoolP("tvshow", "t", false, "format filename to TV show type")
 
 	return cmd
 }

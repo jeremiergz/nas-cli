@@ -135,7 +135,6 @@ func NewTVShowCmd() *cobra.Command {
 	}
 
 	cmd.MarkFlagDirname("directory")
-	cmd.MarkFlagFilename("directory")
 	cmd.Flags().StringArrayP("name", "n", nil, "override TV show name")
 	cmd.Flags().BoolP("yes", "y", false, "automatic yes to prompts")
 
