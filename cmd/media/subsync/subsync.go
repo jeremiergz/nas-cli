@@ -185,22 +185,24 @@ func NewSubsyncCmd() *cobra.Command {
 
 							// Determine points color
 							var pointsStyle func(interface{}) string
-							if points < 20 {
+							if points < 30 {
 								pointsStyle = promptui.Styler(promptui.FGRed)
-							} else if points < 40 {
+							} else if points < 60 {
 								pointsStyle = promptui.Styler(promptui.FGYellow)
 							} else {
 								pointsStyle = promptui.Styler(promptui.FGGreen)
 							}
 
+							outFileWithoutDiacritics, _ := util.RemoveDiacritics(outFile)
+
 							// Save max outfile length for a better results display
-							if len(outFile) > maxOutFileLength {
-								maxOutFileLength = len(outFile)
+							if len(outFileWithoutDiacritics) > maxOutFileLength {
+								maxOutFileLength = len(outFileWithoutDiacritics)
 							}
 
 							results = append(results, result{
 								IsSuccessful: ok,
-								Message:      outFile,
+								Message:      outFileWithoutDiacritics,
 								Points:       fmt.Sprintf("%s %s", pointsStyle(points), pointsStr),
 							})
 							if !ok {

@@ -5,8 +5,12 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"unicode"
 
 	"github.com/spf13/cobra"
+	"golang.org/x/text/runes"
+	"golang.org/x/text/transform"
+	"golang.org/x/text/unicode/norm"
 )
 
 const (
@@ -65,6 +69,18 @@ func DownloadFile(filePath string, url string) error {
 	_, err = io.Copy(out, res.Body)
 
 	return err
+}
+
+var diacriticsTransformer = transform.Chain(norm.NFD, runes.Remove(runes.In(unicode.Mn)), norm.NFC)
+
+// Removes all diacritics from given string
+func RemoveDiacritics(s string) (string, error) {
+	output, _, err := transform.String(diacriticsTransformer, s)
+	if err != nil {
+		return s, err
+	}
+
+	return output, nil
 }
 
 // Checks whether given string is in given array or not
