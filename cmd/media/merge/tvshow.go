@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/disiqueira/gotree/v3"
 	"github.com/manifoldco/promptui"
@@ -19,8 +20,9 @@ import (
 )
 
 type result struct {
-	IsSuccessful bool
-	Message      string
+	Characteristics map[string]string
+	IsSuccessful    bool
+	Message         string
 }
 
 // Checks whether given season has episodes with subtitles or not
@@ -93,6 +95,7 @@ func processTVShows(wd string, tvShows []*media.TVShow, keepOriginalFiles bool, 
 					for _, episode := range season.Episodes {
 						// Nothing to do if there are no subtitles
 						if len(episode.Subtitles) > 0 {
+							start := time.Now()
 
 							videoPath := path.Join(media.WD, episode.Basename)
 							videoBackupPath := path.Join(media.WD, fmt.Sprintf("%s%s%s", "_", episode.Basename, ".bak"))
@@ -136,6 +139,9 @@ func processTVShows(wd string, tvShows []*media.TVShow, keepOriginalFiles bool, 
 
 								ok = false
 								results = append(results, result{
+									Characteristics: map[string]string{
+										"duration": time.Since(start).Round(time.Millisecond).String(),
+									},
 									IsSuccessful: false,
 									Message:      episode.Name(),
 								})
@@ -155,6 +161,9 @@ func processTVShows(wd string, tvShows []*media.TVShow, keepOriginalFiles bool, 
 									wg.Wait()
 								}
 								results = append(results, result{
+									Characteristics: map[string]string{
+										"duration": time.Since(start).Round(time.Millisecond).String(),
+									},
 									IsSuccessful: true,
 									Message:      episode.Name(),
 								})
@@ -231,7 +240,10 @@ func NewTVShowCmd() *cobra.Command {
 						fmt.Println()
 						for _, result := range results {
 							if result.IsSuccessful {
-								console.Success(result.Message)
+								console.Success(fmt.Sprintf("%s  duration=%-6s",
+									result.Message,
+									result.Characteristics["duration"],
+								))
 							} else {
 								console.Error(result.Message)
 							}

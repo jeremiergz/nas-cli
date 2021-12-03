@@ -11,6 +11,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/disiqueira/gotree/v3"
 	"github.com/manifoldco/promptui"
@@ -26,9 +27,9 @@ const subsyncCommand string = "subsync"
 var subsyncMatchingPointsRegexp = regexp.MustCompile(`(?m)\d+%,\s+(\d+)\s+points`)
 
 type result struct {
-	IsSuccessful bool
-	Message      string
-	Points       string
+	Characteristics map[string]string
+	IsSuccessful    bool
+	Message         string
 }
 
 // Prints files as a tree
@@ -46,7 +47,9 @@ func printAll(videos []string, subtitles []string) {
 }
 
 // Attempts to synchronize given subtitle with given video file
-func process(video string, videoLang string, subtitle string, subtitleLang string, streamLang string, outFile string) (matchingPoints int, ok bool) {
+func process(video string, videoLang string, subtitle string, subtitleLang string, streamLang string, outFile string) (duration time.Duration, matchingPoints int, ok bool) {
+	start := time.Now()
+
 	videoPath := path.Join(media.WD, video)
 	subtitlePath := path.Join(media.WD, subtitle)
 	outFilePath := path.Join(media.WD, outFile)
@@ -98,7 +101,7 @@ func process(video string, videoLang string, subtitle string, subtitleLang strin
 		}
 		output, err = runCommand(rerunOptions)
 		if err != nil {
-			return 0, false
+			return time.Since(start), 0, false
 		}
 	}
 
@@ -113,7 +116,7 @@ func process(video string, videoLang string, subtitle string, subtitleLang strin
 	os.Chown(outFilePath, media.UID, media.GID)
 	os.Chmod(outFilePath, util.FileMode)
 
-	return matchingPoints, true
+	return time.Since(start), matchingPoints, true
 }
 
 func NewSubsyncCmd() *cobra.Command {
@@ -176,12 +179,7 @@ func NewSubsyncCmd() *cobra.Command {
 							outFile := strings.Replace(videoFile, videoFileExtension, fmt.Sprintf(".%s.srt", subtitleLang), 1)
 							subtitleFile := subtitleFiles[index]
 
-							points, ok := process(videoFile, videoLang, subtitleFile, subtitleLang, streamLang, outFile)
-
-							pointsStr := "point"
-							if points > 1 {
-								pointsStr += "s"
-							}
+							duration, points, ok := process(videoFile, videoLang, subtitleFile, subtitleLang, streamLang, outFile)
 
 							// Determine points color
 							var pointsStyle func(interface{}) string
@@ -201,9 +199,12 @@ func NewSubsyncCmd() *cobra.Command {
 							}
 
 							results = append(results, result{
+								Characteristics: map[string]string{
+									"duration": duration.Round(time.Millisecond).String(),
+									"points":   pointsStyle(points),
+								},
 								IsSuccessful: ok,
 								Message:      outFileWithoutDiacritics,
-								Points:       fmt.Sprintf("%s %s", pointsStyle(points), pointsStr),
 							})
 							if !ok {
 								hasError = true
@@ -212,7 +213,16 @@ func NewSubsyncCmd() *cobra.Command {
 
 						for _, result := range results {
 							if result.IsSuccessful {
-								console.Success(fmt.Sprintf("%- *s  (%s)", maxOutFileLength, result.Message, result.Points))
+								characteristicsMsg := ""
+								for key, value := range result.Characteristics {
+									characteristicsMsg += fmt.Sprintf("  %s=%-3s", key, value)
+								}
+								console.Success(fmt.Sprintf("%- *s  points=%-3s  duration=%-6s",
+									maxOutFileLength,
+									result.Message,
+									result.Characteristics["points"],
+									result.Characteristics["duration"],
+								))
 							} else {
 								console.Error(result.Message)
 							}
@@ -230,10 +240,10 @@ func NewSubsyncCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringArray("sub-ext", []string{"srt"}, "filter subtitles by extension")
-	cmd.Flags().StringArrayP("video-ext", "e", []string{"avi", "mkv", "mp4"}, "filter video files by extension")
 	cmd.Flags().String("stream", "eng", "stream ISO 639-3 language code")
+	cmd.Flags().StringArray("sub-ext", []string{"srt"}, "filter subtitles by extension")
 	cmd.Flags().String("sub-lang", "eng", "subtitle ISO 639-3 language code")
+	cmd.Flags().StringArrayP("video-ext", "e", []string{"avi", "mkv", "mp4"}, "filter video files by extension")
 	cmd.Flags().String("video-lang", "eng", "video ISO 639-3 language code")
 	cmd.Flags().BoolP("yes", "y", false, "automatic yes to prompts")
 
