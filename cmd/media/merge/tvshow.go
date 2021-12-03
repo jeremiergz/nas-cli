@@ -18,6 +18,11 @@ import (
 	"github.com/jeremiergz/nas-cli/util/media"
 )
 
+type result struct {
+	IsSuccessful bool
+	Message      string
+}
+
 // Checks whether given season has episodes with subtitles or not
 func hasSubtitlesInSeason(season *media.Season) bool {
 	for _, episode := range season.Episodes {
@@ -67,9 +72,9 @@ func printAllTVShows(wd string, tvShows []*media.TVShow) {
 }
 
 // Merges TV show language tracks into one video file
-func processTVShows(wd string, tvShows []*media.TVShow, keepOriginalFiles bool, owner, group int) (bool, []media.Result) {
+func processTVShows(wd string, tvShows []*media.TVShow, keepOriginalFiles bool, owner, group int) (bool, []result) {
 	ok := true
-	results := []media.Result{}
+	results := []result{}
 
 	for _, tvShow := range tvShows {
 		shouldContinue := hasSubtitlesInTVShow(tvShow)
@@ -130,7 +135,7 @@ func processTVShows(wd string, tvShows []*media.TVShow, keepOriginalFiles bool, 
 								wg.Wait()
 
 								ok = false
-								results = append(results, media.Result{
+								results = append(results, result{
 									IsSuccessful: false,
 									Message:      episode.Name(),
 								})
@@ -149,7 +154,7 @@ func processTVShows(wd string, tvShows []*media.TVShow, keepOriginalFiles bool, 
 									}
 									wg.Wait()
 								}
-								results = append(results, media.Result{
+								results = append(results, result{
 									IsSuccessful: true,
 									Message:      episode.Name(),
 								})

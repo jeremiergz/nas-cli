@@ -50,12 +50,6 @@ type Movie struct {
 	Year      int
 }
 
-// Result is struct defining result of a process
-type Result struct {
-	IsSuccessful bool
-	Message      string
-}
-
 var (
 	// GID is the processed files group to set
 	GID int
