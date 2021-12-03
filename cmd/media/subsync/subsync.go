@@ -25,6 +25,12 @@ const subsyncCommand string = "subsync"
 
 var subsyncMatchingPointsRegexp = regexp.MustCompile(`(?m)\d+%,\s+(\d+)\s+points`)
 
+type result struct {
+	IsSuccessful bool
+	Message      string
+	Points       string
+}
+
 // Prints files as a tree
 func printAll(videos []string, subtitles []string) {
 	rootTree := gotree.New(media.WD)
@@ -161,8 +167,10 @@ func NewSubsyncCmd() *cobra.Command {
 						}
 					} else {
 						hasError := false
-						results := []media.Result{}
+						results := []result{}
 						fmt.Println()
+
+						maxOutFileLength := 0
 						for index, videoFile := range videoFiles {
 							videoFileExtension := path.Ext(videoFile)
 							outFile := strings.Replace(videoFile, videoFileExtension, fmt.Sprintf(".%s.srt", subtitleLang), 1)
@@ -175,6 +183,7 @@ func NewSubsyncCmd() *cobra.Command {
 								pointsStr += "s"
 							}
 
+							// Determine points color
 							var pointsStyle func(interface{}) string
 							if points < 20 {
 								pointsStyle = promptui.Styler(promptui.FGRed)
@@ -184,9 +193,15 @@ func NewSubsyncCmd() *cobra.Command {
 								pointsStyle = promptui.Styler(promptui.FGGreen)
 							}
 
-							results = append(results, media.Result{
+							// Save max outfile length for a better results display
+							if len(outFile) > maxOutFileLength {
+								maxOutFileLength = len(outFile)
+							}
+
+							results = append(results, result{
 								IsSuccessful: ok,
-								Message:      fmt.Sprintf("%s  (%s %s)", outFile, pointsStyle(points), pointsStr),
+								Message:      outFile,
+								Points:       fmt.Sprintf("%s %s", pointsStyle(points), pointsStr),
 							})
 							if !ok {
 								hasError = true
@@ -195,7 +210,7 @@ func NewSubsyncCmd() *cobra.Command {
 
 						for _, result := range results {
 							if result.IsSuccessful {
-								console.Success(result.Message)
+								console.Success(fmt.Sprintf("%- *s  (%s)", maxOutFileLength, result.Message, result.Points))
 							} else {
 								console.Error(result.Message)
 							}
