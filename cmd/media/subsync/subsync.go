@@ -1,10 +1,13 @@
 package subsync
 
 import (
+	"bytes"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -19,6 +22,8 @@ import (
 )
 
 const subsyncCommand string = "subsync"
+
+var subsyncMatchingPointsRegexp = regexp.MustCompile(`(?m)\d+%,\s+(\d+)\s+points`)
 
 // Prints files as a tree
 func printAll(videos []string, subtitles []string) {
@@ -35,7 +40,7 @@ func printAll(videos []string, subtitles []string) {
 }
 
 // Attempts to synchronize given subtitle with given video file
-func process(video string, videoLang string, subtitle string, subtitleLang string, streamLang string, outFile string) bool {
+func process(video string, videoLang string, subtitle string, subtitleLang string, streamLang string, outFile string) (matchingPoints int, ok bool) {
 	videoPath := path.Join(media.WD, video)
 	subtitlePath := path.Join(media.WD, subtitle)
 	outFilePath := path.Join(media.WD, outFile)
@@ -61,15 +66,23 @@ func process(video string, videoLang string, subtitle string, subtitleLang strin
 		runOptions = append(runOptions, "--ref-stream-by-lang", streamLang)
 	}
 
-	runCommand := func(opts []string) error {
+	runCommand := func(opts []string) (string, error) {
 		console.Info(fmt.Sprintf("%s %s", subsyncCommand, strings.Join(opts, " ")))
-		subsync := exec.Command(subsyncCommand, opts...)
-		subsync.Stdout = os.Stdout
+		var buf bytes.Buffer
+		mw := io.MultiWriter(os.Stdout, &buf)
 
-		return subsync.Run()
+		subsync := exec.Command(subsyncCommand, opts...)
+		subsync.Stdout = mw
+
+		err := subsync.Run()
+
+		return buf.String(), err
 	}
 
-	err := runCommand(runOptions)
+	var err error
+	var output string
+
+	output, err = runCommand(runOptions)
 
 	if err != nil {
 		rerunOptions := []string{}
@@ -77,16 +90,24 @@ func process(video string, videoLang string, subtitle string, subtitleLang strin
 		if streamLang == "" {
 			rerunOptions = append(rerunOptions, "--ref-stream-by-lang", "eng")
 		}
-		err = runCommand(rerunOptions)
+		output, err = runCommand(rerunOptions)
 		if err != nil {
-			return false
+			return 0, false
+		}
+	}
+
+	matches := subsyncMatchingPointsRegexp.FindAllStringSubmatch(output, -1)
+	if len(matches) > 0 {
+		parsed, err := strconv.Atoi(matches[len(matches)-1][1])
+		if err == nil {
+			matchingPoints = parsed
 		}
 	}
 
 	os.Chown(outFilePath, media.UID, media.GID)
 	os.Chmod(outFilePath, util.FileMode)
 
-	return true
+	return matchingPoints, true
 }
 
 func NewSubsyncCmd() *cobra.Command {
@@ -146,10 +167,26 @@ func NewSubsyncCmd() *cobra.Command {
 							videoFileExtension := path.Ext(videoFile)
 							outFile := strings.Replace(videoFile, videoFileExtension, fmt.Sprintf(".%s.srt", subtitleLang), 1)
 							subtitleFile := subtitleFiles[index]
-							ok := process(videoFile, videoLang, subtitleFile, subtitleLang, streamLang, outFile)
+
+							points, ok := process(videoFile, videoLang, subtitleFile, subtitleLang, streamLang, outFile)
+
+							pointsStr := "point"
+							if points > 1 {
+								pointsStr += "s"
+							}
+
+							var pointsStyle func(interface{}) string
+							if points < 20 {
+								pointsStyle = promptui.Styler(promptui.FGRed)
+							} else if points < 40 {
+								pointsStyle = promptui.Styler(promptui.FGYellow)
+							} else {
+								pointsStyle = promptui.Styler(promptui.FGGreen)
+							}
+
 							results = append(results, media.Result{
 								IsSuccessful: ok,
-								Message:      outFile,
+								Message:      fmt.Sprintf("%s  (%s %s)", outFile, pointsStyle(points), pointsStr),
 							})
 							if !ok {
 								hasError = true
