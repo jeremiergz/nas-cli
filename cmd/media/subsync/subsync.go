@@ -32,6 +32,19 @@ type result struct {
 	Message         string
 }
 
+func formatPoints(points int) string {
+	var pointsStyle func(interface{}) string
+	if points < 30 {
+		pointsStyle = promptui.Styler(promptui.FGRed)
+	} else if points < 60 {
+		pointsStyle = promptui.Styler(promptui.FGYellow)
+	} else {
+		pointsStyle = promptui.Styler(promptui.FGGreen)
+	}
+
+	return pointsStyle(fmt.Sprintf("%-3s", strconv.Itoa(points)))
+}
+
 // Prints files as a tree
 func printAll(videos []string, subtitles []string) {
 	rootTree := gotree.New(media.WD)
@@ -181,16 +194,6 @@ func NewSubsyncCmd() *cobra.Command {
 
 							duration, points, ok := process(videoFile, videoLang, subtitleFile, subtitleLang, streamLang, outFile)
 
-							// Determine points color
-							var pointsStyle func(interface{}) string
-							if points < 30 {
-								pointsStyle = promptui.Styler(promptui.FGRed)
-							} else if points < 60 {
-								pointsStyle = promptui.Styler(promptui.FGYellow)
-							} else {
-								pointsStyle = promptui.Styler(promptui.FGGreen)
-							}
-
 							outFileWithoutDiacritics, _ := util.RemoveDiacritics(outFile)
 
 							// Save max outfile length for a better results display
@@ -200,8 +203,8 @@ func NewSubsyncCmd() *cobra.Command {
 
 							results = append(results, result{
 								Characteristics: map[string]string{
-									"duration": duration.Round(time.Millisecond).String(),
-									"points":   pointsStyle(points),
+									"duration": duration.Round(time.Second).String(),
+									"points":   formatPoints(points),
 								},
 								IsSuccessful: ok,
 								Message:      outFileWithoutDiacritics,

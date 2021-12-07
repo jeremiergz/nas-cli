@@ -162,7 +162,7 @@ func processTVShows(wd string, tvShows []*media.TVShow, keepOriginalFiles bool, 
 								}
 								results = append(results, result{
 									Characteristics: map[string]string{
-										"duration": time.Since(start).Round(time.Millisecond).String(),
+										"duration": time.Since(start).Round(time.Second).String(),
 									},
 									IsSuccessful: true,
 									Message:      episode.Name(),
