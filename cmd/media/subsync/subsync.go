@@ -68,6 +68,7 @@ func process(video string, videoLang string, subtitle string, subtitleLang strin
 	outFilePath := path.Join(media.WD, outFile)
 
 	baseOptions := []string{
+		"--cli",
 		"sync",
 		"--ref",
 		videoPath,
