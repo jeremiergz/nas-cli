@@ -46,11 +46,11 @@ func Connect() (*SSHConnection, error) {
 	}
 	hostKeyCallback, _ := knownhosts.New(sshKnownHosts)
 	sshConfig := &ssh.ClientConfig{
-		User: username,
 		Auth: []ssh.AuthMethod{
 			ssh.PublicKeys(signer),
 		},
 		HostKeyCallback: hostKeyCallback,
+		User:            username,
 	}
 
 	client, err := ssh.Dial("tcp", fmt.Sprintf("%s:%s", sshHost, sshPort), sshConfig)
@@ -59,6 +59,10 @@ func Connect() (*SSHConnection, error) {
 	}
 
 	return &SSHConnection{client}, nil
+}
+
+func (conn *SSHConnection) Disconnect() error {
+	return conn.Close()
 }
 
 func (conn *SSHConnection) SendCommands(cmds ...string) ([]byte, error) {

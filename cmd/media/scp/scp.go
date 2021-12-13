@@ -58,7 +58,7 @@ func process(destination string, subdestination string) error {
 	if err != nil {
 		return err
 	}
-	defer conn.Close()
+	defer conn.Disconnect()
 
 	g := new(errgroup.Group)
 

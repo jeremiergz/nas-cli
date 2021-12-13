@@ -11,19 +11,26 @@ import (
 
 func NewTVShowCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "tvshows",
+		Use:     "tvshows [name]",
 		Aliases: []string{"tv", "t"},
 		Short:   "TV Shows listing",
-		Args:    cobra.MaximumNArgs(0),
+		Args:    cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			tvShowsDest := viper.GetString(config.ConfigKeySCPTVShows)
 			if tvShowsDest == "" {
 				return fmt.Errorf("%s configuration entry is missing", config.ConfigKeySCPTVShows)
 			}
 
-			return process(tvShowsDest, true)
+			var tvShowName string
+			if len(args) > 0 {
+				tvShowName = args[0]
+			}
+
+			return process(tvShowsDest, true, tvShowName)
 		},
 	}
+
+	cmd.PersistentFlags().BoolVarP(&recursive, "recursive", "r", false, "find files and folders recursively")
 
 	return cmd
 }
