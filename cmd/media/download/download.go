@@ -19,9 +19,10 @@ import (
 
 func NewDownloadCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "download <url> [directory]",
-		Short: "Download medium",
-		Args:  cobra.MinimumNArgs(1),
+		Use:     "download <url> [directory]",
+		Aliases: []string{"dl"},
+		Short:   "Download medium",
+		Args:    cobra.MinimumNArgs(1),
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			movie, _ := cmd.Flags().GetBool("movie")
 			tvShow, _ := cmd.Flags().GetBool("tv-show")

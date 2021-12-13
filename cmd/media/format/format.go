@@ -9,8 +9,9 @@ import (
 
 func NewFormatCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "format",
-		Short: "Batch media formatting depending on their type",
+		Use:     "format",
+		Aliases: []string{"fmt"},
+		Short:   "Batch media formatting depending on their type",
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			err := util.CallParentPersistentPreRunE(cmd, args)
 			if err != nil {

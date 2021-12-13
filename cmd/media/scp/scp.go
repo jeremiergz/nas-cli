@@ -99,9 +99,10 @@ func process(destination string, subdestination string) error {
 
 func NewScpCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "scp",
-		Short: "Upload files/folders using scp command",
-		Args:  cobra.MinimumNArgs(1),
+		Use:     "scp",
+		Aliases: []string{"sc"},
+		Short:   "Upload files/folders using scp command",
+		Args:    cobra.MinimumNArgs(1),
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			err := util.CallParentPersistentPreRunE(cmd, args)
 			if err != nil {

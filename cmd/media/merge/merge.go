@@ -19,8 +19,9 @@ const mergeCommand string = "mkvmerge"
 
 func NewMergeCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "merge",
-		Short: "Merge tracks using MKVMerge tool",
+		Use:     "merge",
+		Aliases: []string{"mrg"},
+		Short:   "Merge tracks using MKVMerge tool",
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			err := util.CallParentPersistentPreRunE(cmd, args)
 			if err != nil {

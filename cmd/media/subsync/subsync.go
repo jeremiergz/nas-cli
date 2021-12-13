@@ -135,9 +135,10 @@ func process(video string, videoLang string, subtitle string, subtitleLang strin
 
 func NewSubsyncCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "subsync <directory>",
-		Short: "Synchronize subtitle using SubSync tool",
-		Args:  cobra.MinimumNArgs(1),
+		Use:     "subsync <directory>",
+		Aliases: []string{"sub"},
+		Short:   "Synchronize subtitle using SubSync tool",
+		Args:    cobra.MinimumNArgs(1),
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			_, err := exec.LookPath(subsyncCommand)
 			if err != nil {
