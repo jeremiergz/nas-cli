@@ -9,6 +9,7 @@ import (
 
 	"github.com/jeremiergz/nas-cli/cmd/media/download"
 	"github.com/jeremiergz/nas-cli/cmd/media/format"
+	"github.com/jeremiergz/nas-cli/cmd/media/list"
 	"github.com/jeremiergz/nas-cli/cmd/media/merge"
 	"github.com/jeremiergz/nas-cli/cmd/media/scp"
 	"github.com/jeremiergz/nas-cli/cmd/media/subsync"
@@ -71,6 +72,7 @@ func NewMediaCmd() *cobra.Command {
 	cmd.PersistentFlags().StringP("owner", "o", "", "override default ownership")
 	cmd.AddCommand(download.NewDownloadCmd())
 	cmd.AddCommand(format.NewFormatCmd())
+	cmd.AddCommand(list.NewListCmd())
 	cmd.AddCommand(merge.NewMergeCmd())
 	cmd.AddCommand(scp.NewScpCmd())
 	cmd.AddCommand(subsync.NewSubsyncCmd())
