@@ -10,7 +10,7 @@ require (
 	github.com/manifoldco/promptui v0.9.0
 	github.com/middelink/go-parse-torrent-name v0.0.0-20190301154245-3ff4efacd4c4
 	github.com/spf13/cobra v1.2.1
-	github.com/spf13/viper v1.9.0
+	github.com/spf13/viper v1.10.0
 	golang.org/x/crypto v0.0.0-20211209193657-4570a0811e8b
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	golang.org/x/text v0.3.7
