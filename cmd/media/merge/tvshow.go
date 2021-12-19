@@ -60,7 +60,8 @@ func printAllTVShows(wd string, tvShows []*media.TVShow) {
 			}
 			seasonsTree := tvShowTree.Add(fmt.Sprintf("%s (%d %s)", season.Name, filesCount, fileString))
 			for _, episode := range season.Episodes {
-				episodeTree := seasonsTree.Add(fmt.Sprintf("%s  %s", episode.Name(), episode.Basename))
+				episodeTree := seasonsTree.Add(episode.Name())
+				episodeTree.Add(fmt.Sprintf("%s  %s", strings.ToUpper(episode.Extension), episode.Basename))
 				for lang, subtitle := range episode.Subtitles {
 					episodeTree.Add(fmt.Sprintf("%s  %s", strings.ToUpper(lang), subtitle))
 				}
