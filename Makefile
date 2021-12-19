@@ -60,12 +60,15 @@ install:
 	@go install ${LDFLAGS}
 	@echo ✔ successfully installed ${BINARY}
 
-release:
-	@echo ➜ creating release v${NEXT_VERSION}
+release: test
+	@echo -e "\n➜ creating release v${NEXT_VERSION}"
 	@git checkout main
 	@git tag --annotate "${NEXT_VERSION}" --message "Release v${NEXT_VERSION}"
 	@git push --follow-tags
 	@echo ✔ successfully created release v${NEXT_VERSION}
+
+test:
+	@go test ./...
 
 uninstall:
 	@find "${GOPATH}/bin" -name "${BINARY}" -type f -delete
