@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"github.com/cavaliergopher/grab/v3"
-	"github.com/cheggaaa/pb/termutil"
 	"github.com/cheggaaa/pb/v3"
+	"github.com/cheggaaa/pb/v3/termutil"
 	"github.com/spf13/cobra"
 
 	"github.com/jeremiergz/nas-cli/util"
