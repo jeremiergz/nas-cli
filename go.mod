@@ -3,7 +3,7 @@ module github.com/jeremiergz/nas-cli
 go 1.17
 
 require (
-	github.com/cavaliercoder/grab v2.0.0+incompatible
+	github.com/cavaliergopher/grab/v3 v3.0.1
 	github.com/cheggaaa/pb v2.0.7+incompatible
 	github.com/cheggaaa/pb/v3 v3.0.8
 	github.com/disiqueira/gotree/v3 v3.0.2
@@ -38,7 +38,7 @@ require (
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/subosito/gotenv v1.2.0 // indirect
-	golang.org/x/sys v0.0.0-20211216021012-1d35b9e2eb4e // indirect
+	golang.org/x/sys v0.0.0-20220111092808-5a964db01320 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	gopkg.in/ini.v1 v1.66.2 // indirect
 )

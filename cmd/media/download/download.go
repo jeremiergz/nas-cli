@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/cavaliercoder/grab"
+	"github.com/cavaliergopher/grab/v3"
 	"github.com/cheggaaa/pb/termutil"
 	"github.com/cheggaaa/pb/v3"
 	"github.com/spf13/cobra"
@@ -91,7 +91,7 @@ func NewDownloadCmd() *cobra.Command {
 			ticker := time.NewTicker(time.Second)
 			defer ticker.Stop()
 
-			bar := pb.New64(res.Size)
+			bar := pb.New64(res.Size())
 			bar.Set(pb.Bytes, true)
 			bar.Set(pb.Color, false)
 			bar.Set(pb.Static, true)
