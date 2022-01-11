@@ -55,7 +55,7 @@ func NewDownloadCmd() *cobra.Command {
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			isMovie, _ := cmd.Flags().GetBool("movie")
-			isTVShow, _ := cmd.Flags().GetBool("tv-show")
+			isTVShow, _ := cmd.Flags().GetBool("tvshow")
 			targetURL := args[0]
 			basename := filepath.Base(targetURL)
 			var destination string
