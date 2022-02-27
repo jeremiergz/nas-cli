@@ -44,6 +44,7 @@ build: clean
 build-all: clean
 	@echo ➜ building v${TAG}
 	$(call generate_binary,darwin,amd64,darwin-amd64)
+	$(call generate_binary,darwin,arm64,darwin-arm64)
 	$(call generate_binary,freebsd,386,freebsd-386)
 	$(call generate_binary,freebsd,amd64,freebsd-amd64)
 	$(call generate_binary,linux,386,linux-386)

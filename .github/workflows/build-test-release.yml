@@ -130,8 +130,10 @@ jobs:
           path: build
       - name: Update formula
         run: |
-          export SHA256="$(awk -F '  +' '{print $1}' build/nas-cli-darwin-amd64.sha256)"
-          sed -i "s/sha256 \".*\"/sha256 \"${SHA256}\"/" ./Formula/nas-cli.rb
+          export SHA256_AMD64="$(awk -F '  +' '{print $1}' build/nas-cli-darwin-amd64.sha256)"
+          export SHA256_ARM64="$(awk -F '  +' '{print $1}' build/nas-cli-darwin-arm64.sha256)"
+          sed -i "11s/sha256 \".*\"/sha256 \"${SHA256_AMD64}\"/" ./Formula/nas-cli.rb
+          sed -i "15s/sha256 \".*\"/sha256 \"${SHA256_ARM64}\"/" ./Formula/nas-cli.rb
           sed -i "s/version \".*\"/version \"${GITHUB_REF_NAME}\"/" ./Formula/nas-cli.rb
           git add ./Formula
           git config user.name github-actions
