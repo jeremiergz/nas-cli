@@ -9,7 +9,7 @@ import (
 	"github.com/jeremiergz/nas-cli/util/output"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 )
 
 func NewListCmd() *cobra.Command {
