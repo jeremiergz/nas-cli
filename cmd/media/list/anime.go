@@ -6,7 +6,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
-	"github.com/jeremiergz/nas-cli/util/config"
+	"github.com/jeremiergz/nas-cli/config"
 )
 
 func NewAnimeCmd() *cobra.Command {
@@ -16,9 +16,9 @@ func NewAnimeCmd() *cobra.Command {
 		Short:   "Animes listing",
 		Args:    cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			animesDest := viper.GetString(config.ConfigKeySCPAnimes)
+			animesDest := viper.GetString(config.KeySCPAnimes)
 			if animesDest == "" {
-				return fmt.Errorf("%s configuration entry is missing", config.ConfigKeySCPAnimes)
+				return fmt.Errorf("%s configuration entry is missing", config.KeySCPAnimes)
 			}
 
 			var animeName string
@@ -26,7 +26,7 @@ func NewAnimeCmd() *cobra.Command {
 				animeName = args[0]
 			}
 
-			return process(animesDest, true, animeName)
+			return process(cmd.Context(), animesDest, true, animeName)
 		},
 	}
 

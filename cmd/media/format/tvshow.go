@@ -1,6 +1,7 @@
 package format
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path"
@@ -10,13 +11,14 @@ import (
 	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
 
+	"github.com/jeremiergz/nas-cli/config"
+	"github.com/jeremiergz/nas-cli/model"
+	"github.com/jeremiergz/nas-cli/service"
 	"github.com/jeremiergz/nas-cli/util"
-	"github.com/jeremiergz/nas-cli/util/console"
-	"github.com/jeremiergz/nas-cli/util/media"
 )
 
 // Prints given TV shows as a tree
-func printAllTVShows(wd string, tvShows []*media.TVShow) {
+func printAllTVShows(wd string, tvShows []*model.TVShow) {
 	rootTree := gotree.New(wd)
 	for _, tvShow := range tvShows {
 		tvShowTree := rootTree.Add(tvShow.Name)
@@ -39,7 +41,10 @@ func printAllTVShows(wd string, tvShows []*media.TVShow) {
 }
 
 // Processes listed TV shows by prompting user
-func processTVShows(wd string, tvShows []*media.TVShow, owner, group int, ask bool) error {
+func processTVShows(ctx context.Context, wd string, tvShows []*model.TVShow, owner, group int, ask bool) error {
+	consoleSvc := ctx.Value(util.ContextKeyConsole).(*service.ConsoleService)
+	mediaSvc := ctx.Value(util.ContextKeyMedia).(*service.MediaService)
+
 	for _, tvShow := range tvShows {
 		fmt.Println()
 
@@ -60,7 +65,7 @@ func processTVShows(wd string, tvShows []*media.TVShow, owner, group int, ask bo
 		}
 
 		tvShowPath := path.Join(wd, tvShow.Name)
-		media.PrepareDirectory(tvShowPath, owner, group)
+		mediaSvc.PrepareDirectory(tvShowPath, owner, group)
 
 		for _, season := range tvShow.Seasons {
 			if ask {
@@ -79,15 +84,15 @@ func processTVShows(wd string, tvShows []*media.TVShow, owner, group int, ask bo
 			}
 
 			seasonPath := path.Join(tvShowPath, season.Name)
-			media.PrepareDirectory(seasonPath, owner, group)
+			mediaSvc.PrepareDirectory(seasonPath, owner, group)
 
 			for _, episode := range season.Episodes {
 				oldPath := path.Join(wd, episode.Basename)
 				newPath := path.Join(seasonPath, episode.Name())
 				os.Rename(oldPath, newPath)
 				os.Chown(newPath, owner, group)
-				os.Chmod(newPath, util.FileMode)
-				console.Success(episode.Name())
+				os.Chmod(newPath, config.FileMode)
+				consoleSvc.Success(episode.Name())
 			}
 		}
 	}
@@ -102,11 +107,14 @@ func NewTVShowCmd() *cobra.Command {
 		Short:   "TV Shows batch formatting",
 		Args:    cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			consoleSvc := cmd.Context().Value(util.ContextKeyConsole).(*service.ConsoleService)
+			mediaSvc := cmd.Context().Value(util.ContextKeyMedia).(*service.MediaService)
+
 			extensions, _ := cmd.Flags().GetStringArray("ext")
 			tvShowNames, _ := cmd.Flags().GetStringArray("name")
 			yes, _ := cmd.Flags().GetBool("yes")
 
-			tvShows, err := media.LoadTVShows(media.WD, extensions, nil, nil, false)
+			tvShows, err := mediaSvc.LoadTVShows(config.WD, extensions, nil, nil, false)
 
 			if len(tvShowNames) > 0 {
 				if len(tvShowNames) != len(tvShows) {
@@ -122,11 +130,11 @@ func NewTVShowCmd() *cobra.Command {
 				return err
 			}
 			if len(tvShows) == 0 {
-				console.Success("Nothing to process")
+				consoleSvc.Success("Nothing to process")
 			} else {
-				printAllTVShows(media.WD, tvShows)
+				printAllTVShows(config.WD, tvShows)
 				if !dryRun {
-					processTVShows(media.WD, tvShows, media.UID, media.GID, !yes)
+					processTVShows(cmd.Context(), config.WD, tvShows, config.UID, config.GID, !yes)
 				}
 			}
 

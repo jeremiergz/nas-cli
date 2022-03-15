@@ -1,6 +1,7 @@
 package merge
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
@@ -14,9 +15,10 @@ import (
 	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
 
+	"github.com/jeremiergz/nas-cli/config"
+	"github.com/jeremiergz/nas-cli/model"
+	"github.com/jeremiergz/nas-cli/service"
 	"github.com/jeremiergz/nas-cli/util"
-	"github.com/jeremiergz/nas-cli/util/console"
-	"github.com/jeremiergz/nas-cli/util/media"
 )
 
 type result struct {
@@ -26,7 +28,7 @@ type result struct {
 }
 
 // Checks whether given season has episodes with subtitles or not
-func hasSubtitlesInSeason(season *media.Season) bool {
+func hasSubtitlesInSeason(season *model.Season) bool {
 	for _, episode := range season.Episodes {
 		if len(episode.Subtitles) > 0 {
 			return true
@@ -37,7 +39,7 @@ func hasSubtitlesInSeason(season *media.Season) bool {
 }
 
 // Checks whether given TV Show has a season with episodes with subtitles or not
-func hasSubtitlesInTVShow(tvShow *media.TVShow) bool {
+func hasSubtitlesInTVShow(tvShow *model.TVShow) bool {
 	for _, season := range tvShow.Seasons {
 		if hasSubtitlesInSeason(season) {
 			return true
@@ -48,7 +50,7 @@ func hasSubtitlesInTVShow(tvShow *media.TVShow) bool {
 }
 
 // Prints given TV shows and their subtitles as a tree
-func printAllTVShows(wd string, tvShows []*media.TVShow) {
+func printAllTVShows(wd string, tvShows []*model.TVShow) {
 	rootTree := gotree.New(wd)
 	for _, tvShow := range tvShows {
 		tvShowTree := rootTree.Add(tvShow.Name)
@@ -75,7 +77,10 @@ func printAllTVShows(wd string, tvShows []*media.TVShow) {
 }
 
 // Merges TV show language tracks into one video file
-func processTVShows(wd string, tvShows []*media.TVShow, keepOriginalFiles bool, owner, group int) (bool, []result) {
+func processTVShows(ctx context.Context, wd string, tvShows []*model.TVShow, keepOriginalFiles bool, owner, group int) (bool, []result) {
+	consoleSvc := ctx.Value(util.ContextKeyConsole).(*service.ConsoleService)
+	mediaSvc := ctx.Value(util.ContextKeyMedia).(*service.MediaService)
+
 	ok := true
 	results := []result{}
 
@@ -84,22 +89,22 @@ func processTVShows(wd string, tvShows []*media.TVShow, keepOriginalFiles bool, 
 
 		if shouldContinue {
 			tvShowPath := path.Join(wd, tvShow.Name)
-			media.PrepareDirectory(tvShowPath, owner, group)
+			mediaSvc.PrepareDirectory(tvShowPath, owner, group)
 
 			for _, season := range tvShow.Seasons {
 				shouldContinue = hasSubtitlesInSeason(season)
 
 				if shouldContinue {
 					seasonPath := path.Join(tvShowPath, season.Name)
-					media.PrepareDirectory(seasonPath, owner, group)
+					mediaSvc.PrepareDirectory(seasonPath, owner, group)
 
 					for _, episode := range season.Episodes {
 						// Nothing to do if there are no subtitles
 						if len(episode.Subtitles) > 0 {
 							start := time.Now()
 
-							videoPath := path.Join(media.WD, episode.Basename)
-							videoBackupPath := path.Join(media.WD, fmt.Sprintf("%s%s%s", "_", episode.Basename, ".bak"))
+							videoPath := path.Join(config.WD, episode.Basename)
+							videoBackupPath := path.Join(config.WD, fmt.Sprintf("%s%s%s", "_", episode.Basename, ".bak"))
 							outFilePath := path.Join(seasonPath, episode.Name())
 
 							os.Rename(videoPath, videoBackupPath)
@@ -113,8 +118,8 @@ func processTVShows(wd string, tvShows []*media.TVShow, keepOriginalFiles bool, 
 								outFilePath,
 							}
 							for lang, subtitleFile := range episode.Subtitles {
-								subtitleFilePath := path.Join(media.WD, subtitleFile)
-								subtitleFileBackupPath := path.Join(media.WD, fmt.Sprintf("%s%s%s", "_", subtitleFile, ".bak"))
+								subtitleFilePath := path.Join(config.WD, subtitleFile)
+								subtitleFileBackupPath := path.Join(config.WD, fmt.Sprintf("%s%s%s", "_", subtitleFile, ".bak"))
 								os.Rename(subtitleFilePath, subtitleFileBackupPath)
 								backups = append(backups, backup{currentPath: subtitleFileBackupPath, originalPath: subtitleFilePath})
 								options = append(options, "--language", fmt.Sprintf("0:%s", lang), subtitleFileBackupPath)
@@ -122,7 +127,7 @@ func processTVShows(wd string, tvShows []*media.TVShow, keepOriginalFiles bool, 
 							options = append(options, videoBackupPath)
 
 							fmt.Println()
-							console.Info(fmt.Sprintf("%s %s\n", mergeCommand, strings.Join(options, " ")))
+							consoleSvc.Info(fmt.Sprintf("%s %s\n", mergeCommand, strings.Join(options, " ")))
 							merge := exec.Command(mergeCommand, options...)
 							merge.Stdout = os.Stdout
 							err := merge.Run()
@@ -147,8 +152,8 @@ func processTVShows(wd string, tvShows []*media.TVShow, keepOriginalFiles bool, 
 									Message:      episode.Name(),
 								})
 							} else {
-								os.Chown(outFilePath, media.UID, media.GID)
-								os.Chmod(outFilePath, util.FileMode)
+								os.Chown(outFilePath, config.UID, config.GID)
+								os.Chmod(outFilePath, config.FileMode)
 
 								if !keepOriginalFiles {
 									wg := sync.WaitGroup{}
@@ -186,6 +191,9 @@ func NewTVShowCmd() *cobra.Command {
 		Short:   "Merge TV Shows tracks",
 		Args:    cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			consoleSvc := cmd.Context().Value(util.ContextKeyConsole).(*service.ConsoleService)
+			mediaSvc := cmd.Context().Value(util.ContextKeyMedia).(*service.MediaService)
+
 			delete, _ := cmd.Flags().GetBool("delete")
 			dryRun, _ := cmd.Flags().GetBool("dry-run")
 			languages, _ := cmd.Flags().GetStringArray("language")
@@ -194,7 +202,7 @@ func NewTVShowCmd() *cobra.Command {
 			videoExtensions, _ := cmd.Flags().GetStringArray("video-ext")
 			yes, _ := cmd.Flags().GetBool("yes")
 
-			tvShows, err := media.LoadTVShows(media.WD, videoExtensions, &subtitleExtension, languages, true)
+			tvShows, err := mediaSvc.LoadTVShows(config.WD, videoExtensions, &subtitleExtension, languages, true)
 
 			if len(tvShowNames) > 0 {
 				if len(tvShowNames) != len(tvShows) {
@@ -210,9 +218,9 @@ func NewTVShowCmd() *cobra.Command {
 			}
 
 			if len(tvShows) == 0 {
-				console.Success("No video file to process")
+				consoleSvc.Success("No video file to process")
 			} else {
-				printAllTVShows(media.WD, tvShows)
+				printAllTVShows(config.WD, tvShows)
 
 				if !dryRun {
 					fmt.Println()
@@ -233,7 +241,7 @@ func NewTVShowCmd() *cobra.Command {
 						}
 					} else {
 						hasError := false
-						ok, results := processTVShows(media.WD, tvShows, !delete, media.UID, media.GID)
+						ok, results := processTVShows(cmd.Context(), config.WD, tvShows, !delete, config.UID, config.GID)
 						if !ok {
 							hasError = true
 						}
@@ -241,12 +249,12 @@ func NewTVShowCmd() *cobra.Command {
 						fmt.Println()
 						for _, result := range results {
 							if result.IsSuccessful {
-								console.Success(fmt.Sprintf("%s  duration=%-6s",
+								consoleSvc.Success(fmt.Sprintf("%s  duration=%-6s",
 									result.Message,
 									result.Characteristics["duration"],
 								))
 							} else {
-								console.Error(result.Message)
+								consoleSvc.Error(result.Message)
 							}
 						}
 

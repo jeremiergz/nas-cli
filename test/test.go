@@ -2,12 +2,15 @@ package test
 
 import (
 	"bytes"
+	"context"
 	"io"
 	"os"
 	"path"
 	"strings"
 	"testing"
 
+	"github.com/jeremiergz/nas-cli/service"
+	"github.com/jeremiergz/nas-cli/util"
 	"github.com/spf13/cobra"
 )
 
@@ -73,7 +76,9 @@ func ExecuteCommand(t *testing.T, root *cobra.Command, args []string) (c *cobra.
 	root.SetErr(writer)
 
 	root.SetArgs(args)
-	c, err := root.ExecuteC()
+
+	ctx := GetTestContext()
+	c, err := root.ExecuteContextC(ctx)
 
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
@@ -98,4 +103,16 @@ func ExecuteCommandE(t *testing.T, root *cobra.Command, args []string) (c *cobra
 	c, output = ExecuteCommand(t, root, args)
 
 	return c, output, err
+}
+
+func GetTestContext() context.Context {
+	console := service.NewConsoleService()
+	media := service.NewMediaService()
+	sftp := service.NewSFTPService()
+
+	ctx := context.WithValue(context.Background(), util.ContextKeyConsole, console)
+	ctx = context.WithValue(ctx, util.ContextKeyMedia, media)
+	ctx = context.WithValue(ctx, util.ContextKeySFTP, sftp)
+
+	return ctx
 }

@@ -10,7 +10,7 @@ import (
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 
-	"github.com/jeremiergz/nas-cli/util/output"
+	"github.com/jeremiergz/nas-cli/util"
 )
 
 var (
@@ -35,7 +35,7 @@ func NewInfoCmd() *cobra.Command {
 		Use:   "info",
 		Short: "Print application information",
 		PreRunE: func(cmd *cobra.Command, args []string) error {
-			return output.OnlyValidOutputs()
+			return util.CmdOnlyValidOutputs()
 		},
 		Run: func(cmd *cobra.Command, args []string) {
 			info := map[string]string{
@@ -46,7 +46,7 @@ func NewInfoCmd() *cobra.Command {
 				"version":   Version,
 			}
 
-			switch output.Format {
+			switch util.CmdOutputFormat {
 			case "json":
 				out, _ := json.Marshal(info)
 				fmt.Println(strings.TrimSpace(string(out)))
@@ -66,7 +66,7 @@ func NewInfoCmd() *cobra.Command {
 		},
 	}
 
-	output.AddOutputFlag(cmd)
+	util.CmdAddOutputFlag(cmd)
 
 	return cmd
 }

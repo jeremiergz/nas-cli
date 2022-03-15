@@ -6,8 +6,8 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/jeremiergz/nas-cli/service"
 	"github.com/jeremiergz/nas-cli/util"
-	"github.com/jeremiergz/nas-cli/util/media"
 )
 
 type backup struct {
@@ -23,7 +23,9 @@ func NewMergeCmd() *cobra.Command {
 		Aliases: []string{"mrg"},
 		Short:   "Merge tracks using MKVMerge tool",
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-			err := util.CallParentPersistentPreRunE(cmd, args)
+			mediaSvc := cmd.Context().Value(util.ContextKeyMedia).(*service.MediaService)
+
+			err := util.CmdCallParentPersistentPreRunE(cmd, args)
 			if err != nil {
 				return err
 			}
@@ -33,7 +35,7 @@ func NewMergeCmd() *cobra.Command {
 				return fmt.Errorf("command not found: %s", mergeCommand)
 			}
 
-			return media.InitializeWD(args[0])
+			return mediaSvc.InitializeWD(args[0])
 		},
 	}
 

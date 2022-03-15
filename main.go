@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"os"
 
 	"github.com/jeremiergz/nas-cli/cmd"
@@ -9,6 +10,8 @@ import (
 	"github.com/jeremiergz/nas-cli/cmd/info"
 	"github.com/jeremiergz/nas-cli/cmd/media"
 	"github.com/jeremiergz/nas-cli/cmd/version"
+	"github.com/jeremiergz/nas-cli/service"
+	"github.com/jeremiergz/nas-cli/util"
 )
 
 func main() {
@@ -19,7 +22,15 @@ func main() {
 	rootCmd.AddCommand(media.NewMediaCmd())
 	rootCmd.AddCommand(version.NewVersionCmd())
 
-	if err := rootCmd.Execute(); err != nil {
+	console := service.NewConsoleService()
+	media := service.NewMediaService()
+	sftp := service.NewSFTPService()
+
+	ctx := context.WithValue(context.Background(), util.ContextKeyConsole, console)
+	ctx = context.WithValue(ctx, util.ContextKeyMedia, media)
+	ctx = context.WithValue(ctx, util.ContextKeySFTP, sftp)
+
+	if err := rootCmd.ExecuteContext(ctx); err != nil {
 		os.Exit(1)
 	}
 }

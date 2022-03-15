@@ -6,13 +6,13 @@ import (
 
 	"github.com/jeremiergz/nas-cli/cmd"
 	"github.com/jeremiergz/nas-cli/cmd/info"
-	configutil "github.com/jeremiergz/nas-cli/util/config"
-	"github.com/jeremiergz/nas-cli/util/test"
+	"github.com/jeremiergz/nas-cli/config"
+	"github.com/jeremiergz/nas-cli/test"
 )
 
 func TestVersionCmd(t *testing.T) {
 	tempDir := t.TempDir()
-	configutil.Dir = tempDir
+	config.Dir = tempDir
 
 	rootCmd := cmd.NewRootCmd()
 	rootCmd.AddCommand(NewVersionCmd())

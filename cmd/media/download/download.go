@@ -10,11 +10,11 @@ import (
 
 	"github.com/cavaliergopher/grab/v3"
 	"github.com/cheggaaa/pb/v3"
-	"github.com/cheggaaa/pb/v3/termutil"
 	"github.com/spf13/cobra"
 
+	"github.com/jeremiergz/nas-cli/config"
+	"github.com/jeremiergz/nas-cli/service"
 	"github.com/jeremiergz/nas-cli/util"
-	"github.com/jeremiergz/nas-cli/util/media"
 )
 
 func NewDownloadCmd() *cobra.Command {
@@ -42,43 +42,40 @@ func NewDownloadCmd() *cobra.Command {
 
 			// Exit if directory retrieved from args does not exist
 			if len(args) > 1 {
-				media.WD, _ = filepath.Abs(args[1])
-				stats, err := os.Stat(media.WD)
+				config.WD, _ = filepath.Abs(args[1])
+				stats, err := os.Stat(config.WD)
 				if err != nil || !stats.IsDir() {
-					return fmt.Errorf("%s is not a valid directory", media.WD)
+					return fmt.Errorf("%s is not a valid directory", config.WD)
 				}
 			} else {
-				media.WD, _ = os.Getwd()
+				config.WD, _ = os.Getwd()
 			}
 
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
+			consoleSvc := cmd.Context().Value(util.ContextKeyConsole).(*service.ConsoleService)
+			mediaSvc := cmd.Context().Value(util.ContextKeyMedia).(*service.MediaService)
+
 			isMovie, _ := cmd.Flags().GetBool("movie")
 			isTVShow, _ := cmd.Flags().GetBool("tvshow")
 			targetURL := args[0]
 			basename := filepath.Base(targetURL)
 			var destination string
 			if isMovie || isTVShow {
-				if p, err := media.ParseTitle(basename); err == nil {
+				if p, err := mediaSvc.ParseTitle(basename); err == nil {
 					year := time.Now().Year()
 					if p.Year != 0 {
 						year = p.Year
 					}
 					if isMovie {
-						destination = path.Join(destination, media.ToMovieName(p.Title, year, p.Container))
+						destination = path.Join(destination, util.ToMovieName(p.Title, year, p.Container))
 					} else {
-						destination = path.Join(destination, media.ToEpisodeName(p.Title, p.Season, p.Episode, p.Container))
+						destination = path.Join(destination, util.ToEpisodeName(p.Title, p.Season, p.Episode, p.Container))
 					}
 				}
 			} else {
-				destination = path.Join(media.WD, basename)
-			}
-
-			termWidth, err := termutil.TerminalWidth()
-			defaultWidth := 100
-			if err != nil || termWidth > defaultWidth {
-				termWidth = defaultWidth
+				destination = path.Join(config.WD, basename)
 			}
 
 			client := grab.NewClient()
@@ -97,7 +94,7 @@ func NewDownloadCmd() *cobra.Command {
 			bar.Set(pb.Static, true)
 			bar.SetCurrent(res.BytesComplete())
 			bar.SetTemplate(pb.Full)
-			bar.SetWidth(termWidth)
+			bar.SetWidth(consoleSvc.GetTerminalWidth())
 			bar.Start()
 
 			for {
@@ -112,8 +109,8 @@ func NewDownloadCmd() *cobra.Command {
 					if err := res.Err(); err != nil {
 						return err
 					}
-					os.Chown(res.Filename, media.UID, media.GID)
-					os.Chmod(res.Filename, util.FileMode)
+					os.Chown(res.Filename, config.UID, config.GID)
+					os.Chmod(res.Filename, config.FileMode)
 
 					return nil
 				}

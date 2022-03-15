@@ -4,14 +4,14 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
-	"github.com/jeremiergz/nas-cli/util/config"
+	"github.com/jeremiergz/nas-cli/config"
 )
 
 func NewSetCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:       "set <key> <value>",
 		Short:     "Set configuration entry",
-		ValidArgs: config.ConfigKeys,
+		ValidArgs: config.Keys,
 		Args: func(cmd *cobra.Command, args []string) error {
 			err := cobra.ExactArgs(2)(cmd, args)
 			if err != nil {

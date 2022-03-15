@@ -1,6 +1,7 @@
 package format
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path"
@@ -12,24 +13,27 @@ import (
 	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
 
+	"github.com/jeremiergz/nas-cli/config"
+	"github.com/jeremiergz/nas-cli/model"
+	"github.com/jeremiergz/nas-cli/service"
 	"github.com/jeremiergz/nas-cli/util"
-	"github.com/jeremiergz/nas-cli/util/console"
-	"github.com/jeremiergz/nas-cli/util/media"
 )
 
 var movieFmtRegexp = regexp.MustCompile(`(^.+)\s\(([0-9]{4})\)\.(.+)$`)
 
 // Lists movies in folder that must be processed
-func loadMovies(wd string, extensions []string) ([]media.Movie, error) {
-	toProcess := media.List(wd, extensions, movieFmtRegexp)
-	movies := []media.Movie{}
+func loadMovies(ctx context.Context, wd string, extensions []string) ([]model.Movie, error) {
+	mediaSvc := ctx.Value(util.ContextKeyMedia).(*service.MediaService)
+
+	toProcess := mediaSvc.List(wd, extensions, movieFmtRegexp)
+	movies := []model.Movie{}
 	for _, basename := range toProcess {
-		m, err := media.ParseTitle(basename)
+		m, err := mediaSvc.ParseTitle(basename)
 		if err == nil {
-			movies = append(movies, media.Movie{
+			movies = append(movies, model.Movie{
 				Basename:  basename,
 				Extension: m.Container,
-				Fullname:  media.ToMovieName(m.Title, m.Year, m.Container),
+				Fullname:  util.ToMovieName(m.Title, m.Year, m.Container),
 				Title:     m.Title,
 				Year:      m.Year,
 			})
@@ -42,7 +46,7 @@ func loadMovies(wd string, extensions []string) ([]media.Movie, error) {
 }
 
 // Prints given movies array as a tree
-func printAllMovies(wd string, movies []media.Movie) {
+func printAllMovies(wd string, movies []model.Movie) {
 	moviesTree := gotree.New(wd)
 	for _, m := range movies {
 		moviesTree.Add(fmt.Sprintf("%s  %s", m.Fullname, m.Basename))
@@ -54,7 +58,9 @@ func printAllMovies(wd string, movies []media.Movie) {
 }
 
 // Processes listed movies by prompting user
-func processMovies(wd string, movies []media.Movie, owner, group int) error {
+func processMovies(ctx context.Context, wd string, movies []model.Movie, owner, group int) error {
+	consoleSvc := ctx.Value(util.ContextKeyConsole).(*service.ConsoleService)
+
 	for _, m := range movies {
 		fmt.Println()
 		// Ask if current movie must be processed
@@ -95,13 +101,13 @@ func processMovies(wd string, movies []media.Movie, owner, group int) error {
 			}
 			continue
 		}
-		newMovieName := media.ToMovieName(titleInput, yearInt, m.Extension)
+		newMovieName := util.ToMovieName(titleInput, yearInt, m.Extension)
 		currentFilepath := path.Join(wd, m.Basename)
 		newFilepath := path.Join(wd, newMovieName)
 		os.Rename(currentFilepath, newFilepath)
 		os.Chown(newFilepath, owner, group)
-		os.Chmod(newFilepath, util.FileMode)
-		console.Success(newMovieName)
+		os.Chmod(newFilepath, config.FileMode)
+		consoleSvc.Success(newMovieName)
 	}
 
 	return nil
@@ -114,18 +120,20 @@ func NewMovieCmd() *cobra.Command {
 		Short:   "Movies batch formatting",
 		Args:    cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			consoleSvc := cmd.Context().Value(util.ContextKeyConsole).(*service.ConsoleService)
+
 			extensions, _ := cmd.Flags().GetStringArray("ext")
-			movies, err := loadMovies(media.WD, extensions)
+			movies, err := loadMovies(cmd.Context(), config.WD, extensions)
 			dryRun, _ := cmd.Flags().GetBool("dry-run")
 			if err != nil {
 				return err
 			}
 			if len(movies) == 0 {
-				console.Success("Nothing to process")
+				consoleSvc.Success("Nothing to process")
 			} else {
-				printAllMovies(media.WD, movies)
+				printAllMovies(config.WD, movies)
 				if !dryRun {
-					err := processMovies(media.WD, movies, media.UID, media.GID)
+					err := processMovies(cmd.Context(), config.WD, movies, config.UID, config.GID)
 					if err != nil {
 						return err
 					}

@@ -3,8 +3,8 @@ package format
 import (
 	"github.com/spf13/cobra"
 
+	"github.com/jeremiergz/nas-cli/service"
 	"github.com/jeremiergz/nas-cli/util"
-	"github.com/jeremiergz/nas-cli/util/media"
 )
 
 func NewFormatCmd() *cobra.Command {
@@ -13,12 +13,14 @@ func NewFormatCmd() *cobra.Command {
 		Aliases: []string{"fmt"},
 		Short:   "Batch media formatting depending on their type",
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-			err := util.CallParentPersistentPreRunE(cmd, args)
+			mediaSvc := cmd.Context().Value(util.ContextKeyMedia).(*service.MediaService)
+
+			err := util.CmdCallParentPersistentPreRunE(cmd, args)
 			if err != nil {
 				return err
 			}
 
-			return media.InitializeWD(args[0])
+			return mediaSvc.InitializeWD(args[0])
 		},
 	}
 

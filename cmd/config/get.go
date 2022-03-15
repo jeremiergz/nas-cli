@@ -6,14 +6,14 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
-	"github.com/jeremiergz/nas-cli/util/config"
+	"github.com/jeremiergz/nas-cli/config"
 )
 
 func NewGetCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:       "get <key>",
 		Short:     "Get configuration entry value",
-		ValidArgs: config.ConfigKeys,
+		ValidArgs: config.Keys,
 		Args: func(cmd *cobra.Command, args []string) error {
 			err := cobra.ExactArgs(1)(cmd, args)
 			if err != nil {

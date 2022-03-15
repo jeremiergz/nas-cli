@@ -1,6 +1,7 @@
 package list
 
 import (
+	"context"
 	"fmt"
 	"io/fs"
 	"path"
@@ -10,10 +11,10 @@ import (
 	"sync"
 
 	"github.com/disiqueira/gotree/v3"
+	"github.com/jeremiergz/nas-cli/service"
+	"github.com/jeremiergz/nas-cli/util"
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
-
-	"github.com/jeremiergz/nas-cli/util/sftp"
 )
 
 var (
@@ -36,16 +37,18 @@ func sortSeasons(seasons []fs.FileInfo) {
 }
 
 // Lists files & folders in destination
-func process(destination string, dirsOnly bool, nameFilter string) error {
-	conn, err := sftp.Connect()
+func process(ctx context.Context, destination string, dirsOnly bool, nameFilter string) error {
+	sftpSvc := ctx.Value(util.ContextKeySFTP).(*service.SFTPService)
+
+	err := sftpSvc.Connect()
 	if err != nil {
 		return err
 	}
-	defer conn.Disconnect()
+	defer sftpSvc.Disconnect()
 
 	rootTree := gotree.New(destination)
 
-	files, err := conn.ReadDir(destination)
+	files, err := sftpSvc.Client.ReadDir(destination)
 	if err != nil {
 		return err
 	}
@@ -68,7 +71,7 @@ func process(destination string, dirsOnly bool, nameFilter string) error {
 				baseTree := gotree.New(file.Name())
 				if dirsOnly && file.IsDir() {
 					if recursive {
-						seasons, err := conn.ReadDir(path.Join(destination, file.Name()))
+						seasons, err := sftpSvc.Client.ReadDir(path.Join(destination, file.Name()))
 						if err != nil {
 							return err
 						}
@@ -76,7 +79,7 @@ func process(destination string, dirsOnly bool, nameFilter string) error {
 
 						for _, season := range seasons {
 							episodesTree := baseTree.Add(season.Name())
-							episodes, err := conn.ReadDir(path.Join(destination, file.Name(), season.Name()))
+							episodes, err := sftpSvc.Client.ReadDir(path.Join(destination, file.Name(), season.Name()))
 							if err != nil {
 								return err
 							}

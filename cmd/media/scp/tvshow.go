@@ -6,7 +6,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
-	"github.com/jeremiergz/nas-cli/util/config"
+	"github.com/jeremiergz/nas-cli/config"
 )
 
 func NewTVShowCmd() *cobra.Command {
@@ -16,12 +16,12 @@ func NewTVShowCmd() *cobra.Command {
 		Short:   "TV Shows uploading",
 		Args:    cobra.MinimumNArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			tvShowsDest := viper.GetString(config.ConfigKeySCPTVShows)
+			tvShowsDest := viper.GetString(config.KeySCPTVShows)
 			if tvShowsDest == "" {
-				return fmt.Errorf("%s configuration entry is missing", config.ConfigKeySCPTVShows)
+				return fmt.Errorf("%s configuration entry is missing", config.KeySCPTVShows)
 			}
 
-			return process(tvShowsDest, subpath)
+			return process(cmd.Context(), assets, tvShowsDest, subpath)
 		},
 	}
 

@@ -6,7 +6,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
-	"github.com/jeremiergz/nas-cli/util/config"
+	"github.com/jeremiergz/nas-cli/config"
 )
 
 func NewMovieCmd() *cobra.Command {
@@ -16,12 +16,12 @@ func NewMovieCmd() *cobra.Command {
 		Short:   "Movies uploading",
 		Args:    cobra.MinimumNArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			moviesDest := viper.GetString(config.ConfigKeySCPMovies)
+			moviesDest := viper.GetString(config.KeySCPMovies)
 			if moviesDest == "" {
-				return fmt.Errorf("%s configuration entry is missing", config.ConfigKeySCPMovies)
+				return fmt.Errorf("%s configuration entry is missing", config.KeySCPMovies)
 			}
 
-			return process(moviesDest, subpath)
+			return process(cmd.Context(), assets, moviesDest, subpath)
 		},
 	}
 

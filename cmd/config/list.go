@@ -6,10 +6,11 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/jeremiergz/nas-cli/util/output"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"gopkg.in/yaml.v3"
+
+	"github.com/jeremiergz/nas-cli/util"
 )
 
 func NewListCmd() *cobra.Command {
@@ -17,7 +18,7 @@ func NewListCmd() *cobra.Command {
 		Use:   "list",
 		Short: "List configuration entries",
 		PreRunE: func(cmd *cobra.Command, args []string) error {
-			return output.OnlyValidOutputs()
+			return util.CmdOnlyValidOutputs()
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if err := viper.ReadInConfig(); err != nil {
@@ -27,7 +28,7 @@ func NewListCmd() *cobra.Command {
 					return err
 				}
 			} else {
-				switch output.Format {
+				switch util.CmdOutputFormat {
 				case "json":
 					out, _ := json.Marshal(viper.AllSettings())
 					fmt.Println(strings.TrimSpace(string(out)))
@@ -52,7 +53,7 @@ func NewListCmd() *cobra.Command {
 		},
 	}
 
-	output.AddOutputFlag(cmd)
+	util.CmdAddOutputFlag(cmd)
 
 	return cmd
 }

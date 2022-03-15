@@ -7,14 +7,15 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/spf13/cobra"
+
 	"github.com/jeremiergz/nas-cli/cmd/media/download"
 	"github.com/jeremiergz/nas-cli/cmd/media/format"
 	"github.com/jeremiergz/nas-cli/cmd/media/list"
 	"github.com/jeremiergz/nas-cli/cmd/media/merge"
 	"github.com/jeremiergz/nas-cli/cmd/media/scp"
 	"github.com/jeremiergz/nas-cli/cmd/media/subsync"
-	"github.com/jeremiergz/nas-cli/util/media"
-	"github.com/spf13/cobra"
+	"github.com/jeremiergz/nas-cli/config"
 )
 
 var ownershipRegexp = regexp.MustCompile(`^(\w+):?(\w+)?$`)
@@ -55,12 +56,12 @@ func NewMediaCmd() *cobra.Command {
 				}
 			}
 
-			media.UID, err = strconv.Atoi(selectedUser.Uid)
+			config.UID, err = strconv.Atoi(selectedUser.Uid)
 			if err != nil {
 				return fmt.Errorf("could not set user %s", selectedUser.Username)
 			}
 
-			media.GID, err = strconv.Atoi(selectedGroup.Gid)
+			config.GID, err = strconv.Atoi(selectedGroup.Gid)
 			if err != nil {
 				return fmt.Errorf("could not set group %s", selectedGroup.Name)
 			}

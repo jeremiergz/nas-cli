@@ -2,6 +2,7 @@ package subsync
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"os"
@@ -17,9 +18,9 @@ import (
 	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
 
+	"github.com/jeremiergz/nas-cli/config"
+	"github.com/jeremiergz/nas-cli/service"
 	"github.com/jeremiergz/nas-cli/util"
-	"github.com/jeremiergz/nas-cli/util/console"
-	"github.com/jeremiergz/nas-cli/util/media"
 )
 
 const subsyncCommand string = "subsync"
@@ -47,7 +48,7 @@ func formatPoints(points int) string {
 
 // Prints files as a tree
 func printAll(videos []string, subtitles []string) {
-	rootTree := gotree.New(media.WD)
+	rootTree := gotree.New(config.WD)
 	for index, video := range videos {
 		fileIndex := strconv.FormatInt(int64(index+1), 10)
 		subTree := rootTree.Add(fileIndex)
@@ -60,12 +61,14 @@ func printAll(videos []string, subtitles []string) {
 }
 
 // Attempts to synchronize given subtitle with given video file
-func process(video string, videoLang string, subtitle string, subtitleLang string, streamLang string, outFile string) (duration time.Duration, matchingPoints int, ok bool) {
+func process(ctx context.Context, video string, videoLang string, subtitle string, subtitleLang string, streamLang string, outFile string) (duration time.Duration, matchingPoints int, ok bool) {
+	consoleSvc := ctx.Value(util.ContextKeyConsole).(*service.ConsoleService)
+
 	start := time.Now()
 
-	videoPath := path.Join(media.WD, video)
-	subtitlePath := path.Join(media.WD, subtitle)
-	outFilePath := path.Join(media.WD, outFile)
+	videoPath := path.Join(config.WD, video)
+	subtitlePath := path.Join(config.WD, subtitle)
+	outFilePath := path.Join(config.WD, outFile)
 
 	baseOptions := []string{
 		"--cli",
@@ -90,7 +93,7 @@ func process(video string, videoLang string, subtitle string, subtitleLang strin
 	}
 
 	runCommand := func(opts []string) (string, error) {
-		console.Info(fmt.Sprintf("%s %s", subsyncCommand, strings.Join(opts, " ")))
+		consoleSvc.Info(fmt.Sprintf("%s %s", subsyncCommand, strings.Join(opts, " ")))
 		var buf bytes.Buffer
 		mw := io.MultiWriter(os.Stdout, &buf)
 
@@ -127,8 +130,8 @@ func process(video string, videoLang string, subtitle string, subtitleLang strin
 		}
 	}
 
-	os.Chown(outFilePath, media.UID, media.GID)
-	os.Chmod(outFilePath, util.FileMode)
+	os.Chown(outFilePath, config.UID, config.GID)
+	os.Chmod(outFilePath, config.FileMode)
 
 	return time.Since(start), matchingPoints, true
 }
@@ -140,14 +143,19 @@ func NewSubsyncCmd() *cobra.Command {
 		Short:   "Synchronize subtitle using SubSync tool",
 		Args:    cobra.MinimumNArgs(1),
 		PreRunE: func(cmd *cobra.Command, args []string) error {
+			mediaSvc := cmd.Context().Value(util.ContextKeyMedia).(*service.MediaService)
+
 			_, err := exec.LookPath(subsyncCommand)
 			if err != nil {
 				return fmt.Errorf("command not found: %s", subsyncCommand)
 			}
 
-			return media.InitializeWD(args[0])
+			return mediaSvc.InitializeWD(args[0])
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
+			consoleSvc := cmd.Context().Value(util.ContextKeyConsole).(*service.ConsoleService)
+			mediaSvc := cmd.Context().Value(util.ContextKeyMedia).(*service.MediaService)
+
 			dryRun, _ := cmd.Flags().GetBool("dry-run")
 			streamLang, _ := cmd.Flags().GetString("stream")
 			subtitleExtensions, _ := cmd.Flags().GetStringArray("sub-ext")
@@ -156,15 +164,15 @@ func NewSubsyncCmd() *cobra.Command {
 			videoLang, _ := cmd.Flags().GetString("video-lang")
 			yes, _ := cmd.Flags().GetBool("yes")
 
-			subtitleFiles := media.List(media.WD, subtitleExtensions, nil)
+			subtitleFiles := mediaSvc.List(config.WD, subtitleExtensions, nil)
 			sort.Sort(util.Alphabetic(subtitleFiles))
-			videoFiles := media.List(media.WD, videoExtensions, nil)
+			videoFiles := mediaSvc.List(config.WD, videoExtensions, nil)
 			sort.Sort(util.Alphabetic(videoFiles))
 
 			if len(subtitleFiles) == 0 {
-				console.Success("No subtitle file to process")
+				consoleSvc.Success("No subtitle file to process")
 			} else if len(videoFiles) == 0 {
-				console.Success("No video file to process")
+				consoleSvc.Success("No video file to process")
 			} else {
 				printAll(videoFiles, subtitleFiles)
 
@@ -194,7 +202,7 @@ func NewSubsyncCmd() *cobra.Command {
 							outFile := strings.Replace(videoFile, videoFileExtension, fmt.Sprintf(".%s.srt", subtitleLang), 1)
 							subtitleFile := subtitleFiles[index]
 
-							duration, points, ok := process(videoFile, videoLang, subtitleFile, subtitleLang, streamLang, outFile)
+							duration, points, ok := process(cmd.Context(), videoFile, videoLang, subtitleFile, subtitleLang, streamLang, outFile)
 
 							outFileWithoutDiacritics, _ := util.RemoveDiacritics(outFile)
 
@@ -222,14 +230,14 @@ func NewSubsyncCmd() *cobra.Command {
 								for key, value := range result.Characteristics {
 									characteristicsMsg += fmt.Sprintf("  %s=%-3s", key, value)
 								}
-								console.Success(fmt.Sprintf("%- *s  points=%-3s  duration=%-6s",
+								consoleSvc.Success(fmt.Sprintf("%- *s  points=%-3s  duration=%-6s",
 									maxOutFileLength,
 									result.Message,
 									result.Characteristics["points"],
 									result.Characteristics["duration"],
 								))
 							} else {
-								console.Error(result.Message)
+								consoleSvc.Error(result.Message)
 							}
 						}
 
