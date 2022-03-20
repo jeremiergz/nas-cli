@@ -44,7 +44,7 @@ func CmdCallParentPersistentPreRunE(cmd *cobra.Command, args []string) error {
 
 // Checks that value passed to --output is valid
 func CmdOnlyValidOutputs() error {
-	if !StringInSlice(CmdOutputFormat, CmdOutputFormats) {
+	if !Contains(CmdOutputFormats, CmdOutputFormat) {
 		return fmt.Errorf("invalid value %s for --output", CmdOutputFormat)
 	}
 

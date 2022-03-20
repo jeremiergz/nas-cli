@@ -23,7 +23,7 @@ func TestConfigGetCmd(t *testing.T) {
 	rootCmd := cmd.NewRootCmd()
 	rootCmd.AddCommand(NewConfigCmd())
 
-	_, output := test.ExecuteCommand(t, rootCmd, []string{"config", "get", config.KeySSHUsername})
+	_, output := test.ExecuteCommand(t, rootCmd, []string{"config", "get", config.KeySSHUser})
 	currentUser, _ := user.Current()
 
 	content, _ := os.ReadFile(path.Join(tempDir, config.FileName))
@@ -57,17 +57,17 @@ func TestConfigSetCmd(t *testing.T) {
 		key   string
 		value string
 	}{
-		{config.KeyNASDomain, "nas.test.local"},
-		{config.KeySCPAnimes, path.Join(os.TempDir(), "animes")},
-		{config.KeySCPGroup, "test"},
-		{config.KeySCPMovies, path.Join(os.TempDir(), "movies")},
-		{config.KeySCPTVShows, path.Join(os.TempDir(), "tvshows")},
-		{config.KeySCPUser, "test"},
+		{config.KeyNASFQDN, "nas.test.local"},
+		{config.KeySCPDestAnimesPath, path.Join(os.TempDir(), "animes")},
+		{config.KeySCPChownGroup, "test"},
+		{config.KeySCPDestMoviesPath, path.Join(os.TempDir(), "movies")},
+		{config.KeySCPDestTVShowsPath, path.Join(os.TempDir(), "tvshows")},
+		{config.KeySCPChownUser, "test"},
 		{config.KeySSHHost, "ssh.test.local"},
-		{config.KeySSHKnownHosts, path.Join(os.TempDir(), ".ssh", "known_hosts")},
+		{config.KeySSHClientKnownHosts, path.Join(os.TempDir(), ".ssh", "known_hosts")},
 		{config.KeySSHPort, "22"},
-		{config.KeySSHPrivateKey, path.Join(os.TempDir(), ".ssh", "id_rsa")},
-		{config.KeySSHUsername, "test"},
+		{config.KeySSHClientPrivateKey, path.Join(os.TempDir(), ".ssh", "id_rsa")},
+		{config.KeySSHUser, "test"},
 	}
 
 	for _, try := range tests {

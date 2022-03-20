@@ -44,7 +44,7 @@ func (s *MediaService) List(wd string, extensions []string, regExp *regexp.Regex
 	filesList := []string{}
 	for _, f := range files {
 		ext := strings.Replace(path.Ext(f.Name()), ".", "", 1)
-		isValidExt := util.StringInSlice(ext, extensions)
+		isValidExt := util.Contains(extensions, ext)
 		shouldProcess := !f.IsDir() && isValidExt
 		if shouldProcess {
 			if regExp == nil || !regExp.Match([]byte(f.Name())) {

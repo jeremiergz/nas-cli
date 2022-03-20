@@ -18,7 +18,10 @@ import (
 	"github.com/jeremiergz/nas-cli/config"
 )
 
-var ownershipRegexp = regexp.MustCompile(`^(\w+):?(\w+)?$`)
+var (
+	ownership       string
+	ownershipRegexp = regexp.MustCompile(`^(\w+):?(\w+)?$`)
+)
 
 func NewMediaCmd() *cobra.Command {
 	cmd := &cobra.Command{
@@ -30,7 +33,6 @@ func NewMediaCmd() *cobra.Command {
 			selectedUser, _ := user.Current()
 			selectedGroup := &user.Group{Gid: selectedUser.Gid}
 
-			ownership, _ := cmd.Flags().GetString("owner")
 			if ownership != "" {
 				if !ownershipRegexp.MatchString(ownership) {
 					return fmt.Errorf("ownership must be expressed as <user>[:group]")
@@ -70,7 +72,7 @@ func NewMediaCmd() *cobra.Command {
 		},
 	}
 
-	cmd.PersistentFlags().StringP("owner", "o", "", "override default ownership")
+	cmd.PersistentFlags().StringVarP(&ownership, "owner", "o", "", "override default ownership")
 	cmd.AddCommand(download.NewDownloadCmd())
 	cmd.AddCommand(format.NewFormatCmd())
 	cmd.AddCommand(list.NewListCmd())

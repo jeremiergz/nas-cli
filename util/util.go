@@ -9,17 +9,30 @@ import (
 	"golang.org/x/text/unicode/norm"
 )
 
-type Alphabetic []string
+type SortAlphabetic []string
 
-func (list Alphabetic) Len() int { return len(list) }
+func (list SortAlphabetic) Len() int { return len(list) }
 
-func (list Alphabetic) Swap(i, j int) { list[i], list[j] = list[j], list[i] }
-
-func (list Alphabetic) Less(i, j int) bool {
-	return (strings.ToLower(list[i]))[0] < (strings.ToLower(list[j]))[0]
+func (list SortAlphabetic) Less(i, j int) bool {
+	return (strings.ToLower(list[i])) < (strings.ToLower(list[j]))
 }
 
-var diacriticsTransformer = transform.Chain(norm.NFD, runes.Remove(runes.In(unicode.Mn)), norm.NFC)
+func (list SortAlphabetic) Swap(i, j int) { list[i], list[j] = list[j], list[i] }
+
+var (
+	diacriticsTransformer = transform.Chain(norm.NFD, runes.Remove(runes.In(unicode.Mn)), norm.NFC)
+)
+
+// Checks whether given generic value is in array
+func Contains[T comparable](elems []T, v T) bool {
+	for _, s := range elems {
+		if v == s {
+			return true
+		}
+	}
+
+	return false
+}
 
 // Removes all diacritics from given string
 func RemoveDiacritics(s string) (string, error) {
@@ -29,15 +42,4 @@ func RemoveDiacritics(s string) (string, error) {
 	}
 
 	return output, nil
-}
-
-// Checks whether given string is in given array or not
-func StringInSlice(str string, list []string) bool {
-	for _, v := range list {
-		if v == str {
-			return true
-		}
-	}
-
-	return false
 }

@@ -16,9 +16,9 @@ func NewTVShowCmd() *cobra.Command {
 		Short:   "TV Shows uploading",
 		Args:    cobra.MinimumNArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			tvShowsDest := viper.GetString(config.KeySCPTVShows)
+			tvShowsDest := viper.GetString(config.KeySCPDestTVShowsPath)
 			if tvShowsDest == "" {
-				return fmt.Errorf("%s configuration entry is missing", config.KeySCPTVShows)
+				return fmt.Errorf("%s configuration entry is missing", config.KeySCPDestTVShowsPath)
 			}
 
 			return process(cmd.Context(), assets, tvShowsDest, subpath)

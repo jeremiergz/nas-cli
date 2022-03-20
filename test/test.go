@@ -9,9 +9,10 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/spf13/cobra"
+
 	"github.com/jeremiergz/nas-cli/service"
 	"github.com/jeremiergz/nas-cli/util"
-	"github.com/spf13/cobra"
 )
 
 func AssertEquals(t *testing.T, expected, output string) {

@@ -122,9 +122,7 @@ func NewMovieCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			consoleSvc := cmd.Context().Value(util.ContextKeyConsole).(*service.ConsoleService)
 
-			extensions, _ := cmd.Flags().GetStringArray("ext")
 			movies, err := loadMovies(cmd.Context(), config.WD, extensions)
-			dryRun, _ := cmd.Flags().GetBool("dry-run")
 			if err != nil {
 				return err
 			}

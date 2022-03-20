@@ -17,6 +17,11 @@ import (
 	"github.com/jeremiergz/nas-cli/util"
 )
 
+var (
+	movie  bool
+	tvShow bool
+)
+
 func NewDownloadCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "download <url> [directory]",
@@ -24,8 +29,6 @@ func NewDownloadCmd() *cobra.Command {
 		Short:   "Download medium",
 		Args:    cobra.MinimumNArgs(1),
 		PreRunE: func(cmd *cobra.Command, args []string) error {
-			movie, _ := cmd.Flags().GetBool("movie")
-			tvShow, _ := cmd.Flags().GetBool("tv-show")
 			if movie && tvShow {
 				return fmt.Errorf("movie & tv-show flags are mutually exclusive")
 			}
@@ -57,18 +60,16 @@ func NewDownloadCmd() *cobra.Command {
 			consoleSvc := cmd.Context().Value(util.ContextKeyConsole).(*service.ConsoleService)
 			mediaSvc := cmd.Context().Value(util.ContextKeyMedia).(*service.MediaService)
 
-			isMovie, _ := cmd.Flags().GetBool("movie")
-			isTVShow, _ := cmd.Flags().GetBool("tvshow")
 			targetURL := args[0]
 			basename := filepath.Base(targetURL)
 			var destination string
-			if isMovie || isTVShow {
+			if movie || tvShow {
 				if p, err := mediaSvc.ParseTitle(basename); err == nil {
 					year := time.Now().Year()
 					if p.Year != 0 {
 						year = p.Year
 					}
-					if isMovie {
+					if movie {
 						destination = path.Join(destination, util.ToMovieName(p.Title, year, p.Container))
 					} else {
 						destination = path.Join(destination, util.ToEpisodeName(p.Title, p.Season, p.Episode, p.Container))
@@ -119,8 +120,8 @@ func NewDownloadCmd() *cobra.Command {
 	}
 
 	cmd.MarkFlagDirname("directory")
-	cmd.Flags().BoolP("movie", "m", false, "format filename to movie type")
-	cmd.Flags().BoolP("tvshow", "t", false, "format filename to TV show type")
+	cmd.Flags().BoolVarP(&movie, "movie", "m", false, "format filename to movie type")
+	cmd.Flags().BoolVarP(&tvShow, "tvshow", "t", false, "format filename to TV show type")
 
 	return cmd
 }

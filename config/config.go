@@ -5,10 +5,12 @@ import (
 	"os"
 	"os/user"
 	"path"
+	"strings"
 
 	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"gopkg.in/ini.v1"
 )
 
 const (
@@ -21,17 +23,17 @@ const (
 	// FileMode is the default mode to apply to files
 	FileMode os.FileMode = 0644
 
-	KeyNASDomain     string = "nas.domain"
-	KeySCPAnimes     string = "scp.animes"
-	KeySCPGroup      string = "scp.group"
-	KeySCPMovies     string = "scp.movies"
-	KeySCPTVShows    string = "scp.tvshows"
-	KeySCPUser       string = "scp.user"
-	KeySSHHost       string = "ssh.host"
-	KeySSHKnownHosts string = "ssh.knownhosts"
-	KeySSHPort       string = "ssh.port"
-	KeySSHPrivateKey string = "ssh.privatekey"
-	KeySSHUsername   string = "ssh.username"
+	KeyNASFQDN             string = "nas.fqdn"
+	KeySCPChownGroup       string = "scp.chown.group"
+	KeySCPChownUser        string = "scp.chown.user"
+	KeySCPDestAnimesPath   string = "scp.dest.animespath"
+	KeySCPDestMoviesPath   string = "scp.dest.moviespath"
+	KeySCPDestTVShowsPath  string = "scp.dest.tvshowspath"
+	KeySSHClientKnownHosts string = "ssh.client.knownhosts"
+	KeySSHClientPrivateKey string = "ssh.client.privatekey"
+	KeySSHHost             string = "ssh.host"
+	KeySSHPort             string = "ssh.port"
+	KeySSHUser             string = "ssh.user"
 )
 
 var (
@@ -44,19 +46,19 @@ var (
 	// Configuration file name
 	FileName string = ".nascliconfig"
 
-	// Configuration keys
+	// Configuration keys in INI file order
 	Keys = []string{
-		KeyNASDomain,
-		KeySCPAnimes,
-		KeySCPGroup,
-		KeySCPMovies,
-		KeySCPTVShows,
-		KeySCPUser,
+		KeyNASFQDN,
+		KeySCPChownGroup,
+		KeySCPChownUser,
+		KeySCPDestAnimesPath,
+		KeySCPDestMoviesPath,
+		KeySCPDestTVShowsPath,
 		KeySSHHost,
-		KeySSHKnownHosts,
 		KeySSHPort,
-		KeySSHPrivateKey,
-		KeySSHUsername,
+		KeySSHUser,
+		KeySSHClientKnownHosts,
+		KeySSHClientPrivateKey,
 	}
 
 	// UID is the processed files owner to set
@@ -79,20 +81,30 @@ func init() {
 			}
 		}
 
-		nasDomain := viper.GetString(KeyNASDomain)
-		viper.SetDefault(KeySSHHost, viper.GetString(KeyNASDomain))
-		if nasDomain != "" && viper.GetString(KeySSHHost) == "" {
+		nasDomain := viper.GetString(KeyNASFQDN)
+		viper.SetDefault(KeyNASFQDN, "localhost")
+
+		viper.SetDefault(KeySCPChownGroup, "media")
+		viper.SetDefault(KeySCPChownUser, "media")
+
+		viper.SetDefault(KeySCPDestAnimesPath, "")
+		viper.SetDefault(KeySCPDestMoviesPath, "")
+		viper.SetDefault(KeySCPDestTVShowsPath, "")
+
+		sshHost := viper.GetString(KeySSHHost)
+		viper.SetDefault(KeySSHHost, "localhost")
+		if nasDomain != "" && sshHost == "" {
 			viper.Set(KeySSHHost, nasDomain)
 		}
 
 		homedir, _ := os.UserHomeDir()
 		defaultKnownHosts := path.Join(homedir, ".ssh", "known_hosts")
-		viper.SetDefault(KeySSHKnownHosts, defaultKnownHosts)
+		viper.SetDefault(KeySSHClientKnownHosts, defaultKnownHosts)
 
 		viper.SetDefault(KeySSHPort, "22")
 
 		defaultPrivateKey := path.Join(homedir, ".ssh", "id_rsa")
-		viper.SetDefault(KeySSHPrivateKey, defaultPrivateKey)
+		viper.SetDefault(KeySSHClientPrivateKey, defaultPrivateKey)
 
 		currentUser, _ := user.Current()
 		var defaultUsername string
@@ -101,7 +113,7 @@ func init() {
 		} else {
 			defaultUsername = os.Getenv("USER")
 		}
-		viper.SetDefault(KeySSHUsername, defaultUsername)
+		viper.SetDefault(KeySSHUser, defaultUsername)
 
 		err := Save()
 		if err != nil {
@@ -112,16 +124,29 @@ func init() {
 }
 
 func Save() error {
-	tempFilePath := path.Join(Dir, fmt.Sprintf("%s%s", FileName, ".bak.ini"))
-	destFilePath := path.Join(Dir, FileName)
+	configFilePath := path.Join(Dir, FileName)
 
-	err := viper.WriteConfigAs(tempFilePath)
-	if err != nil {
-		return fmt.Errorf("could not write configuration: %s", err)
+	cfg := ini.Empty()
+	for _, key := range Keys {
+		lastSep := strings.LastIndex(key, ".")
+		sectionName := key[:(lastSep)]
+		keyName := key[(lastSep + 1):]
+		if sectionName == "default" {
+			sectionName = ""
+		}
+		cfg.Section(sectionName).Key(keyName).SetValue(viper.GetString(key))
 	}
-	err = os.Rename(tempFilePath, destFilePath)
+
+	file, err := os.Create(configFilePath)
 	if err != nil {
-		return fmt.Errorf("could not rename temporary file: %s", err)
+		return fmt.Errorf("could not open file for write: %v", err)
+	}
+	defer file.Close()
+
+	_, err = cfg.WriteTo(file)
+
+	if err != nil {
+		return fmt.Errorf("could not write configuration: %v", err)
 	}
 
 	return nil

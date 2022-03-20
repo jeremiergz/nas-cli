@@ -12,6 +12,7 @@ import (
 	"github.com/cheggaaa/pb/v3"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"golang.org/x/sync/errgroup"
 
 	"github.com/jeremiergz/nas-cli/config"
 	"github.com/jeremiergz/nas-cli/service"
@@ -21,11 +22,10 @@ import (
 const scpCommand string = "scp"
 
 var (
-	assets []string
-	// delete    bool
-	nasDomain string
-	// recursive bool
-	subpath string
+	assets    []string
+	delete    bool
+	recursive bool
+	subpath   string
 )
 
 // // Uploads files & folders to configured destination using scp
@@ -112,21 +112,18 @@ func process(ctx context.Context, assets []string, destination string, subdestin
 		filename := filepath.Base(asset)
 		localFile, err := os.Open(asset)
 		if err != nil {
-			fmt.Println("localFile err")
 			return err
 		}
 		defer localFile.Close()
 
 		localFileStats, err := localFile.Stat()
 		if err != nil {
-			fmt.Println("localFileStats err")
 			return err
 		}
 
 		remoteAsset := filepath.Join(destination, filename)
 		remoteFile, err := sftpSvc.Client.Create(remoteAsset)
 		if err != nil {
-			fmt.Println("remoteFile err", remoteAsset)
 			return err
 		}
 		defer remoteFile.Close()
@@ -186,6 +183,27 @@ func process(ctx context.Context, assets []string, destination string, subdestin
 		}
 	}
 
+	g := new(errgroup.Group)
+
+	user := viper.GetString(config.KeySCPChownUser)
+	if user == "" {
+		user = "root"
+	}
+	group := viper.GetString(config.KeySCPChownGroup)
+	if group == "" {
+		group = "root"
+	}
+
+	if delete {
+		for _, asset := range assets {
+			func(a string) {
+				g.Go(func() error {
+					return os.RemoveAll(a)
+				})
+			}(asset)
+		}
+	}
+
 	return nil
 }
 
@@ -206,16 +224,13 @@ func NewScpCmd() *cobra.Command {
 				return fmt.Errorf("command not found: %s", scpCommand)
 			}
 
-			if nasDomain = viper.GetString(config.KeyNASDomain); nasDomain == "" {
-				return fmt.Errorf("%s configuration entry is missing", config.KeyNASDomain)
+			if viper.GetString(config.KeyNASFQDN) == "" {
+				return fmt.Errorf("%s configuration entry is missing", config.KeyNASFQDN)
 			}
 
 			// Remove last part as it is the subpath to append to scp command's destination
 			assets = append(args[:len(args)-1], args[len(args):]...)
 			subpath = args[len(args)-1]
-
-			// delete, _ = cmd.Flags().GetBool("delete")
-			// recursive, _ = cmd.Flags().GetBool("recursive")
 
 			// Exit if files/folders retrieved from assets do not exist
 			for index, asset := range assets {
@@ -231,8 +246,8 @@ func NewScpCmd() *cobra.Command {
 		},
 	}
 
-	cmd.PersistentFlags().BoolP("delete", "d", false, "remove source files after upload")
-	cmd.PersistentFlags().BoolP("recursive", "r", false, "find files and folders recursively")
+	cmd.PersistentFlags().BoolVarP(&delete, "delete", "d", false, "remove source files after upload")
+	cmd.PersistentFlags().BoolVarP(&recursive, "recursive", "r", false, "find files and folders recursively")
 	cmd.AddCommand(NewAnimeCmd())
 	cmd.AddCommand(NewMovieCmd())
 	cmd.AddCommand(NewTVShowCmd())

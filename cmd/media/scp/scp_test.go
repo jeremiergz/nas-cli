@@ -44,10 +44,10 @@ func TestSCPProcess(t *testing.T) {
 	// tempDir := t.TempDir()
 	viper.ReadInConfig()
 	viper.Set(config.KeySSHHost, "localhost")
-	viper.Set(config.KeySSHKnownHosts, "/Users/jeremiergz/.ssh/known_hosts")
+	viper.Set(config.KeySSHClientKnownHosts, "/Users/jeremiergz/.ssh/known_hosts")
 	viper.Set(config.KeySSHPort, 22)
-	viper.Set(config.KeySSHPrivateKey, "/Users/jeremiergz/.ssh/id_rsa")
-	viper.Set(config.KeySSHUsername, "jeremiergz")
+	viper.Set(config.KeySSHClientPrivateKey, "/Users/jeremiergz/.ssh/id_rsa")
+	viper.Set(config.KeySSHUser, "jeremiergz")
 
 	wd, _ := os.Getwd()
 	dir := filepath.Join(wd, "../../..", "test")

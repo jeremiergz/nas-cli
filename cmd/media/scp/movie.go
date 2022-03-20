@@ -16,9 +16,9 @@ func NewMovieCmd() *cobra.Command {
 		Short:   "Movies uploading",
 		Args:    cobra.MinimumNArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			moviesDest := viper.GetString(config.KeySCPMovies)
+			moviesDest := viper.GetString(config.KeySCPDestMoviesPath)
 			if moviesDest == "" {
-				return fmt.Errorf("%s configuration entry is missing", config.KeySCPMovies)
+				return fmt.Errorf("%s configuration entry is missing", config.KeySCPDestMoviesPath)
 			}
 
 			return process(cmd.Context(), assets, moviesDest, subpath)

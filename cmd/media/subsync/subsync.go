@@ -25,7 +25,16 @@ import (
 
 const subsyncCommand string = "subsync"
 
-var subsyncMatchingPointsRegexp = regexp.MustCompile(`(?m)\d+%,\s+(\d+)\s+points`)
+var (
+	dryRun                      bool
+	streamLang                  string
+	subsyncMatchingPointsRegexp = regexp.MustCompile(`(?m)\d+%,\s+(\d+)\s+points`)
+	subtitleExtensions          []string
+	subtitleLang                string
+	videoExtensions             []string
+	videoLang                   string
+	yes                         bool
+)
 
 type result struct {
 	Characteristics map[string]string
@@ -156,18 +165,10 @@ func NewSubsyncCmd() *cobra.Command {
 			consoleSvc := cmd.Context().Value(util.ContextKeyConsole).(*service.ConsoleService)
 			mediaSvc := cmd.Context().Value(util.ContextKeyMedia).(*service.MediaService)
 
-			dryRun, _ := cmd.Flags().GetBool("dry-run")
-			streamLang, _ := cmd.Flags().GetString("stream")
-			subtitleExtensions, _ := cmd.Flags().GetStringArray("sub-ext")
-			subtitleLang, _ := cmd.Flags().GetString("sub-lang")
-			videoExtensions, _ := cmd.Flags().GetStringArray("video-ext")
-			videoLang, _ := cmd.Flags().GetString("video-lang")
-			yes, _ := cmd.Flags().GetBool("yes")
-
 			subtitleFiles := mediaSvc.List(config.WD, subtitleExtensions, nil)
-			sort.Sort(util.Alphabetic(subtitleFiles))
+			sort.Sort(util.SortAlphabetic(subtitleFiles))
 			videoFiles := mediaSvc.List(config.WD, videoExtensions, nil)
-			sort.Sort(util.Alphabetic(videoFiles))
+			sort.Sort(util.SortAlphabetic(videoFiles))
 
 			if len(subtitleFiles) == 0 {
 				consoleSvc.Success("No subtitle file to process")
@@ -253,12 +254,13 @@ func NewSubsyncCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().String("stream", "eng", "stream ISO 639-3 language code")
-	cmd.Flags().StringArray("sub-ext", []string{"srt"}, "filter subtitles by extension")
-	cmd.Flags().String("sub-lang", "eng", "subtitle ISO 639-3 language code")
-	cmd.Flags().StringArrayP("video-ext", "e", []string{"avi", "mkv", "mp4"}, "filter video files by extension")
-	cmd.Flags().String("video-lang", "eng", "video ISO 639-3 language code")
-	cmd.Flags().BoolP("yes", "y", false, "automatic yes to prompts")
+	cmd.PersistentFlags().BoolVar(&dryRun, "dry-run", false, "print result without processing it")
+	cmd.Flags().StringVar(&streamLang, "stream", "eng", "stream ISO 639-3 language code")
+	cmd.Flags().StringArrayVar(&subtitleExtensions, "sub-ext", []string{"srt"}, "filter subtitles by extension")
+	cmd.Flags().StringVar(&subtitleLang, "sub-lang", "eng", "subtitle ISO 639-3 language code")
+	cmd.Flags().StringArrayVarP(&videoExtensions, "video-ext", "e", []string{"avi", "mkv", "mp4"}, "filter video files by extension")
+	cmd.Flags().StringVar(&videoLang, "video-lang", "eng", "video ISO 639-3 language code")
+	cmd.Flags().BoolVarP(&yes, "yes", "y", false, "automatic yes to prompts")
 
 	return cmd
 }

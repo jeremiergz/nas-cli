@@ -25,16 +25,16 @@ func NewSFTPService() *SFTPService {
 
 func (s *SFTPService) Connect() error {
 	sshHost := viper.GetString(config.KeySSHHost)
-	sshKnownHosts := viper.GetString(config.KeySSHKnownHosts)
+	sshKnownHosts := viper.GetString(config.KeySSHClientKnownHosts)
 	sshPort := viper.GetString(config.KeySSHPort)
-	sshPrivateKey := viper.GetString(config.KeySSHPrivateKey)
-	username := viper.GetString(config.KeySSHUsername)
+	sshPrivateKey := viper.GetString(config.KeySSHClientPrivateKey)
+	username := viper.GetString(config.KeySSHUser)
 	requiredConfig := map[string]string{
-		config.KeySSHHost:       sshHost,
-		config.KeySSHKnownHosts: sshKnownHosts,
-		config.KeySSHPort:       sshPort,
-		config.KeySSHPrivateKey: sshPrivateKey,
-		config.KeySSHUsername:   username,
+		config.KeySSHHost:             sshHost,
+		config.KeySSHClientKnownHosts: sshKnownHosts,
+		config.KeySSHPort:             sshPort,
+		config.KeySSHClientPrivateKey: sshPrivateKey,
+		config.KeySSHUser:             username,
 	}
 	for key, value := range requiredConfig {
 		if value == "" {

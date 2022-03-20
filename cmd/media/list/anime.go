@@ -16,9 +16,9 @@ func NewAnimeCmd() *cobra.Command {
 		Short:   "Animes listing",
 		Args:    cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			animesDest := viper.GetString(config.KeySCPAnimes)
+			animesDest := viper.GetString(config.KeySCPDestAnimesPath)
 			if animesDest == "" {
-				return fmt.Errorf("%s configuration entry is missing", config.KeySCPAnimes)
+				return fmt.Errorf("%s configuration entry is missing", config.KeySCPDestAnimesPath)
 			}
 
 			var animeName string

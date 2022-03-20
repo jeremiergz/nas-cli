@@ -11,10 +11,11 @@ import (
 	"sync"
 
 	"github.com/disiqueira/gotree/v3"
-	"github.com/jeremiergz/nas-cli/service"
-	"github.com/jeremiergz/nas-cli/util"
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
+
+	"github.com/jeremiergz/nas-cli/service"
+	"github.com/jeremiergz/nas-cli/util"
 )
 
 var (

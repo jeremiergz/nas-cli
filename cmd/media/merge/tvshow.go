@@ -27,6 +27,10 @@ type result struct {
 	Message         string
 }
 
+var (
+	tvShowNames []string
+)
+
 // Checks whether given season has episodes with subtitles or not
 func hasSubtitlesInSeason(season *model.Season) bool {
 	for _, episode := range season.Episodes {
@@ -194,15 +198,7 @@ func NewTVShowCmd() *cobra.Command {
 			consoleSvc := cmd.Context().Value(util.ContextKeyConsole).(*service.ConsoleService)
 			mediaSvc := cmd.Context().Value(util.ContextKeyMedia).(*service.MediaService)
 
-			delete, _ := cmd.Flags().GetBool("delete")
-			dryRun, _ := cmd.Flags().GetBool("dry-run")
-			languages, _ := cmd.Flags().GetStringArray("language")
-			tvShowNames, _ := cmd.Flags().GetStringArray("name")
-			subtitleExtension, _ := cmd.Flags().GetString("sub-ext")
-			videoExtensions, _ := cmd.Flags().GetStringArray("video-ext")
-			yes, _ := cmd.Flags().GetBool("yes")
-
-			tvShows, err := mediaSvc.LoadTVShows(config.WD, videoExtensions, &subtitleExtension, languages, true)
+			tvShows, err := mediaSvc.LoadTVShows(config.WD, videoExtensions, &subtitleExtension, subtitleLanguages, true)
 
 			if len(tvShowNames) > 0 {
 				if len(tvShowNames) != len(tvShows) {
@@ -270,7 +266,7 @@ func NewTVShowCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringArrayP("name", "n", nil, "override TV show name")
+	cmd.Flags().StringArrayVarP(&tvShowNames, "name", "n", nil, "override TV show name")
 
 	return cmd
 }

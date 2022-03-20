@@ -17,6 +17,11 @@ import (
 	"github.com/jeremiergz/nas-cli/util"
 )
 
+var (
+	yes         bool
+	tvShowNames []string
+)
+
 // Prints given TV shows as a tree
 func printAllTVShows(wd string, tvShows []*model.TVShow) {
 	rootTree := gotree.New(wd)
@@ -110,10 +115,6 @@ func NewTVShowCmd() *cobra.Command {
 			consoleSvc := cmd.Context().Value(util.ContextKeyConsole).(*service.ConsoleService)
 			mediaSvc := cmd.Context().Value(util.ContextKeyMedia).(*service.MediaService)
 
-			extensions, _ := cmd.Flags().GetStringArray("ext")
-			tvShowNames, _ := cmd.Flags().GetStringArray("name")
-			yes, _ := cmd.Flags().GetBool("yes")
-
 			tvShows, err := mediaSvc.LoadTVShows(config.WD, extensions, nil, nil, false)
 
 			if len(tvShowNames) > 0 {
@@ -125,7 +126,6 @@ func NewTVShowCmd() *cobra.Command {
 				}
 			}
 
-			dryRun, _ := cmd.Flags().GetBool("dry-run")
 			if err != nil {
 				return err
 			}
@@ -143,8 +143,8 @@ func NewTVShowCmd() *cobra.Command {
 	}
 
 	cmd.MarkFlagDirname("directory")
-	cmd.Flags().StringArrayP("name", "n", nil, "override TV show name")
-	cmd.Flags().BoolP("yes", "y", false, "automatic yes to prompts")
+	cmd.Flags().StringArrayVarP(&tvShowNames, "name", "n", nil, "override TV show name")
+	cmd.Flags().BoolVarP(&yes, "yes", "y", false, "automatic yes to prompts")
 
 	return cmd
 }
