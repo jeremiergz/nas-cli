@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"path"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -26,6 +27,13 @@ func AssertContains(t *testing.T, expected, output string) {
 	t.Helper()
 	if !strings.Contains(output, expected) {
 		t.Fatalf("\nExpected to contain: \"%v\"", expected)
+	}
+}
+
+func AssertContainsRegExp(t *testing.T, expected *regexp.Regexp, output string) {
+	t.Helper()
+	if !expected.MatchString(output) {
+		t.Fatalf("\nExpected to contain RegExp: \"%v\"", expected)
 	}
 }
 

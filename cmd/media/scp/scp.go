@@ -28,74 +28,6 @@ var (
 	subpath   string
 )
 
-// // Uploads files & folders to configured destination using scp
-// func process2(assets []string, destination string, subdestination string) error {
-// 	args := []string{}
-// 	if recursive {
-// 		args = append(args, "-r")
-// 	}
-// 	args = append(args, assets...)
-// 	fullDestination := fmt.Sprintf("\"%s\"", path.Join(destination, subdestination))
-// 	args = append(args, fmt.Sprintf("%s:%s", nasDomain, fullDestination))
-
-// 	console.Info(fmt.Sprintf("%s %s\n", scpCommand, strings.Join(args, " ")))
-// 	var stderr bytes.Buffer
-// 	runCommand := func(opts []string) error {
-// 		scp := exec.Command(scpCommand, opts...)
-// 		scp.Stderr = &stderr
-// 		scp.Stdout = os.Stdout
-// 		return scp.Run()
-// 	}
-
-// 	err := runCommand(args)
-// 	if err != nil {
-// 		commandErr := fmt.Errorf("%s: %s", err.Error(), stderr.String())
-// 		return commandErr
-// 	}
-
-// 	conn, err := ssh.Connect()
-// 	if err != nil {
-// 		return err
-// 	}
-// 	defer conn.Disconnect()
-
-// 	g := new(errgroup.Group)
-
-// 	commands := []string{
-// 		fmt.Sprintf("cd \"%s\"", destination),
-// 		"find . -type d -exec chmod 755 {} +",
-// 		"find . -type f -exec chmod 644 {} +",
-// 	}
-
-// 	var user string
-// 	if user = viper.GetString(config.KeySCPUser); user == "" {
-// 		user = "media"
-// 	}
-// 	var group string
-// 	if group = viper.GetString(config.KeySCPGroup); group == "" {
-// 		group = "media"
-// 	}
-
-// 	commands = append(commands, fmt.Sprintf("chown -R %s:%s ./*", user, group))
-
-// 	g.Go(func() error {
-// 		_, err = conn.SendCommands(commands...)
-// 		return err
-// 	})
-
-// 	if delete {
-// 		for _, asset := range assets {
-// 			func(a string) {
-// 				g.Go(func() error {
-// 					return os.RemoveAll(a)
-// 				})
-// 			}(asset)
-// 		}
-// 	}
-
-// 	return g.Wait()
-// }
-
 // Uploads files & folders to configured destination using SFTP
 func process(ctx context.Context, assets []string, destination string, subdestination string) error {
 	consoleSvc := ctx.Value(util.ContextKeyConsole).(*service.ConsoleService)
@@ -185,14 +117,29 @@ func process(ctx context.Context, assets []string, destination string, subdestin
 
 	g := new(errgroup.Group)
 
-	user := viper.GetString(config.KeySCPChownUser)
-	if user == "" {
-		user = "root"
-	}
-	group := viper.GetString(config.KeySCPChownGroup)
-	if group == "" {
-		group = "root"
-	}
+	// TODO: implement remote chown & chmod
+
+	// commands := []string{
+	// 	fmt.Sprintf("cd \"%s\"", destination),
+	// 	"find . -type d -exec chmod 755 {} +",
+	// 	"find . -type f -exec chmod 644 {} +",
+	// }
+
+	// user := viper.GetString(config.KeySCPChownUser)
+	// if user == "" {
+	// 	user = "root"
+	// }
+	// group := viper.GetString(config.KeySCPChownGroup)
+	// if group == "" {
+	// 	group = "root"
+	// }
+
+	// commands = append(commands, fmt.Sprintf("chown -R %s:%s ./*", user, group))
+
+	// g.Go(func() error {
+	// 	_, err = conn.SendCommands(commands...)
+	// 	return err
+	// })
 
 	if delete {
 		for _, asset := range assets {

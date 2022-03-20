@@ -6,6 +6,7 @@ import (
 	"os/user"
 	"path"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -72,9 +73,12 @@ func TestConfigSetCmd(t *testing.T) {
 
 	for _, try := range tests {
 		test.ExecuteCommand(t, rootCmd, []string{"config", "set", try.key, try.value})
+
 		test.AssertEquals(t, try.value, viper.GetString(try.key))
 		content, _ := os.ReadFile(path.Join(tempDir, config.FileName))
 		subKey := strings.ReplaceAll(filepath.Ext(try.key), ".", "")
-		test.AssertContains(t, fmt.Sprintf("%s=%s", subKey, try.value), string(content))
+
+		configLineRegExp := regexp.MustCompile(fmt.Sprintf(`%s\s*=\s*%s`, subKey, try.value))
+		test.AssertContainsRegExp(t, configLineRegExp, string(content))
 	}
 }
