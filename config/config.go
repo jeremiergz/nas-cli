@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/user"
 	"path"
+	"path/filepath"
 	"strings"
 
 	"github.com/manifoldco/promptui"
@@ -98,13 +99,28 @@ func init() {
 		}
 
 		homedir, _ := os.UserHomeDir()
-		defaultKnownHosts := path.Join(homedir, ".ssh", "known_hosts")
-		viper.SetDefault(KeySSHClientKnownHosts, defaultKnownHosts)
+		sep := string(filepath.Separator)
+		tildeStr := fmt.Sprintf("~%s", sep)
+
+		sshKnownHosts := viper.GetString(KeySSHClientKnownHosts)
+		if sshKnownHosts != "" && strings.HasPrefix(sshKnownHosts, tildeStr) {
+			sshKnownHosts = strings.Replace(sshKnownHosts, tildeStr, homedir+sep, 1)
+			viper.Set(KeySSHClientKnownHosts, sshKnownHosts)
+		} else {
+			defaultKnownHosts := path.Join(homedir, ".ssh", "known_hosts")
+			viper.SetDefault(KeySSHClientKnownHosts, defaultKnownHosts)
+		}
+
+		sshPrivateKey := viper.GetString(KeySSHClientPrivateKey)
+		if sshPrivateKey != "" && strings.HasPrefix(sshPrivateKey, tildeStr) {
+			sshPrivateKey = strings.Replace(sshPrivateKey, tildeStr, homedir+sep, 1)
+			viper.Set(KeySSHClientPrivateKey, sshPrivateKey)
+		} else {
+			defaultPrivateKey := path.Join(homedir, ".ssh", "id_rsa")
+			viper.SetDefault(KeySSHClientPrivateKey, defaultPrivateKey)
+		}
 
 		viper.SetDefault(KeySSHPort, "22")
-
-		defaultPrivateKey := path.Join(homedir, ".ssh", "id_rsa")
-		viper.SetDefault(KeySSHClientPrivateKey, defaultPrivateKey)
 
 		currentUser, _ := user.Current()
 		var defaultUsername string
