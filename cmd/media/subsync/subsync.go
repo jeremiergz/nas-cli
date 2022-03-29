@@ -23,7 +23,9 @@ import (
 	"github.com/jeremiergz/nas-cli/util"
 )
 
-const subsyncCommand string = "subsync"
+const (
+	subsyncCommand string = "subsync"
+)
 
 var (
 	dryRun                      bool

@@ -35,7 +35,7 @@ func CmdCallParentPersistentPreRun(cmd *cobra.Command, args []string) {
 func CmdCallParentPersistentPreRunE(cmd *cobra.Command, args []string) error {
 	if parent := cmd.Parent(); parent != nil {
 		if parent.PersistentPreRunE != nil {
-			return parent.PersistentPreRunE(parent.Root(), args)
+			return parent.PersistentPreRunE(parent, args)
 		}
 	}
 

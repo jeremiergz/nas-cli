@@ -1,16 +1,19 @@
 package service
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/cheggaaa/pb/v3/termutil"
 	"github.com/manifoldco/promptui"
 )
 
-type ConsoleService struct{}
+type ConsoleService struct {
+	ctx context.Context
+}
 
-func NewConsoleService() *ConsoleService {
-	service := &ConsoleService{}
+func NewConsoleService(ctx context.Context) *ConsoleService {
+	service := &ConsoleService{ctx: ctx}
 
 	return service
 }

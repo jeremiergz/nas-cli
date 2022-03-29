@@ -1,72 +1,34 @@
 package service
 
 import (
-	"fmt"
-	"os"
+	"context"
 
+	"github.com/jeremiergz/nas-cli/util"
 	"github.com/pkg/sftp"
-	"github.com/spf13/viper"
 	"golang.org/x/crypto/ssh"
-	"golang.org/x/crypto/ssh/knownhosts"
-
-	"github.com/jeremiergz/nas-cli/config"
 )
 
 type SFTPService struct {
 	Client *sftp.Client
+	ctx    context.Context
 	ssh    *ssh.Client
 }
 
-func NewSFTPService() *SFTPService {
-	service := &SFTPService{}
+func NewSFTPService(ctx context.Context) *SFTPService {
+	service := &SFTPService{ctx: ctx}
 
 	return service
 }
 
 func (s *SFTPService) Connect() error {
-	sshHost := viper.GetString(config.KeySSHHost)
-	sshKnownHosts := viper.GetString(config.KeySSHClientKnownHosts)
-	sshPort := viper.GetString(config.KeySSHPort)
-	sshPrivateKey := viper.GetString(config.KeySSHClientPrivateKey)
-	username := viper.GetString(config.KeySSHUser)
-	requiredConfig := map[string]string{
-		config.KeySSHHost:             sshHost,
-		config.KeySSHClientKnownHosts: sshKnownHosts,
-		config.KeySSHPort:             sshPort,
-		config.KeySSHClientPrivateKey: sshPrivateKey,
-		config.KeySSHUser:             username,
-	}
-	for key, value := range requiredConfig {
-		if value == "" {
-			return fmt.Errorf("required variable %s is not defined", key)
-		}
-	}
+	sshSvc := s.ctx.Value(util.ContextKeySSH).(*SSHService)
 
-	keyBytes, err := os.ReadFile(sshPrivateKey)
-	if err != nil {
-		return fmt.Errorf("unable to read private key: %v", err)
-	}
-	signer, err := ssh.ParsePrivateKey(keyBytes)
-	if err != nil {
-		return fmt.Errorf("unable to parse private key: %v", err)
-	}
-	hostKeyCallback, _ := knownhosts.New(sshKnownHosts)
-	sshConfig := &ssh.ClientConfig{
-		Auth: []ssh.AuthMethod{
-			ssh.PublicKeys(signer),
-		},
-		HostKeyCallback: hostKeyCallback,
-		User:            username,
-	}
-
-	sshClient, err := ssh.Dial("tcp", fmt.Sprintf("%s:%s", sshHost, sshPort), sshConfig)
+	err := sshSvc.Connect()
 	if err != nil {
 		return err
 	}
 
-	s.ssh = sshClient
-
-	sftpClient, err := sftp.NewClient(s.ssh)
+	sftpClient, err := sftp.NewClient(sshSvc.Client)
 
 	if err != nil {
 		s.ssh.Conn.Close()

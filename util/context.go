@@ -6,4 +6,5 @@ const (
 	ContextKeyConsole contextKey = iota
 	ContextKeyMedia
 	ContextKeySFTP
+	ContextKeySSH
 )

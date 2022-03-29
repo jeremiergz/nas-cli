@@ -36,7 +36,7 @@ func NewMergeCmd() *cobra.Command {
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			mediaSvc := cmd.Context().Value(util.ContextKeyMedia).(*service.MediaService)
 
-			err := util.CmdCallParentPersistentPreRunE(cmd, args)
+			err := util.CmdCallParentPersistentPreRunE(cmd.Parent(), args)
 			if err != nil {
 				return err
 			}

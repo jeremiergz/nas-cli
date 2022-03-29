@@ -1,11 +1,7 @@
 package media
 
 import (
-	"fmt"
-	"os/user"
 	"regexp"
-	"strconv"
-	"strings"
 
 	"github.com/spf13/cobra"
 
@@ -15,7 +11,7 @@ import (
 	"github.com/jeremiergz/nas-cli/cmd/media/merge"
 	"github.com/jeremiergz/nas-cli/cmd/media/scp"
 	"github.com/jeremiergz/nas-cli/cmd/media/subsync"
-	"github.com/jeremiergz/nas-cli/config"
+	"github.com/jeremiergz/nas-cli/util"
 )
 
 var (
@@ -28,47 +24,9 @@ func NewMediaCmd() *cobra.Command {
 		Use:   "media",
 		Short: "Set of utilities for media management",
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-			var err error
+			err := util.InitOwnership(ownership)
 
-			selectedUser, _ := user.Current()
-			selectedGroup := &user.Group{Gid: selectedUser.Gid}
-
-			if ownership != "" {
-				if !ownershipRegexp.MatchString(ownership) {
-					return fmt.Errorf("ownership must be expressed as <user>[:group]")
-				}
-
-				matches := strings.Split(ownership, ":")
-
-				userName := matches[0]
-				selectedUser, err = user.Lookup(userName)
-				if err != nil {
-					return fmt.Errorf("could not find user %s", userName)
-				}
-
-				if len(matches) > 1 {
-					groupName := userName
-					if matches[1] != "" {
-						groupName = matches[1]
-					}
-					selectedGroup, err = user.LookupGroup(groupName)
-					if err != nil {
-						return fmt.Errorf("could not find group %s", groupName)
-					}
-				}
-			}
-
-			config.UID, err = strconv.Atoi(selectedUser.Uid)
-			if err != nil {
-				return fmt.Errorf("could not set user %s", selectedUser.Username)
-			}
-
-			config.GID, err = strconv.Atoi(selectedGroup.Gid)
-			if err != nil {
-				return fmt.Errorf("could not set group %s", selectedGroup.Name)
-			}
-
-			return nil
+			return err
 		},
 	}
 

@@ -1,15 +1,15 @@
 package scp
 
 import (
+	"bytes"
 	"context"
 	"fmt"
-	"io"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
-	"sort"
+	"strings"
 
-	"github.com/cheggaaa/pb/v3"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"golang.org/x/sync/errgroup"
@@ -19,7 +19,9 @@ import (
 	"github.com/jeremiergz/nas-cli/util"
 )
 
-const scpCommand string = "scp"
+const (
+	scpCommand string = "scp"
+)
 
 var (
 	assets    []string
@@ -31,115 +33,60 @@ var (
 // Uploads files & folders to configured destination using SFTP
 func process(ctx context.Context, assets []string, destination string, subdestination string) error {
 	consoleSvc := ctx.Value(util.ContextKeyConsole).(*service.ConsoleService)
-	sftpSvc := ctx.Value(util.ContextKeySFTP).(*service.SFTPService)
+	sshSvc := ctx.Value(util.ContextKeySSH).(*service.SSHService)
 
-	err := sftpSvc.Connect()
+	args := []string{}
+	if recursive {
+		args = append(args, "-r")
+	}
+	args = append(args, assets...)
+	fullDestination := fmt.Sprintf("\"%s\"", path.Join(destination, subdestination))
+	args = append(args, fmt.Sprintf("%s:%s", viper.GetString(config.KeyNASFQDN), fullDestination))
+
+	consoleSvc.Info(fmt.Sprintf("%s %s\n", scpCommand, strings.Join(args, " ")))
+	var stderr bytes.Buffer
+	runCommand := func(opts []string) error {
+		scp := exec.Command(scpCommand, opts...)
+		scp.Stderr = &stderr
+		scp.Stdout = os.Stdout
+		return scp.Run()
+	}
+
+	err := runCommand(args)
+	if err != nil {
+		commandErr := fmt.Errorf("%s: %s", err.Error(), stderr.String())
+		return commandErr
+	}
+
+	err = sshSvc.Connect()
 	if err != nil {
 		return err
 	}
-	defer sftpSvc.Disconnect()
-
-	sort.Strings(assets)
-	for index, asset := range assets {
-		filename := filepath.Base(asset)
-		localFile, err := os.Open(asset)
-		if err != nil {
-			return err
-		}
-		defer localFile.Close()
-
-		localFileStats, err := localFile.Stat()
-		if err != nil {
-			return err
-		}
-
-		remoteAsset := filepath.Join(destination, filename)
-		remoteFile, err := sftpSvc.Client.Create(remoteAsset)
-		if err != nil {
-			return err
-		}
-		defer remoteFile.Close()
-
-		buff := make([]byte, 1024*1024*100) // 100 Mb
-
-		bar := pb.New64(localFileStats.Size())
-		bar.Set("prefix", fmt.Sprintf("%s ", filename))
-		bar.Set(pb.Bytes, true)
-		bar.Set(pb.Color, false)
-		bar.Set(pb.Static, true)
-		bar.SetCurrent(0)
-		bar.SetTemplate(pb.Full)
-		bar.SetWidth(consoleSvc.GetTerminalWidth())
-		bar.Start()
-		bar.Write()
-
-		ch := make(chan int64, 1)
-
-		go func(currentIndex int) {
-			var totalBytesCopied int64 = 0
-
-			for bytesRead := range ch {
-				totalBytesCopied = totalBytesCopied + bytesRead
-				bar.SetCurrent(totalBytesCopied)
-				if totalBytesCopied == localFileStats.Size() {
-					bar.Finish()
-					bar.Write()
-
-					if currentIndex < len(assets)-1 {
-						fmt.Println()
-					}
-				} else {
-					bar.Write()
-				}
-			}
-		}(index)
-
-		for {
-			bytesRead, err := localFile.Read(buff)
-
-			if err != nil {
-				if err != io.EOF {
-					return err
-				}
-
-				close(ch)
-
-				break
-			}
-
-			if _, err := remoteFile.Write(buff[:bytesRead]); err != nil {
-				return err
-			}
-
-			ch <- int64(bytesRead)
-		}
-	}
+	defer sshSvc.Disconnect()
 
 	g := new(errgroup.Group)
 
-	// TODO: implement remote chown & chmod
+	commands := []string{
+		fmt.Sprintf("cd \"%s\"", destination),
+		"find . -type d -exec chmod 755 {} +",
+		"find . -type f -exec chmod 644 {} +",
+	}
 
-	// commands := []string{
-	// 	fmt.Sprintf("cd \"%s\"", destination),
-	// 	"find . -type d -exec chmod 755 {} +",
-	// 	"find . -type f -exec chmod 644 {} +",
-	// }
+	var user string
+	if user = viper.GetString(config.KeySCPChownUser); user == "" {
+		user = "media"
+	}
+	var group string
+	if group = viper.GetString(config.KeySCPChownGroup); group == "" {
+		group = "media"
+	}
 
-	// user := viper.GetString(config.KeySCPChownUser)
-	// if user == "" {
-	// 	user = "root"
-	// }
-	// group := viper.GetString(config.KeySCPChownGroup)
-	// if group == "" {
-	// 	group = "root"
-	// }
+	commands = append(commands, fmt.Sprintf("chown -R %s:%s ./*", user, group))
 
-	// commands = append(commands, fmt.Sprintf("chown -R %s:%s ./*", user, group))
-
-	// g.Go(func() error {
-	// 	_, err = conn.SendCommands(commands...)
-	// 	return err
-	// })
+	g.Go(func() error {
+		_, err = sshSvc.SendCommands(commands...)
+		return err
+	})
 
 	if delete {
 		for _, asset := range assets {
@@ -151,7 +98,7 @@ func process(ctx context.Context, assets []string, destination string, subdestin
 		}
 	}
 
-	return nil
+	return g.Wait()
 }
 
 func NewScpCmd() *cobra.Command {
@@ -161,7 +108,7 @@ func NewScpCmd() *cobra.Command {
 		Short:   "Upload files/folders using scp command",
 		Args:    cobra.MinimumNArgs(1),
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-			err := util.CmdCallParentPersistentPreRunE(cmd, args)
+			err := util.CmdCallParentPersistentPreRunE(cmd.Parent(), args)
 			if err != nil {
 				return err
 			}
@@ -178,6 +125,9 @@ func NewScpCmd() *cobra.Command {
 			// Remove last part as it is the subpath to append to scp command's destination
 			assets = append(args[:len(args)-1], args[len(args):]...)
 			subpath = args[len(args)-1]
+
+			delete, _ = cmd.Flags().GetBool("delete")
+			recursive, _ = cmd.Flags().GetBool("recursive")
 
 			// Exit if files/folders retrieved from assets do not exist
 			for index, asset := range assets {
