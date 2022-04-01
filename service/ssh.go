@@ -1,7 +1,6 @@
 package service
 
 import (
-	"context"
 	"fmt"
 	"log"
 	"os"
@@ -16,11 +15,10 @@ import (
 
 type SSHService struct {
 	Client *ssh.Client
-	ctx    context.Context
 }
 
-func NewSSHService(ctx context.Context) *SSHService {
-	service := &SSHService{ctx: ctx}
+func NewSSHService() *SSHService {
+	service := &SSHService{}
 
 	return service
 }

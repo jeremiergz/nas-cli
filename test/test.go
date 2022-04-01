@@ -117,10 +117,10 @@ func ExecuteCommandE(t *testing.T, root *cobra.Command, args []string) (c *cobra
 func GetTestContext() context.Context {
 	ctx := context.Background()
 
-	console := service.NewConsoleService(ctx)
-	media := service.NewMediaService(ctx)
-	sftp := service.NewSFTPService(ctx)
-	ssh := service.NewSSHService(ctx)
+	console := service.NewConsoleService()
+	media := service.NewMediaService()
+	sftp := service.NewSFTPService()
+	ssh := service.NewSSHService()
 
 	ctx = context.WithValue(ctx, util.ContextKeyConsole, console)
 	ctx = context.WithValue(ctx, util.ContextKeyMedia, media)

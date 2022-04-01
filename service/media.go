@@ -1,7 +1,6 @@
 package service
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"path"
@@ -16,16 +15,14 @@ import (
 	"github.com/jeremiergz/nas-cli/util"
 )
 
-type MediaService struct {
-	ctx context.Context
-}
+type MediaService struct{}
 
 var (
 	tvShowFmtRegexp = regexp.MustCompile(`(^.+)(\s-\s)S\d+E\d+\.(.+)$`)
 )
 
-func NewMediaService(ctx context.Context) *MediaService {
-	service := &MediaService{ctx: ctx}
+func NewMediaService() *MediaService {
+	service := &MediaService{}
 
 	return service
 }

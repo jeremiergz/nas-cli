@@ -1,27 +1,23 @@
 package service
 
 import (
-	"context"
-
-	"github.com/jeremiergz/nas-cli/util"
 	"github.com/pkg/sftp"
 	"golang.org/x/crypto/ssh"
 )
 
 type SFTPService struct {
 	Client *sftp.Client
-	ctx    context.Context
 	ssh    *ssh.Client
 }
 
-func NewSFTPService(ctx context.Context) *SFTPService {
-	service := &SFTPService{ctx: ctx}
+func NewSFTPService() *SFTPService {
+	service := &SFTPService{}
 
 	return service
 }
 
 func (s *SFTPService) Connect() error {
-	sshSvc := s.ctx.Value(util.ContextKeySSH).(*SSHService)
+	sshSvc := NewSSHService()
 
 	err := sshSvc.Connect()
 	if err != nil {
@@ -38,6 +34,7 @@ func (s *SFTPService) Connect() error {
 	}
 
 	s.Client = sftpClient
+	s.ssh = sshSvc.Client
 
 	return nil
 }
