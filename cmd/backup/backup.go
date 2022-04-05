@@ -46,11 +46,17 @@ func process(ctx context.Context, source string, destination io.Writer, filters 
 		if hasFilters && isInFilters(filenameInArchive, filters) {
 			return nil
 		} else {
-			header, err := tar.FileInfoHeader(fi, fi.Name())
+			link := fi.Name()
+			if fi.Mode()&os.ModeSymlink == os.ModeSymlink {
+				if link, err = os.Readlink(filename); err != nil {
+					return err
+				}
+			}
+
+			header, err := tar.FileInfoHeader(fi, link)
 			if err != nil {
 				return err
 			}
-
 			header.Name = filenameInArchive
 
 			err = tw.WriteHeader(header)
