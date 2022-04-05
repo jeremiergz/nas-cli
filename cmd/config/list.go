@@ -3,13 +3,13 @@ package config
 import (
 	"encoding/json"
 	"fmt"
-	"sort"
 	"strings"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"gopkg.in/yaml.v3"
 
+	"github.com/jeremiergz/nas-cli/config"
 	"github.com/jeremiergz/nas-cli/util"
 )
 
@@ -34,13 +34,11 @@ func NewListCmd() *cobra.Command {
 					fmt.Println(strings.TrimSpace(string(out)))
 
 				case "text":
-					keys := viper.AllKeys()
 					toPrint := []string{}
-					for _, key := range keys {
+					for _, key := range config.Keys {
 						format := "%s=%s"
 						toPrint = append(toPrint, fmt.Sprintf(format, key, viper.GetString(key)))
 					}
-					sort.Strings(toPrint)
 					fmt.Println(strings.Join(toPrint, "\n"))
 
 				case "yaml":
