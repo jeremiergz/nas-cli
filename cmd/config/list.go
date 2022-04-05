@@ -35,7 +35,7 @@ func NewListCmd() *cobra.Command {
 
 				case "text":
 					toPrint := []string{}
-					for _, key := range config.Keys {
+					for _, key := range config.OrderedKeys {
 						format := "%s=%s"
 						toPrint = append(toPrint, fmt.Sprintf(format, key, viper.GetString(key)))
 					}

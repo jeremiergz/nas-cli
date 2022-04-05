@@ -24,6 +24,8 @@ const (
 	// FileMode is the default mode to apply to files
 	FileMode os.FileMode = 0644
 
+	KeyBackupPlexDest      string = "backup.plex.dest"
+	KeyBackupPlexSrc       string = "backup.plex.src"
 	KeyNASFQDN             string = "nas.fqdn"
 	KeySCPChownGroup       string = "scp.chown.group"
 	KeySCPChownUser        string = "scp.chown.user"
@@ -48,8 +50,10 @@ var (
 	FileName string = ".nascliconfig"
 
 	// Configuration keys in INI file order
-	Keys = []string{
+	OrderedKeys = []string{
 		KeyNASFQDN,
+		KeyBackupPlexSrc,
+		KeyBackupPlexDest,
 		KeySCPChownGroup,
 		KeySCPChownUser,
 		KeySCPDestAnimesPath,
@@ -84,6 +88,25 @@ func init() {
 
 		nasDomain := viper.GetString(KeyNASFQDN)
 		viper.SetDefault(KeyNASFQDN, "localhost")
+
+		backupPlexSrc := viper.GetString(KeyBackupPlexSrc)
+		if backupPlexSrc != "" {
+			backupPlexSrcPath, err := filepath.Abs(backupPlexSrc)
+			if err != nil {
+				fmt.Println(promptui.Styler(promptui.FGRed)("✗"), err.Error())
+				os.Exit(1)
+			}
+			viper.Set(KeyBackupPlexSrc, backupPlexSrcPath)
+		}
+		backupPlexDest := viper.GetString(KeyBackupPlexDest)
+		if backupPlexDest != "" {
+			backupPlexDestPath, err := filepath.Abs(backupPlexDest)
+			if err != nil {
+				fmt.Println(promptui.Styler(promptui.FGRed)("✗"), err.Error())
+				os.Exit(1)
+			}
+			viper.Set(KeyBackupPlexDest, backupPlexDestPath)
+		}
 
 		viper.SetDefault(KeySCPChownGroup, "media")
 		viper.SetDefault(KeySCPChownUser, "media")
@@ -143,7 +166,7 @@ func Save() error {
 	configFilePath := path.Join(Dir, FileName)
 
 	cfg := ini.Empty()
-	for _, key := range Keys {
+	for _, key := range OrderedKeys {
 		lastSep := strings.LastIndex(key, ".")
 		sectionName := key[:(lastSep)]
 		keyName := key[(lastSep + 1):]

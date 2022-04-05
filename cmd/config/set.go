@@ -11,7 +11,7 @@ func NewSetCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:       "set <key> <value>",
 		Short:     "Set configuration entry",
-		ValidArgs: config.Keys,
+		ValidArgs: config.OrderedKeys,
 		Args: func(cmd *cobra.Command, args []string) error {
 			err := cobra.ExactArgs(2)(cmd, args)
 			if err != nil {

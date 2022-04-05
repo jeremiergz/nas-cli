@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/jeremiergz/nas-cli/cmd"
+	"github.com/jeremiergz/nas-cli/cmd/backup"
 	"github.com/jeremiergz/nas-cli/cmd/completion"
 	"github.com/jeremiergz/nas-cli/cmd/config"
 	"github.com/jeremiergz/nas-cli/cmd/info"
@@ -16,6 +17,7 @@ import (
 
 func main() {
 	rootCmd := cmd.NewRootCmd()
+	rootCmd.AddCommand(backup.NewBackupCmd())
 	rootCmd.AddCommand(completion.NewCompletionCmd())
 	rootCmd.AddCommand(config.NewConfigCmd())
 	rootCmd.AddCommand(info.NewInfoCmd())

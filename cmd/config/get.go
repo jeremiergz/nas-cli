@@ -13,7 +13,7 @@ func NewGetCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:       "get <key>",
 		Short:     "Get configuration entry value",
-		ValidArgs: config.Keys,
+		ValidArgs: config.OrderedKeys,
 		Args: func(cmd *cobra.Command, args []string) error {
 			err := cobra.ExactArgs(1)(cmd, args)
 			if err != nil {
