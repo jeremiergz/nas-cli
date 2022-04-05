@@ -56,7 +56,7 @@ func NewMergeCmd() *cobra.Command {
 	cmd.PersistentFlags().StringVar(&subtitleExtension, "sub-ext", "srt", "subtitles extension")
 	cmd.PersistentFlags().StringArrayVarP(&videoExtensions, "video-ext", "e", []string{"avi", "mkv", "mp4"}, "filter video files by extension")
 	cmd.PersistentFlags().BoolVarP(&yes, "yes", "y", false, "automatic yes to prompts")
-	cmd.AddCommand(NewTVShowCmd())
+	cmd.AddCommand(newTVShowCmd())
 
 	return cmd
 }

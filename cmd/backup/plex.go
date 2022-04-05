@@ -13,7 +13,7 @@ import (
 	"github.com/jeremiergz/nas-cli/util"
 )
 
-func NewPlexCmd() *cobra.Command {
+func newPlexCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "plex",
 		Aliases: []string{"px", "p"},

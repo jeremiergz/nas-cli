@@ -9,7 +9,7 @@ import (
 	"github.com/jeremiergz/nas-cli/config"
 )
 
-func NewAnimeCmd() *cobra.Command {
+func newAnimeCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "animes [name]",
 		Aliases: []string{"ani", "a"},

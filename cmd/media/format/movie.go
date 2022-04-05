@@ -113,7 +113,7 @@ func processMovies(ctx context.Context, wd string, movies []model.Movie, owner, 
 	return nil
 }
 
-func NewMovieCmd() *cobra.Command {
+func newMovieCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "movies <directory>",
 		Aliases: []string{"mov", "m"},

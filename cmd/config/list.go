@@ -13,7 +13,7 @@ import (
 	"github.com/jeremiergz/nas-cli/util"
 )
 
-func NewListCmd() *cobra.Command {
+func newListCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "list",
 		Short: "List configuration entries",

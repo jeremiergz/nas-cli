@@ -9,7 +9,7 @@ import (
 	"github.com/jeremiergz/nas-cli/config"
 )
 
-func NewTVShowCmd() *cobra.Command {
+func newTVShowCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "tvshows <assets> <subpath>",
 		Aliases: []string{"tv", "t"},

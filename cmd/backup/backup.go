@@ -92,7 +92,7 @@ func NewBackupCmd() *cobra.Command {
 	}
 
 	cmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "shows details about compressed files")
-	cmd.AddCommand(NewPlexCmd())
+	cmd.AddCommand(newPlexCmd())
 
 	return cmd
 }

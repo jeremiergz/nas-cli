@@ -145,9 +145,9 @@ func NewScpCmd() *cobra.Command {
 
 	cmd.PersistentFlags().BoolVarP(&delete, "delete", "d", false, "remove source files after upload")
 	cmd.PersistentFlags().BoolVarP(&recursive, "recursive", "r", false, "find files and folders recursively")
-	cmd.AddCommand(NewAnimeCmd())
-	cmd.AddCommand(NewMovieCmd())
-	cmd.AddCommand(NewTVShowCmd())
+	cmd.AddCommand(newAnimeCmd())
+	cmd.AddCommand(newMovieCmd())
+	cmd.AddCommand(newTVShowCmd())
 
 	return cmd
 }

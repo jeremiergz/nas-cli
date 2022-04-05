@@ -7,7 +7,7 @@ import (
 	"github.com/jeremiergz/nas-cli/config"
 )
 
-func NewSetCmd() *cobra.Command {
+func newSetCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:       "set <key> <value>",
 		Short:     "Set configuration entry",

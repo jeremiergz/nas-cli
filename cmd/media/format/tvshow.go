@@ -105,7 +105,7 @@ func processTVShows(ctx context.Context, wd string, tvShows []*model.TVShow, own
 	return nil
 }
 
-func NewTVShowCmd() *cobra.Command {
+func newTVShowCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "tvshows <directory>",
 		Aliases: []string{"tv", "t"},

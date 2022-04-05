@@ -140,9 +140,9 @@ func NewListCmd() *cobra.Command {
 		Args:    cobra.MinimumNArgs(1),
 	}
 
-	cmd.AddCommand(NewAnimeCmd())
-	cmd.AddCommand(NewMovieCmd())
-	cmd.AddCommand(NewTVShowCmd())
+	cmd.AddCommand(newAnimeCmd())
+	cmd.AddCommand(newMovieCmd())
+	cmd.AddCommand(newTVShowCmd())
 
 	return cmd
 }

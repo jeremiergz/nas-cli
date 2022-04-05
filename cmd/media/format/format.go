@@ -31,8 +31,8 @@ func NewFormatCmd() *cobra.Command {
 
 	cmd.PersistentFlags().BoolVar(&dryRun, "dry-run", false, "print result without processing it")
 	cmd.PersistentFlags().StringArrayVarP(&extensions, "ext", "e", []string{"avi", "mkv", "mp4"}, "filter files by extension")
-	cmd.AddCommand(NewMovieCmd())
-	cmd.AddCommand(NewTVShowCmd())
+	cmd.AddCommand(newMovieCmd())
+	cmd.AddCommand(newTVShowCmd())
 
 	return cmd
 }

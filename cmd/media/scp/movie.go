@@ -9,7 +9,7 @@ import (
 	"github.com/jeremiergz/nas-cli/config"
 )
 
-func NewMovieCmd() *cobra.Command {
+func newMovieCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "movies <assets> <subpath>",
 		Aliases: []string{"mov", "m"},

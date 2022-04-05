@@ -9,7 +9,7 @@ import (
 	"github.com/jeremiergz/nas-cli/config"
 )
 
-func NewGetCmd() *cobra.Command {
+func newGetCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:       "get <key>",
 		Short:     "Get configuration entry value",
