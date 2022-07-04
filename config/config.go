@@ -37,6 +37,7 @@ const (
 	KeySSHHost             string = "ssh.host"
 	KeySSHPort             string = "ssh.port"
 	KeySSHUser             string = "ssh.user"
+	KeySubsyncOptions      string = "subsync.options"
 )
 
 var (
@@ -64,6 +65,7 @@ var (
 		KeySSHUser,
 		KeySSHClientKnownHosts,
 		KeySSHClientPrivateKey,
+		KeySubsyncOptions,
 	}
 
 	// UID is the processed files owner to set
@@ -153,6 +155,8 @@ func init() {
 			defaultUsername = os.Getenv("USER")
 		}
 		viper.SetDefault(KeySSHUser, defaultUsername)
+
+		viper.SetDefault(KeySubsyncOptions, "")
 
 		err := Save()
 		if err != nil {

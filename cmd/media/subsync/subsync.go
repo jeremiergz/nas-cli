@@ -17,6 +17,7 @@ import (
 	"github.com/disiqueira/gotree/v3"
 	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 
 	"github.com/jeremiergz/nas-cli/config"
 	"github.com/jeremiergz/nas-cli/service"
@@ -82,7 +83,6 @@ func process(ctx context.Context, video string, videoLang string, subtitle strin
 	outFilePath := path.Join(config.WD, outFile)
 
 	baseOptions := []string{
-		"--cli",
 		"sync",
 		"--ref",
 		videoPath,
@@ -94,6 +94,12 @@ func process(ctx context.Context, video string, videoLang string, subtitle strin
 		subtitleLang,
 		"--out",
 		outFilePath,
+	}
+
+	subsyncOptions := viper.GetString(config.KeySubsyncOptions)
+
+	if subsyncOptions != "" {
+		baseOptions = append(strings.Split(subsyncOptions, " "), baseOptions...)
 	}
 
 	runOptions := []string{}
