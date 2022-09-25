@@ -55,6 +55,11 @@ func hasSubtitlesInTVShow(tvShow *model.TVShow) bool {
 
 // Prints given TV shows and their subtitles as a tree
 func printAllTVShows(wd string, tvShows []*model.TVShow) {
+	langFlagsMapping := map[string]string{
+		"eng": "🇺🇸",
+		"fre": "🇫🇷",
+	}
+
 	rootTree := gotree.New(wd)
 	for _, tvShow := range tvShows {
 		tvShowTree := rootTree.Add(tvShow.Name)
@@ -67,9 +72,15 @@ func printAllTVShows(wd string, tvShows []*model.TVShow) {
 			seasonsTree := tvShowTree.Add(fmt.Sprintf("%s (%d %s)", season.Name, filesCount, fileString))
 			for _, episode := range season.Episodes {
 				episodeTree := seasonsTree.Add(episode.Name())
-				episodeTree.Add(fmt.Sprintf("%s  %s", strings.ToUpper(episode.Extension), episode.Basename))
+				episodeTree.Add(fmt.Sprintf("📼  %s", episode.Basename))
+
 				for lang, subtitle := range episode.Subtitles {
-					episodeTree.Add(fmt.Sprintf("%s  %s", strings.ToUpper(lang), subtitle))
+					flag := langFlagsMapping[lang]
+					if flag != "" {
+						episodeTree.Add(fmt.Sprintf("%s   %s", flag, subtitle))
+					} else {
+						episodeTree.Add(fmt.Sprintf("%s  %s", strings.ToUpper(lang), subtitle))
+					}
 				}
 			}
 		}
