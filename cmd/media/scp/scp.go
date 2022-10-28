@@ -40,7 +40,7 @@ func process(ctx context.Context, assets []string, destination string, subdestin
 		args = append(args, "-r")
 	}
 	args = append(args, assets...)
-	fullDestination := fmt.Sprintf("\"%s\"", path.Join(destination, subdestination))
+	fullDestination := path.Join(destination, subdestination)
 	args = append(args, fmt.Sprintf("%s:%s", viper.GetString(config.KeyNASFQDN), fullDestination))
 
 	consoleSvc.Info(fmt.Sprintf("%s %s\n", scpCommand, strings.Join(args, " ")))
