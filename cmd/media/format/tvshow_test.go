@@ -125,7 +125,7 @@ func TestTVShowCmdWithNameOverride(t *testing.T) {
 		"test.s02e04.mkv",
 		"test.s02e05.mkv",
 	}
-	tvshowName := "Overriden Name"
+	tvshowName := "Overridden Name"
 	expectedTree := map[string]map[string][]string{
 		tvshowName: {
 			"Season 1": {

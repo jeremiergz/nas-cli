@@ -14,19 +14,19 @@ import (
 )
 
 var (
-	// BuildDate is the last build datetime, overriden as ldflag
+	// BuildDate is the last build datetime, overridden as ldflag
 	BuildDate = "N/A"
 
 	// Compiler is the the compiler toolchain that built the running binary
 	Compiler = fmt.Sprintf("%s/%s", runtime.Compiler, runtime.Version())
 
-	// GitCommit is the last commit SHA string, overriden as ldflag
+	// GitCommit is the last commit SHA string, overridden as ldflag
 	GitCommit = "N/A"
 
 	// Platform is the system OS and architecture binary is built for
 	Platform = fmt.Sprintf("%s/%s", runtime.GOOS, runtime.GOARCH)
 
-	// Version is the Calendar Versioning string, overriden as ldflag
+	// Version is the Calendar Versioning string, overridden as ldflag
 	Version = "N/A"
 )
 

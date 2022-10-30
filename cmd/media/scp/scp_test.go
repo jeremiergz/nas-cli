@@ -57,7 +57,7 @@ func TestSCPProcess(t *testing.T) {
 
 	// wd, _ := os.Getwd()
 	// dir := filepath.Join(wd, "../../..", "test")
-	// dest := filepath.Join(wd, "../../..", "test", "transfered")
+	// dest := filepath.Join(wd, "../../..", "test", "transferred")
 
 	// console := service.NewConsoleService()
 	// media := service.NewMediaService()
