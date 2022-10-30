@@ -2,6 +2,7 @@
 
 [![pipeline status](https://github.com/jeremiergz/nas-cli/workflows/Build%20&%20Test%20&%20Release/badge.svg?branch=main)](https://github.com/jeremiergz/nas-cli/actions)
 [![license](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](https://github.com/jeremiergz/nas-cli/blob/main/LICENSE)
+[![go report](https://goreportcard.com/badge/github.com/jeremiergz/nas-cli)](https://goreportcard.com/report/github.com/jeremiergz/nas-cli)
 
 CLI application for managing my NAS.
 
