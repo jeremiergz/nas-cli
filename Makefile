@@ -2,15 +2,21 @@ DEPENDENCIES			:= cut date find git go
 $(foreach dependency, ${DEPENDENCIES}, $(if $(shell which ${dependency}),, $(error No ${dependency} in PATH)))
 
 BINARY					:= nas-cli
-BUILD_DATE				:= $(shell date -u +%FT%TZ)
-GIT_COMMIT				:= $(shell git rev-parse HEAD)
 OUTPUT_DIR				:= build
+SHELL					:= /bin/bash
+
+BUILD_DATE				:= $(shell date -u +%FT%T.%3NZ)
+GIT_COMMIT				:= $(shell git rev-parse HEAD)
 TAG						:= $(shell git describe --abbrev=0)
+
 NEXT_VERSION_BASE		:= $(shell date +%y.%m)
 VERSION_BASE			:= $(shell echo ${TAG} | cut -c1-5)
 VERSION_PATCH			:= $(shell echo ${TAG} | cut -c7-)
-LDFLAGS					:= -ldflags "-X github.com/jeremiergz/nas-cli/cmd/info.BuildDate=${BUILD_DATE} -X github.com/jeremiergz/nas-cli/cmd/info.GitCommit=${GIT_COMMIT} -X github.com/jeremiergz/nas-cli/cmd/info.Version=${TAG}"
-SHELL					:= /bin/bash
+
+LDFLAGS					:= -ldflags
+LDFLAGS					+= "-X 'github.com/jeremiergz/nas-cli/cmd/info.BuildDate=${BUILD_DATE}'
+LDFLAGS					+= -X 'github.com/jeremiergz/nas-cli/cmd/info.GitCommit=${GIT_COMMIT}'
+LDFLAGS					+= -X 'github.com/jeremiergz/nas-cli/cmd/info.Version=${TAG}'"
 
 ifeq (${VERSION_BASE}, ${NEXT_VERSION_BASE})
 	NEXT_VERSION_PATCH	:= $(shell echo $$((${VERSION_PATCH} + 1)))
