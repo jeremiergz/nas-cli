@@ -1,9 +1,9 @@
-DEPENDENCIES			:= cut date find git go
+SHELL					:= /bin/bash
+DEPENDENCIES			:= awk basename cut date echo find git go realpath rm sha256sum
 $(foreach dependency, ${DEPENDENCIES}, $(if $(shell which ${dependency}),, $(error No ${dependency} in PATH)))
 
-BINARY					:= nas-cli
+BINARY					:= $(shell basename $(realpath .))
 OUTPUT_DIR				:= build
-SHELL					:= /bin/bash
 
 BUILD_DATE				:= $(shell date -u +%FT%T.%3NZ)
 GIT_COMMIT				:= $(shell git rev-parse HEAD)
