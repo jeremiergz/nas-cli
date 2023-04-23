@@ -31,7 +31,7 @@ func isInFilters(name string, filters []string) bool {
 	return false
 }
 
-func process(ctx context.Context, source string, destination io.Writer, filters []string) error {
+func process(ctx context.Context, w io.Writer, source string, destination io.Writer, filters []string) error {
 	gw := gzip.NewWriter(destination)
 	defer gw.Close()
 
@@ -79,17 +79,20 @@ func process(ctx context.Context, source string, destination io.Writer, filters 
 			}
 
 			if verbose {
-				fmt.Println(filenameInArchive)
+				fmt.Fprintln(w, filenameInArchive)
 			}
 
 			return nil
 		}
 	})
+	if err != nil {
+		return err
+	}
 
-	return err
+	return nil
 }
 
-func NewBackupCmd() *cobra.Command {
+func NewCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "backup",
 		Aliases: []string{"bak"},

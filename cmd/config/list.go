@@ -10,7 +10,7 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/jeremiergz/nas-cli/config"
-	"github.com/jeremiergz/nas-cli/util"
+	"github.com/jeremiergz/nas-cli/util/cmdutil"
 )
 
 func newListCmd() *cobra.Command {
@@ -18,40 +18,45 @@ func newListCmd() *cobra.Command {
 		Use:   "list",
 		Short: "List configuration entries",
 		PreRunE: func(cmd *cobra.Command, args []string) error {
-			return util.CmdOnlyValidOutputs()
+			return cmdutil.OnlyValidOutputs()
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
+			w := cmd.OutOrStdout()
+
 			if err := viper.ReadInConfig(); err != nil {
 				if _, ok := err.(viper.ConfigFileNotFoundError); ok {
-					fmt.Println("no configuration entries")
+					fmt.Fprintln(w, "no configuration entries")
 				} else {
 					return err
 				}
 			} else {
-				switch util.CmdOutputFormat {
+				var toPrint string
+				switch cmdutil.OutputFormat {
 				case "json":
 					out, _ := json.Marshal(viper.AllSettings())
-					fmt.Println(strings.TrimSpace(string(out)))
+					toPrint = strings.TrimSpace(string(out))
 
 				case "text":
-					toPrint := []string{}
+					values := []string{}
 					for _, key := range config.OrderedKeys {
 						format := "%s=%s"
-						toPrint = append(toPrint, fmt.Sprintf(format, key, viper.GetString(key)))
+						values = append(values, fmt.Sprintf(format, key, viper.GetString(key)))
 					}
-					fmt.Println(strings.Join(toPrint, "\n"))
+					toPrint = strings.Join(values, "\n")
 
 				case "yaml":
 					out, _ := yaml.Marshal(viper.AllSettings())
-					fmt.Println(strings.TrimSpace(string(out)))
+					toPrint = strings.TrimSpace(string(out))
 				}
+
+				fmt.Fprintln(w, toPrint)
 			}
 
 			return nil
 		},
 	}
 
-	util.CmdAddOutputFlag(cmd)
+	cmdutil.AddOutputFlag(cmd)
 
 	return cmd
 }

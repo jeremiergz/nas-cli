@@ -2,11 +2,13 @@ package cmd
 
 import (
 	"github.com/spf13/cobra"
+
+	"github.com/jeremiergz/nas-cli/util/processutil"
 )
 
-func NewRootCmd() *cobra.Command {
+func NewCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "nas-cli",
+		Use:   processutil.AppName,
 		Short: "CLI application for managing my NAS",
 	}
 

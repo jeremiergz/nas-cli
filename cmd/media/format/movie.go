@@ -3,15 +3,17 @@ package format
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"path"
 	"regexp"
 	"strconv"
-	"strings"
 
 	"github.com/disiqueira/gotree/v3"
 	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 
 	"github.com/jeremiergz/nas-cli/config"
 	"github.com/jeremiergz/nas-cli/model"
@@ -19,7 +21,10 @@ import (
 	"github.com/jeremiergz/nas-cli/util"
 )
 
-var movieFmtRegexp = regexp.MustCompile(`(^.+)\s\(([0-9]{4})\)\.(.+)$`)
+var (
+	movieFmtRegexp = regexp.MustCompile(`(^.+)\s\(([0-9]{4})\)\.(.+)$`)
+	movieNameCaser = cases.Title(language.Und)
+)
 
 // Lists movies in folder that must be processed
 func loadMovies(ctx context.Context, wd string, extensions []string) ([]model.Movie, error) {
@@ -46,7 +51,7 @@ func loadMovies(ctx context.Context, wd string, extensions []string) ([]model.Mo
 }
 
 // Prints given movies array as a tree
-func printAllMovies(wd string, movies []model.Movie) {
+func printAllMovies(w io.Writer, wd string, movies []model.Movie) {
 	moviesTree := gotree.New(wd)
 	for _, m := range movies {
 		moviesTree.Add(fmt.Sprintf("%s  %s", m.Fullname, m.Basename))
@@ -54,15 +59,15 @@ func printAllMovies(wd string, movies []model.Movie) {
 	toPrint := moviesTree.Print()
 	lastSpaceRegexp := regexp.MustCompile(`\s$`)
 	toPrint = lastSpaceRegexp.ReplaceAllString(toPrint, "")
-	fmt.Println(toPrint)
+	fmt.Fprintln(w, toPrint)
 }
 
 // Processes listed movies by prompting user
-func processMovies(ctx context.Context, wd string, movies []model.Movie, owner, group int) error {
+func processMovies(ctx context.Context, w io.Writer, wd string, movies []model.Movie, owner, group int) error {
 	consoleSvc := ctx.Value(util.ContextKeyConsole).(*service.ConsoleService)
 
 	for _, m := range movies {
-		fmt.Println()
+		fmt.Fprintln(w)
 		// Ask if current movie must be processed
 		prompt := promptui.Prompt{
 			Label:     fmt.Sprintf("Rename %s", m.Basename),
@@ -76,10 +81,11 @@ func processMovies(ctx context.Context, wd string, movies []model.Movie, owner, 
 			}
 			continue
 		}
+
 		// Allow modification of parsed movie title
 		prompt = promptui.Prompt{
 			Label:   "Name",
-			Default: strings.Title(m.Title),
+			Default: movieNameCaser.String(m.Title),
 		}
 		titleInput, err := prompt.Run()
 		if err != nil {
@@ -122,6 +128,8 @@ func newMovieCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			consoleSvc := cmd.Context().Value(util.ContextKeyConsole).(*service.ConsoleService)
 
+			w := cmd.OutOrStdout()
+
 			movies, err := loadMovies(cmd.Context(), config.WD, extensions)
 			if err != nil {
 				return err
@@ -129,9 +137,9 @@ func newMovieCmd() *cobra.Command {
 			if len(movies) == 0 {
 				consoleSvc.Success("Nothing to process")
 			} else {
-				printAllMovies(config.WD, movies)
+				printAllMovies(w, config.WD, movies)
 				if !dryRun {
-					err := processMovies(cmd.Context(), config.WD, movies, config.UID, config.GID)
+					err := processMovies(cmd.Context(), w, config.WD, movies, config.UID, config.GID)
 					if err != nil {
 						return err
 					}

@@ -26,7 +26,9 @@ func newAnimeCmd() *cobra.Command {
 				animeName = args[0]
 			}
 
-			return process(cmd.Context(), animesDest, true, animeName)
+			w := cmd.OutOrStdout()
+
+			return process(cmd.Context(), w, animesDest, true, animeName)
 		},
 	}
 

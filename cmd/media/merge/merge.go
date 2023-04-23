@@ -8,6 +8,7 @@ import (
 
 	"github.com/jeremiergz/nas-cli/service"
 	"github.com/jeremiergz/nas-cli/util"
+	"github.com/jeremiergz/nas-cli/util/cmdutil"
 )
 
 type backup struct {
@@ -28,7 +29,7 @@ var (
 	yes               bool
 )
 
-func NewMergeCmd() *cobra.Command {
+func NewCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "merge",
 		Aliases: []string{"mrg"},
@@ -36,7 +37,7 @@ func NewMergeCmd() *cobra.Command {
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			mediaSvc := cmd.Context().Value(util.ContextKeyMedia).(*service.MediaService)
 
-			err := util.CmdCallParentPersistentPreRunE(cmd.Parent(), args)
+			err := cmdutil.CallParentPersistentPreRunE(cmd.Parent(), args)
 			if err != nil {
 				return err
 			}

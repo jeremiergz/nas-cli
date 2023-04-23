@@ -1,33 +1,48 @@
 package completion
 
 import (
-	"fmt"
+	"bytes"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/jeremiergz/nas-cli/cmd"
-	"github.com/jeremiergz/nas-cli/config"
-	"github.com/jeremiergz/nas-cli/test"
 )
 
-func TestCompletionCmd(t *testing.T) {
-	tempDir := t.TempDir()
-	config.Dir = tempDir
+func Test_Completion_For_Bash(t *testing.T) {
+	output, err := testCompletionGeneration(t, "bash")
 
-	rootCmd := cmd.NewRootCmd()
-	rootCmd.AddCommand(NewCompletionCmd())
+	assert.NoError(t, err)
+	assert.Contains(t, output, "# bash completion for")
+}
 
-	tests := []struct {
-		args     []string
-		contains string
-	}{
-		{[]string{"bash"}, fmt.Sprintf("# bash completion for %s", rootCmd.Name())},
-		{[]string{"zsh"}, fmt.Sprintf("# zsh completion for %s", rootCmd.Name())},
-	}
+func Test_Completion_For_ZSH(t *testing.T) {
+	output, err := testCompletionGeneration(t, "zsh")
 
-	for _, try := range tests {
-		args := append([]string{"completion"}, try.args...)
-		_, output := test.ExecuteCommand(t, rootCmd, args)
+	assert.NoError(t, err)
+	assert.Contains(t, output, "# zsh completion for")
+}
 
-		test.AssertContains(t, try.contains, output)
-	}
+func Test_Completion_Fails_When_Shell_Is_Unknown(t *testing.T) {
+	output, err := testCompletionGeneration(t, "unknown")
+
+	assert.Contains(t, output, "invalid argument \"unknown\"")
+	assert.Error(t, err)
+}
+
+func testCompletionGeneration(t *testing.T, shell string) (string, error) {
+	t.Helper()
+
+	rootCMD := cmd.NewCommand()
+	rootCMD.AddCommand(NewCommand())
+
+	args := []string{"completion", shell}
+
+	output := new(bytes.Buffer)
+	rootCMD.SetOut(output)
+	rootCMD.SetErr(output)
+	rootCMD.SetArgs(args)
+	err := rootCMD.Execute()
+
+	return output.String(), err
 }

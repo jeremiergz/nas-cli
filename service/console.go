@@ -2,22 +2,25 @@ package service
 
 import (
 	"fmt"
+	"io"
 
 	"github.com/cheggaaa/pb/v3/termutil"
 	"github.com/manifoldco/promptui"
 )
 
-type ConsoleService struct{}
+type ConsoleService struct {
+	w io.Writer
+}
 
-func NewConsoleService() *ConsoleService {
-	service := &ConsoleService{}
+func NewConsoleService(w io.Writer) *ConsoleService {
+	service := &ConsoleService{w}
 
 	return service
 }
 
 // Pretty-prints given error message
 func (s *ConsoleService) Error(message string) {
-	fmt.Println(promptui.Styler(promptui.FGRed)("✗"), message)
+	fmt.Fprintln(s.w, promptui.Styler(promptui.FGRed)("✗"), message)
 }
 
 // Retrieves the terminal width to use when printing on console
@@ -33,10 +36,10 @@ func (s *ConsoleService) GetTerminalWidth() int {
 
 // Pretty-prints given info message
 func (s *ConsoleService) Info(message string) {
-	fmt.Println(promptui.Styler(promptui.FGYellow)("❯"), message)
+	fmt.Fprintln(s.w, promptui.Styler(promptui.FGYellow)("❯"), message)
 }
 
 // Pretty-prints given success message
 func (s *ConsoleService) Success(message string) {
-	fmt.Println(promptui.Styler(promptui.FGGreen)("✔"), message)
+	fmt.Fprintln(s.w, promptui.Styler(promptui.FGGreen)("✔"), message)
 }

@@ -9,10 +9,13 @@ import (
 	"strings"
 
 	ptn "github.com/middelink/go-parse-torrent-name"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 
 	"github.com/jeremiergz/nas-cli/config"
 	"github.com/jeremiergz/nas-cli/model"
 	"github.com/jeremiergz/nas-cli/util"
+	"github.com/jeremiergz/nas-cli/util/sliceutil"
 )
 
 type MediaService struct{}
@@ -44,7 +47,7 @@ func (s *MediaService) List(wd string, extensions []string, regExp *regexp.Regex
 	filesList := []string{}
 	for _, f := range files {
 		ext := strings.Replace(path.Ext(f.Name()), ".", "", 1)
-		isValidExt := util.Contains(extensions, ext)
+		isValidExt := sliceutil.Contains(extensions, ext)
 		shouldProcess := !f.IsDir() && isValidExt
 		if shouldProcess {
 			if regExp == nil || !regExp.Match([]byte(f.Name())) {
@@ -55,6 +58,10 @@ func (s *MediaService) List(wd string, extensions []string, regExp *regexp.Regex
 
 	return filesList
 }
+
+var (
+	episodeNameCaser = cases.Title(language.Und)
+)
 
 // Lists TV shows in folder that must be processed
 func (s *MediaService) LoadTVShows(wd string, extensions []string, subtitlesExt *string, subtitlesLangs []string, anyFiles bool) ([]*model.TVShow, error) {
@@ -67,7 +74,8 @@ func (s *MediaService) LoadTVShows(wd string, extensions []string, subtitlesExt 
 	tvShows := []*model.TVShow{}
 	for _, basename := range toProcess {
 		e, err := s.ParseTitle(basename)
-		e.Title = strings.Title(e.Title)
+
+		e.Title = episodeNameCaser.String(e.Title)
 		if err == nil {
 			var tvShow *model.TVShow
 			tvShowIndex := s.findTVShowIndex(e.Title, tvShows)

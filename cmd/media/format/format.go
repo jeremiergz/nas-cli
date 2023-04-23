@@ -5,6 +5,7 @@ import (
 
 	"github.com/jeremiergz/nas-cli/service"
 	"github.com/jeremiergz/nas-cli/util"
+	"github.com/jeremiergz/nas-cli/util/cmdutil"
 )
 
 var (
@@ -12,7 +13,7 @@ var (
 	extensions []string
 )
 
-func NewFormatCmd() *cobra.Command {
+func NewCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "format",
 		Aliases: []string{"fmt"},
@@ -20,7 +21,7 @@ func NewFormatCmd() *cobra.Command {
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			mediaSvc := cmd.Context().Value(util.ContextKeyMedia).(*service.MediaService)
 
-			err := util.CmdCallParentPersistentPreRunE(cmd.Parent(), args)
+			err := cmdutil.CallParentPersistentPreRunE(cmd.Parent(), args)
 			if err != nil {
 				return err
 			}

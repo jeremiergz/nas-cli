@@ -19,7 +19,7 @@ var (
 	ownershipRegexp = regexp.MustCompile(`^(\w+):?(\w+)?$`)
 )
 
-func NewMediaCmd() *cobra.Command {
+func NewCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "media",
 		Short: "Set of utilities for media management",
@@ -31,12 +31,12 @@ func NewMediaCmd() *cobra.Command {
 	}
 
 	cmd.PersistentFlags().StringVarP(&ownership, "owner", "o", "", "override default ownership")
-	cmd.AddCommand(download.NewDownloadCmd())
-	cmd.AddCommand(format.NewFormatCmd())
-	cmd.AddCommand(list.NewListCmd())
-	cmd.AddCommand(merge.NewMergeCmd())
-	cmd.AddCommand(scp.NewScpCmd())
-	cmd.AddCommand(subsync.NewSubsyncCmd())
+	cmd.AddCommand(download.NewCommand())
+	cmd.AddCommand(format.NewCommand())
+	cmd.AddCommand(list.NewCommand())
+	cmd.AddCommand(merge.NewCommand())
+	cmd.AddCommand(scp.NewCommand())
+	cmd.AddCommand(subsync.NewCommand())
 
 	return cmd
 }

@@ -26,7 +26,9 @@ func newTVShowCmd() *cobra.Command {
 				tvShowName = args[0]
 			}
 
-			return process(cmd.Context(), tvShowsDest, true, tvShowName)
+			w := cmd.OutOrStdout()
+
+			return process(cmd.Context(), w, tvShowsDest, true, tvShowName)
 		},
 	}
 

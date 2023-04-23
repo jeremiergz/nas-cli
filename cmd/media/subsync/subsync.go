@@ -59,7 +59,7 @@ func formatPoints(points int) string {
 }
 
 // Prints files as a tree
-func printAll(videos []string, subtitles []string) {
+func printAll(w io.Writer, videos []string, subtitles []string) {
 	rootTree := gotree.New(config.WD)
 	for index, video := range videos {
 		fileIndex := strconv.FormatInt(int64(index+1), 10)
@@ -69,7 +69,7 @@ func printAll(videos []string, subtitles []string) {
 		subTree.Add(video)
 	}
 	toPrint := rootTree.Print()
-	fmt.Println(toPrint)
+	fmt.Fprintln(w, toPrint)
 }
 
 // Attempts to synchronize given subtitle with given video file
@@ -153,7 +153,7 @@ func process(ctx context.Context, video string, videoLang string, subtitle strin
 	return time.Since(start), matchingPoints, true
 }
 
-func NewSubsyncCmd() *cobra.Command {
+func NewCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "subsync <directory>",
 		Aliases: []string{"sub"},
@@ -178,12 +178,14 @@ func NewSubsyncCmd() *cobra.Command {
 			videoFiles := mediaSvc.List(config.WD, videoExtensions, nil)
 			sort.Sort(util.SortAlphabetic(videoFiles))
 
+			w := cmd.OutOrStdout()
+
 			if len(subtitleFiles) == 0 {
 				consoleSvc.Success("No subtitle file to process")
 			} else if len(videoFiles) == 0 {
 				consoleSvc.Success("No video file to process")
 			} else {
-				printAll(videoFiles, subtitleFiles)
+				printAll(w, videoFiles, subtitleFiles)
 
 				if !dryRun {
 					var err error
@@ -203,7 +205,7 @@ func NewSubsyncCmd() *cobra.Command {
 					} else {
 						hasError := false
 						results := []result{}
-						fmt.Println()
+						fmt.Fprintln(w)
 
 						maxOutFileLength := 0
 						for index, videoFile := range videoFiles {
@@ -251,7 +253,7 @@ func NewSubsyncCmd() *cobra.Command {
 						}
 
 						if hasError {
-							fmt.Println()
+							fmt.Fprintln(w)
 							return fmt.Errorf("an error occurred")
 						}
 					}

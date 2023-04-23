@@ -1,24 +1,36 @@
 package version
 
 import (
+	"bytes"
 	"fmt"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/jeremiergz/nas-cli/cmd"
-	"github.com/jeremiergz/nas-cli/cmd/info"
-	"github.com/jeremiergz/nas-cli/config"
-	"github.com/jeremiergz/nas-cli/test"
+	"github.com/jeremiergz/nas-cli/util/processutil"
 )
 
-func TestVersionCmd(t *testing.T) {
-	tempDir := t.TempDir()
-	config.Dir = tempDir
+func Test_Outputs_The_Correct_Version(t *testing.T) {
+	rootCMD := cmd.NewCommand()
+	rootCMD.AddCommand(NewCommand())
 
-	rootCmd := cmd.NewRootCmd()
-	rootCmd.AddCommand(NewVersionCmd())
+	tests := []string{
+		"N/A",
+		"v1.0.0",
+		"qys2toaiqdignhk88z39o3hw5zm3234wv9qfx6uz",
+	}
 
-	_, output := test.ExecuteCommand(t, rootCmd, []string{"version"})
+	for _, test := range tests {
+		processutil.GitCommit = test
+		output := new(bytes.Buffer)
+		rootCMD.SetOut(output)
+		rootCMD.SetErr(output)
+		rootCMD.SetArgs([]string{"version"})
+		rootCMD.Execute()
 
-	expected := fmt.Sprintf("%s %s", rootCmd.Name(), info.Version)
-	test.AssertEquals(t, expected, output)
+		expected := fmt.Sprintf("%s %s\n", rootCMD.Name(), test)
+
+		assert.Equal(t, expected, output.String())
+	}
 }

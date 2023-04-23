@@ -3,6 +3,7 @@ package list
 import (
 	"context"
 	"fmt"
+	"io"
 	"io/fs"
 	"path"
 	"sort"
@@ -38,7 +39,7 @@ func sortSeasons(seasons []fs.FileInfo) {
 }
 
 // Lists files & folders in destination
-func process(ctx context.Context, destination string, dirsOnly bool, nameFilter string) error {
+func process(ctx context.Context, w io.Writer, destination string, dirsOnly bool, nameFilter string) error {
 	sftpSvc := ctx.Value(util.ContextKeySFTP).(*service.SFTPService)
 
 	err := sftpSvc.Connect()
@@ -127,12 +128,12 @@ func process(ctx context.Context, destination string, dirsOnly bool, nameFilter 
 		rootTree.Add("no files found")
 	}
 
-	fmt.Println(strings.TrimSpace(rootTree.Print()))
+	fmt.Fprintln(w, strings.TrimSpace(rootTree.Print()))
 
 	return nil
 }
 
-func NewListCmd() *cobra.Command {
+func NewCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "list",
 		Aliases: []string{"ls"},

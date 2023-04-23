@@ -14,19 +14,14 @@ func newGetCmd() *cobra.Command {
 		Use:       "get <key>",
 		Short:     "Get configuration entry value",
 		ValidArgs: config.OrderedKeys,
-		Args: func(cmd *cobra.Command, args []string) error {
-			err := cobra.ExactArgs(1)(cmd, args)
-			if err != nil {
-				return err
-			}
-
-			return cobra.OnlyValidArgs(cmd, args)
-		},
+		Args:      cobra.MatchAll(cobra.ExactArgs(1), cobra.OnlyValidArgs),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			key := args[0]
 
+			w := cmd.OutOrStdout()
+
 			value := viper.GetString(key)
-			fmt.Println(value)
+			fmt.Fprintln(w, value)
 
 			return nil
 		},

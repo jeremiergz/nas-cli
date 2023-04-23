@@ -33,7 +33,7 @@ func createAssets(t *testing.T, dir string, number uint) []string {
 		name := filepath.Join(dir, fmt.Sprintf("%s.mkv", gen))
 		f, err := os.Create(name)
 		if err != nil {
-			fmt.Println(err)
+			t.Fail()
 		}
 
 		randBigInt, _ := rand.Int(rand.Reader, big.NewInt(100))

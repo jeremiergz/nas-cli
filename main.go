@@ -16,17 +16,19 @@ import (
 )
 
 func main() {
-	rootCmd := cmd.NewRootCmd()
-	rootCmd.AddCommand(backup.NewBackupCmd())
-	rootCmd.AddCommand(completion.NewCompletionCmd())
-	rootCmd.AddCommand(config.NewConfigCmd())
-	rootCmd.AddCommand(info.NewInfoCmd())
-	rootCmd.AddCommand(media.NewMediaCmd())
-	rootCmd.AddCommand(version.NewVersionCmd())
+	rootCmd := cmd.NewCommand()
+	rootCmd.AddCommand(backup.NewCommand())
+	rootCmd.AddCommand(completion.NewCommand())
+	rootCmd.AddCommand(config.NewCommand())
+	rootCmd.AddCommand(info.NewCommand())
+	rootCmd.AddCommand(media.NewCommand())
+	rootCmd.AddCommand(version.NewCommand())
 
 	ctx := context.Background()
 
-	console := service.NewConsoleService()
+	w := rootCmd.OutOrStdout()
+
+	console := service.NewConsoleService(w)
 	media := service.NewMediaService()
 	sftp := service.NewSFTPService()
 	ssh := service.NewSSHService()

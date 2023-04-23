@@ -3,6 +3,7 @@ package merge
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path"
@@ -54,7 +55,7 @@ func hasSubtitlesInTVShow(tvShow *model.TVShow) bool {
 }
 
 // Prints given TV shows and their subtitles as a tree
-func printAllTVShows(wd string, tvShows []*model.TVShow) {
+func printAllTVShows(w io.Writer, wd string, tvShows []*model.TVShow) {
 	langFlagsMapping := map[string]string{
 		"eng": "🇺🇸",
 		"fre": "🇫🇷",
@@ -88,11 +89,11 @@ func printAllTVShows(wd string, tvShows []*model.TVShow) {
 	toPrint := rootTree.Print()
 	lastSpaceRegexp := regexp.MustCompile(`\s$`)
 	toPrint = lastSpaceRegexp.ReplaceAllString(toPrint, "")
-	fmt.Println(toPrint)
+	fmt.Fprintln(w, toPrint)
 }
 
 // Merges TV show language tracks into one video file
-func processTVShows(ctx context.Context, wd string, tvShows []*model.TVShow, keepOriginalFiles bool, owner, group int) (bool, []result) {
+func processTVShows(ctx context.Context, w io.Writer, wd string, tvShows []*model.TVShow, keepOriginalFiles bool, owner, group int) (bool, []result) {
 	consoleSvc := ctx.Value(util.ContextKeyConsole).(*service.ConsoleService)
 	mediaSvc := ctx.Value(util.ContextKeyMedia).(*service.MediaService)
 
@@ -141,7 +142,7 @@ func processTVShows(ctx context.Context, wd string, tvShows []*model.TVShow, kee
 							}
 							options = append(options, videoBackupPath)
 
-							fmt.Println()
+							fmt.Fprintln(w)
 							consoleSvc.Info(fmt.Sprintf("%s %s\n", mergeCommand, strings.Join(options, " ")))
 							merge := exec.Command(mergeCommand, options...)
 							merge.Stdout = os.Stdout
@@ -211,6 +212,8 @@ func newTVShowCmd() *cobra.Command {
 
 			tvShows, err := mediaSvc.LoadTVShows(config.WD, videoExtensions, &subtitleExtension, subtitleLanguages, true)
 
+			w := cmd.OutOrStdout()
+
 			if len(tvShowNames) > 0 {
 				if len(tvShowNames) != len(tvShows) {
 					return fmt.Errorf("names must be provided for all TV shows")
@@ -227,10 +230,10 @@ func newTVShowCmd() *cobra.Command {
 			if len(tvShows) == 0 {
 				consoleSvc.Success("No video file to process")
 			} else {
-				printAllTVShows(config.WD, tvShows)
+				printAllTVShows(w, config.WD, tvShows)
 
 				if !dryRun {
-					fmt.Println()
+					fmt.Fprintln(w)
 
 					var err error
 					if !yes {
@@ -248,12 +251,12 @@ func newTVShowCmd() *cobra.Command {
 						}
 					} else {
 						hasError := false
-						ok, results := processTVShows(cmd.Context(), config.WD, tvShows, !delete, config.UID, config.GID)
+						ok, results := processTVShows(cmd.Context(), w, config.WD, tvShows, !delete, config.UID, config.GID)
 						if !ok {
 							hasError = true
 						}
 
-						fmt.Println()
+						fmt.Fprintln(w)
 						for _, result := range results {
 							if result.IsSuccessful {
 								consoleSvc.Success(fmt.Sprintf("%s  duration=%-6s",
@@ -266,7 +269,7 @@ func newTVShowCmd() *cobra.Command {
 						}
 
 						if hasError {
-							fmt.Println()
+							fmt.Fprintln(w)
 							return fmt.Errorf("an error occurred")
 						}
 					}

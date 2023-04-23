@@ -1,32 +1,27 @@
 package format
 
 import (
+	"bytes"
+	"context"
 	"fmt"
+	"io"
 	"os"
 	"path"
 	"strings"
 	"testing"
 
 	"github.com/disiqueira/gotree/v3"
+	"github.com/stretchr/testify/assert"
 
 	"github.com/jeremiergz/nas-cli/cmd"
 	"github.com/jeremiergz/nas-cli/config"
-	"github.com/jeremiergz/nas-cli/test"
+	"github.com/jeremiergz/nas-cli/service"
+	"github.com/jeremiergz/nas-cli/util"
 )
 
-func prepareTVShows(t *testing.T, dir string, files []string) {
-	t.Helper()
-	for _, file := range files {
-		os.Create(path.Join(dir, file))
-	}
-}
-
-func TestTVShowCmdWithDryRun(t *testing.T) {
+func Test_TV_Show_With_Dry_Run(t *testing.T) {
 	tempDir := t.TempDir()
 	config.Dir = tempDir
-
-	rootCmd := cmd.NewRootCmd()
-	rootCmd.AddCommand(NewFormatCmd())
 
 	baseFiles := []string{
 		"test.s01e01.mkv",
@@ -58,18 +53,30 @@ func TestTVShowCmdWithDryRun(t *testing.T) {
 	season2Tree.Add(fmt.Sprintf("%s  %s", "Test - S02E04.mkv", "test.s02e04.mkv"))
 	season2Tree.Add(fmt.Sprintf("%s  %s", "Test - S02E05.mkv", "test.s02e05.mkv"))
 
-	_, output, _ := test.ExecuteCommandE(t, rootCmd, []string{"format", "tvshows", "--dry-run", tempDir})
-	fmt.Println(output)
-	fmt.Println(os.ReadDir(tempDir))
-	test.AssertEquals(t, strings.TrimSpace(rootTree.Print()), strings.TrimSpace(output))
+	rootCMD := cmd.NewCommand()
+	rootCMD.AddCommand(NewCommand())
+
+	args := []string{"format", "tvshows", "--dry-run", tempDir}
+
+	output := new(bytes.Buffer)
+	ctx := getTestContext(t, output)
+
+	rootCMD.SetOut(output)
+	rootCMD.SetErr(output)
+	rootCMD.SetArgs(args)
+	err := rootCMD.ExecuteContext(ctx)
+
+	assert.NoError(t, err)
+
+	assert.Equal(t, strings.TrimSpace(rootTree.Print()), strings.TrimSpace(output.String()))
 }
 
-func TestTVShowCmdWithoutOptions(t *testing.T) {
+func Test_TV_Show_Without_Options(t *testing.T) {
 	tempDir := t.TempDir()
 	config.Dir = tempDir
 
-	rootCmd := cmd.NewRootCmd()
-	rootCmd.AddCommand(NewFormatCmd())
+	rootCmd := cmd.NewCommand()
+	rootCmd.AddCommand(NewCommand())
 
 	baseFiles := []string{
 		"test.s01e01.mkv",
@@ -102,16 +109,30 @@ func TestTVShowCmdWithoutOptions(t *testing.T) {
 		},
 	}
 	prepareTVShows(t, tempDir, baseFiles)
-	test.ExecuteCommand(t, rootCmd, []string{"format", "tvshows", "--yes", tempDir})
-	test.AssertSameTVShowTree(t, expectedTree, tempDir)
+
+	rootCMD := cmd.NewCommand()
+	rootCMD.AddCommand(NewCommand())
+
+	args := []string{"format", "tvshows", "--yes", tempDir}
+
+	output := new(bytes.Buffer)
+	ctx := getTestContext(t, output)
+
+	rootCMD.SetOut(output)
+	rootCMD.SetErr(output)
+	rootCMD.SetArgs(args)
+	err := rootCMD.ExecuteContext(ctx)
+
+	assert.NoError(t, err)
+	assertSameTVShowTree(t, expectedTree, tempDir)
 }
 
-func TestTVShowCmdWithNameOverride(t *testing.T) {
+func Test_TV_Show_With_Name_Override(t *testing.T) {
 	tempDir := t.TempDir()
 	config.Dir = tempDir
 
-	rootCmd := cmd.NewRootCmd()
-	rootCmd.AddCommand(NewFormatCmd())
+	rootCmd := cmd.NewCommand()
+	rootCmd.AddCommand(NewCommand())
 
 	baseFiles := []string{
 		"test.s01e01.mkv",
@@ -145,6 +166,81 @@ func TestTVShowCmdWithNameOverride(t *testing.T) {
 		},
 	}
 	prepareTVShows(t, tempDir, baseFiles)
-	test.ExecuteCommand(t, rootCmd, []string{"format", "tvshows", "--yes", "--name", tvshowName, tempDir})
-	test.AssertSameTVShowTree(t, expectedTree, tempDir)
+
+	rootCMD := cmd.NewCommand()
+	rootCMD.AddCommand(NewCommand())
+
+	args := []string{"format", "tvshows", "--yes", "--name", tvshowName, tempDir}
+
+	output := new(bytes.Buffer)
+	ctx := getTestContext(t, output)
+
+	rootCMD.SetOut(output)
+	rootCMD.SetErr(output)
+	rootCMD.SetArgs(args)
+	err := rootCMD.ExecuteContext(ctx)
+
+	assert.NoError(t, err)
+	assertSameTVShowTree(t, expectedTree, tempDir)
+}
+
+func assertSameTVShowTree(t *testing.T, expected map[string]map[string][]string, dir string) {
+	t.Helper()
+	for tvshow, seasons := range expected {
+		tvshowPath := path.Join(dir, tvshow)
+		dirInfo, err := os.Stat(tvshowPath)
+
+		if err != nil {
+			t.Errorf("Unexpected error: %v", err)
+		} else if dirInfo.IsDir() {
+			for season, files := range seasons {
+				seasonPath := path.Join(tvshowPath, season)
+				dirInfo, err = os.Stat(seasonPath)
+
+				if err != nil {
+					t.Errorf("Unexpected error: %v", err)
+				} else if dirInfo.IsDir() {
+					for _, file := range files {
+						filePath := path.Join(seasonPath, file)
+						fileInfo, err := os.Stat(filePath)
+
+						if err != nil {
+							t.Errorf("Unexpected error: %v", err)
+						} else if fileInfo == nil {
+							t.Fatalf("\nExpected episode to be a file: %s", filePath)
+						}
+					}
+				} else {
+					t.Fatalf("\nExpected season to be a directory: %s", seasonPath)
+				}
+			}
+		} else {
+			t.Fatalf("\nExpected TV show to be a directory: %s", tvshowPath)
+		}
+	}
+}
+
+func getTestContext(t *testing.T, w io.Writer) context.Context {
+	t.Helper()
+
+	ctx := context.Background()
+
+	console := service.NewConsoleService(w)
+	media := service.NewMediaService()
+	sftp := service.NewSFTPService()
+	ssh := service.NewSSHService()
+
+	ctx = context.WithValue(ctx, util.ContextKeyConsole, console)
+	ctx = context.WithValue(ctx, util.ContextKeyMedia, media)
+	ctx = context.WithValue(ctx, util.ContextKeySFTP, sftp)
+	ctx = context.WithValue(ctx, util.ContextKeySSH, ssh)
+
+	return ctx
+}
+
+func prepareTVShows(t *testing.T, dir string, files []string) {
+	t.Helper()
+	for _, file := range files {
+		os.Create(path.Join(dir, file))
+	}
 }

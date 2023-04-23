@@ -26,7 +26,9 @@ func newMovieCmd() *cobra.Command {
 				movieName = args[0]
 			}
 
-			return process(cmd.Context(), moviesDest, false, movieName)
+			w := cmd.OutOrStdout()
+
+			return process(cmd.Context(), w, moviesDest, false, movieName)
 		},
 	}
 

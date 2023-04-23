@@ -23,17 +23,6 @@ var (
 	diacriticsTransformer = transform.Chain(norm.NFD, runes.Remove(runes.In(unicode.Mn)), norm.NFC)
 )
 
-// Checks whether given generic value is in array
-func Contains[T comparable](elems []T, v T) bool {
-	for _, s := range elems {
-		if v == s {
-			return true
-		}
-	}
-
-	return false
-}
-
 // Removes all diacritics from given string
 func RemoveDiacritics(s string) (string, error) {
 	output, _, err := transform.String(diacriticsTransformer, s)

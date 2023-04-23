@@ -22,7 +22,7 @@ var (
 	tvShow bool
 )
 
-func NewDownloadCmd() *cobra.Command {
+func NewCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "download <url> [directory]",
 		Aliases: []string{"dl"},
@@ -60,6 +60,8 @@ func NewDownloadCmd() *cobra.Command {
 			consoleSvc := cmd.Context().Value(util.ContextKeyConsole).(*service.ConsoleService)
 			mediaSvc := cmd.Context().Value(util.ContextKeyMedia).(*service.MediaService)
 
+			w := cmd.OutOrStdout()
+
 			targetURL := args[0]
 			basename := filepath.Base(targetURL)
 			var destination string
@@ -85,7 +87,7 @@ func NewDownloadCmd() *cobra.Command {
 				return err
 			}
 			res := client.Do(req)
-			fmt.Println(path.Join(destination, basename))
+			fmt.Fprintln(w, path.Join(destination, basename))
 			ticker := time.NewTicker(time.Second)
 			defer ticker.Stop()
 

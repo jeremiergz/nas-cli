@@ -1,26 +1,33 @@
 package completion
 
 import (
-	"os"
+	"fmt"
+	"strings"
 
 	"github.com/spf13/cobra"
 )
 
-func NewCompletionCmd() *cobra.Command {
+var (
+	validShells = []string{"bash", "zsh"}
+)
+
+func NewCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:       "completion <bash|zsh>",
+		Use:       fmt.Sprintf("completion <%s>", strings.Join(validShells, "|")),
 		Short:     "Generate completion scripts",
-		ValidArgs: []string{"bash", "zsh"},
-		Args:      cobra.ExactValidArgs(1),
+		ValidArgs: validShells,
+		Args:      cobra.MatchAll(cobra.ExactArgs(1), cobra.OnlyValidArgs),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			rootCmd := cmd.Parent()
 
+			w := cmd.OutOrStdout()
+
 			switch args[0] {
 			case "bash":
-				rootCmd.GenBashCompletion(os.Stdout)
+				rootCmd.GenBashCompletion(w)
 
 			case "zsh":
-				rootCmd.GenZshCompletion(os.Stdout)
+				rootCmd.GenZshCompletion(w)
 			}
 
 			return nil

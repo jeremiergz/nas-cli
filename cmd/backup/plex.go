@@ -10,7 +10,7 @@ import (
 	"github.com/spf13/viper"
 
 	"github.com/jeremiergz/nas-cli/config"
-	"github.com/jeremiergz/nas-cli/util"
+	"github.com/jeremiergz/nas-cli/util/cmdutil"
 )
 
 func newPlexCmd() *cobra.Command {
@@ -19,7 +19,7 @@ func newPlexCmd() *cobra.Command {
 		Aliases: []string{"px", "p"},
 		Short:   "Plex backuping",
 		PreRunE: func(cmd *cobra.Command, args []string) error {
-			err := util.CmdCallParentPersistentPreRunE(cmd.Parent(), args)
+			err := cmdutil.CallParentPersistentPreRunE(cmd.Parent(), args)
 			if err != nil {
 				return err
 			}
@@ -76,7 +76,9 @@ func newPlexCmd() *cobra.Command {
 			}
 			defer destFile.Close()
 
-			return process(cmd.Context(), backupSrc, destFile, filters)
+			w := cmd.OutOrStdout()
+
+			return process(cmd.Context(), w, backupSrc, destFile, filters)
 		},
 	}
 

@@ -17,6 +17,7 @@ import (
 	"github.com/jeremiergz/nas-cli/config"
 	"github.com/jeremiergz/nas-cli/service"
 	"github.com/jeremiergz/nas-cli/util"
+	"github.com/jeremiergz/nas-cli/util/cmdutil"
 )
 
 const (
@@ -101,14 +102,14 @@ func process(ctx context.Context, assets []string, destination string, subdestin
 	return g.Wait()
 }
 
-func NewScpCmd() *cobra.Command {
+func NewCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "scp",
 		Aliases: []string{"sc"},
 		Short:   "Upload files/folders using scp command",
 		Args:    cobra.MinimumNArgs(1),
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-			err := util.CmdCallParentPersistentPreRunE(cmd.Parent(), args)
+			err := cmdutil.CallParentPersistentPreRunE(cmd.Parent(), args)
 			if err != nil {
 				return err
 			}

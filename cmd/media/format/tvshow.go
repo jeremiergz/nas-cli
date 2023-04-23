@@ -3,6 +3,7 @@ package format
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"path"
 	"regexp"
@@ -23,7 +24,7 @@ var (
 )
 
 // Prints given TV shows as a tree
-func printAllTVShows(wd string, tvShows []*model.TVShow) {
+func printAllTVShows(w io.Writer, wd string, tvShows []*model.TVShow) {
 	rootTree := gotree.New(wd)
 	for _, tvShow := range tvShows {
 		tvShowTree := rootTree.Add(tvShow.Name)
@@ -42,16 +43,16 @@ func printAllTVShows(wd string, tvShows []*model.TVShow) {
 	toPrint := rootTree.Print()
 	lastSpaceRegexp := regexp.MustCompile(`\s$`)
 	toPrint = lastSpaceRegexp.ReplaceAllString(toPrint, "")
-	fmt.Println(toPrint)
+	fmt.Fprintln(w, toPrint)
 }
 
 // Processes listed TV shows by prompting user
-func processTVShows(ctx context.Context, wd string, tvShows []*model.TVShow, owner, group int, ask bool) error {
+func processTVShows(ctx context.Context, w io.Writer, wd string, tvShows []*model.TVShow, owner, group int, ask bool) error {
 	consoleSvc := ctx.Value(util.ContextKeyConsole).(*service.ConsoleService)
 	mediaSvc := ctx.Value(util.ContextKeyMedia).(*service.MediaService)
 
 	for _, tvShow := range tvShows {
-		fmt.Println()
+		fmt.Fprintln(w)
 
 		var err error
 		if ask {
@@ -117,6 +118,8 @@ func newTVShowCmd() *cobra.Command {
 
 			tvShows, err := mediaSvc.LoadTVShows(config.WD, extensions, nil, nil, false)
 
+			w := cmd.OutOrStdout()
+
 			if len(tvShowNames) > 0 {
 				if len(tvShowNames) != len(tvShows) {
 					return fmt.Errorf("names must be provided for all TV shows")
@@ -132,9 +135,9 @@ func newTVShowCmd() *cobra.Command {
 			if len(tvShows) == 0 {
 				consoleSvc.Success("Nothing to process")
 			} else {
-				printAllTVShows(config.WD, tvShows)
+				printAllTVShows(w, config.WD, tvShows)
 				if !dryRun {
-					processTVShows(cmd.Context(), config.WD, tvShows, config.UID, config.GID, !yes)
+					processTVShows(cmd.Context(), w, config.WD, tvShows, config.UID, config.GID, !yes)
 				}
 			}
 
