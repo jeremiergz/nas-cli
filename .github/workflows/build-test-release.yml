@@ -86,7 +86,7 @@ jobs:
         with:
           draft: false
           prerelease: false
-          release_name: v${{ github.ref }}
+          release_name: ${{ github.ref }}
           tag_name: ${{ github.ref }}
 
   release-upload:
@@ -157,5 +157,5 @@ jobs:
           git add ./Formula
           git config user.name github-actions
           git config user.email github-actions@github.com
-          git commit -m "chore: update to v${GITHUB_REF_NAME}"
+          git commit -m "chore: update to ${GITHUB_REF_NAME}"
           git push
