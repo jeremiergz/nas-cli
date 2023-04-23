@@ -22,7 +22,7 @@ func Test_Outputs_The_Correct_Version(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		processutil.GitCommit = test
+		processutil.Version = test
 		output := new(bytes.Buffer)
 		rootCMD.SetOut(output)
 		rootCMD.SetErr(output)

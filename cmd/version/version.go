@@ -15,7 +15,7 @@ func NewCommand() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			w := cmd.OutOrStdout()
 
-			fmt.Fprintln(w, cmd.Parent().Name(), processutil.GitCommit)
+			fmt.Fprintln(w, cmd.Parent().Name(), processutil.Version)
 		},
 	}
 
