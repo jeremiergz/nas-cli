@@ -96,7 +96,7 @@ release: build test
 	@git checkout main
 	@git tag --annotate "${NEXT_VERSION}" --message "Release ${NEXT_VERSION}"
 	@git push --follow-tags
-	@echo ✔ successfully created release v${NEXT_VERSION}
+	@echo ✔ successfully created release ${NEXT_VERSION}
 
 .PHONY: test
 test: clean
