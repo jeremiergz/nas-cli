@@ -1,6 +1,7 @@
 package config
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -33,7 +34,7 @@ func newListCmd() *cobra.Command {
 				var toPrint string
 				switch cmdutil.OutputFormat {
 				case "json":
-					out, _ := json.Marshal(viper.AllSettings())
+					out, _ := json.MarshalIndent(viper.AllSettings(), "", "  ")
 					toPrint = strings.TrimSpace(string(out))
 
 				case "text":
@@ -45,8 +46,11 @@ func newListCmd() *cobra.Command {
 					toPrint = strings.Join(values, "\n")
 
 				case "yaml":
-					out, _ := yaml.Marshal(viper.AllSettings())
-					toPrint = strings.TrimSpace(string(out))
+					var buf bytes.Buffer
+					encoder := yaml.NewEncoder(&buf)
+					encoder.SetIndent(2)
+					encoder.Encode(viper.AllSettings())
+					toPrint = strings.TrimSpace(buf.String())
 				}
 
 				fmt.Fprintln(w, toPrint)

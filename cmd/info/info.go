@@ -1,6 +1,7 @@
 package info
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"sort"
@@ -31,23 +32,29 @@ func NewCommand() *cobra.Command {
 
 			w := cmd.OutOrStdout()
 
+			var toPrint string
 			switch cmdutil.OutputFormat {
 			case "json":
-				out, _ := json.Marshal(info)
-				fmt.Fprintln(w, strings.TrimSpace(string(out)))
+				out, _ := json.MarshalIndent(info, "", "  ")
+				toPrint = strings.TrimSpace(string(out))
 
 			case "text":
-				toPrint := []string{}
+				values := []string{}
 				for key, value := range info {
-					toPrint = append(toPrint, fmt.Sprintf("%s%-9s %s", strings.ToUpper(key[0:1]), key[1:]+":", value))
+					values = append(values, fmt.Sprintf("%s%-9s %s", strings.ToUpper(key[0:1]), key[1:]+":", value))
 				}
-				sort.Strings(toPrint)
-				fmt.Fprintln(w, strings.Join(toPrint, "\n"))
+				sort.Strings(values)
+				toPrint = strings.Join(values, "\n")
 
 			case "yaml":
-				out, _ := yaml.Marshal(info)
-				fmt.Fprintln(w, strings.TrimSpace(string(out)))
+				var buf bytes.Buffer
+				encoder := yaml.NewEncoder(&buf)
+				encoder.SetIndent(2)
+				encoder.Encode(info)
+				toPrint = strings.TrimSpace(buf.String())
 			}
+
+			fmt.Fprintln(w, toPrint)
 
 			return nil
 		},

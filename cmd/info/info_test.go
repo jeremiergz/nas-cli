@@ -15,8 +15,13 @@ func Test_Outputs_Information_As_JSON(t *testing.T) {
 	output, err := testInfoOutput(t, "json")
 
 	assert.NoError(t, err)
-	expected := fmt.Sprintf(
-		"{\"buildDate\":\"%s\",\"compiler\":\"%s\",\"gitCommit\":\"%s\",\"platform\":\"%s\",\"version\":\"%s\"}\n",
+	expected := fmt.Sprintf(`{
+  "buildDate": "%s",
+  "compiler": "%s",
+  "gitCommit": "%s",
+  "platform": "%s",
+  "version": "%s"
+}`+"\n",
 		processutil.BuildDate, processutil.Compiler, processutil.GitCommit, processutil.Platform, processutil.Version,
 	)
 	assert.Equal(t, expected, output)
