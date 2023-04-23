@@ -6,7 +6,7 @@
 
 CLI application for managing my NAS.
 
-<img alt="logo" src="https://github.com/jeremiergz/nas-cli/blob/main/logo.png?raw=true" width="50" />
+<img alt="logo" src="https://github.com/jeremiergz/nas-cli/blob/main/logo.png?raw=true" width="100" />
 
 ## Authors
 
