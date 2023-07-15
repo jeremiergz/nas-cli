@@ -1,3 +1,9 @@
+define check_deps
+	$(foreach dependency, ${1}, $(if $(shell which ${dependency}),, $(error No ${dependency} in PATH)))
+endef
+
+$(call check_deps,basename cut date echo git go)
+
 DEPENDENCIES			:= awk cut date echo git go rm sha256sum
 $(foreach dependency, ${DEPENDENCIES}, $(if $(shell which ${dependency}),, $(error No ${dependency} in PATH)))
 
@@ -8,8 +14,8 @@ endif
 
 OUTPUT_DIR				:= build
 COVERAGE_DIR			:= coverage
-BINARY					:= nas-cli
 MODULE					:= $(shell go list -m)
+BINARY					:= $(shell basename ${MODULE})
 SHELL					:= /bin/bash
 
 BUILD_DATE				:= $(shell date -u +%FT%T.%3NZ)
@@ -37,6 +43,7 @@ LDFLAGS					+= "
 
 define generate_binary
 	@ \
+	set -e; \
 	if [[ ${1} != "" ]]; then export GOOS=${1}; fi; \
 	if [[ ${2} != "" ]]; then export GOARCH=${2}; fi; \
 	if [[ $$GOARCH == "arm" ]]; then export GOARM=7; fi; \
@@ -50,6 +57,7 @@ endef
 
 define run_tests
 	@ \
+	set -e; \
 	mkdir -p ${COVERAGE_DIR}; \
 	go test -coverpkg=${MODULE}/... -coverprofile=${COVERAGE_DIR}/profile.cov ./...
 endef
@@ -78,20 +86,24 @@ build-all: clean
 
 .PHONY: clean
 clean:
+	$(call check_deps,rm)
 	@rm -rf ${OUTPUT_DIR} ${COVERAGE_DIR}
 
 .PHONY: coverage
 coverage: clean
+	$(call check_deps,go)
 	$(call run_tests) > /dev/null
 	@go tool cover -func coverage/profile.cov
 
 .PHONY: coverage-html
 coverage-html: clean
+	$(call check_deps,go)
 	$(call run_tests) > /dev/null
 	@go tool cover -html coverage/profile.cov
 
 .PHONY: release
 release: build test
+	$(call check_deps,echo git)
 	@echo -e "\n➜ creating release ${NEXT_VERSION}"
 	@git checkout main
 	@git tag --annotate "${NEXT_VERSION}" --message "Release ${NEXT_VERSION}"
@@ -100,4 +112,5 @@ release: build test
 
 .PHONY: test
 test: clean
+	$(call check_deps,go mkdir)
 	$(call run_tests)
