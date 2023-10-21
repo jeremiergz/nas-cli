@@ -159,7 +159,7 @@ func printAllTVShows(w io.Writer, wd string, tvShows []*model.TVShow) {
 				for lang, subtitle := range episode.Subtitles {
 					flag := util.ToLanguageFlag(lang)
 					if flag != "" {
-						episodeTree.Add(fmt.Sprintf("%s  %s", flag, subtitle))
+						episodeTree.Add(fmt.Sprintf("%s   %s", flag, subtitle))
 					} else {
 						episodeTree.Add(fmt.Sprintf("%s  %s", strings.ToUpper(lang), subtitle))
 					}
