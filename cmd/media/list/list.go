@@ -15,13 +15,28 @@ import (
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/jeremiergz/nas-cli/service"
-	"github.com/jeremiergz/nas-cli/util"
+	sftpservice "github.com/jeremiergz/nas-cli/service/sftp"
+	"github.com/jeremiergz/nas-cli/util/ctxutil"
 )
 
 var (
 	recursive bool
 )
+
+func NewCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:     "list",
+		Aliases: []string{"ls"},
+		Short:   "List media files",
+		Args:    cobra.MinimumNArgs(1),
+	}
+
+	cmd.AddCommand(newAnimeCmd())
+	cmd.AddCommand(newMovieCmd())
+	cmd.AddCommand(newTVShowCmd())
+
+	return cmd
+}
 
 func sortEpisodes(episodes []fs.FileInfo) {
 	sort.Slice(episodes, func(i, j int) bool {
@@ -40,7 +55,7 @@ func sortSeasons(seasons []fs.FileInfo) {
 
 // Lists files & folders in destination
 func process(ctx context.Context, w io.Writer, destination string, dirsOnly bool, nameFilter string) error {
-	sftpSvc := ctx.Value(util.ContextKeySFTP).(*service.SFTPService)
+	sftpSvc := ctxutil.Singleton[*sftpservice.Service](ctx)
 
 	err := sftpSvc.Connect()
 	if err != nil {
@@ -131,19 +146,4 @@ func process(ctx context.Context, w io.Writer, destination string, dirsOnly bool
 	fmt.Fprintln(w, strings.TrimSpace(rootTree.Print()))
 
 	return nil
-}
-
-func NewCommand() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:     "list",
-		Aliases: []string{"ls"},
-		Short:   "List media files",
-		Args:    cobra.MinimumNArgs(1),
-	}
-
-	cmd.AddCommand(newAnimeCmd())
-	cmd.AddCommand(newMovieCmd())
-	cmd.AddCommand(newTVShowCmd())
-
-	return cmd
 }

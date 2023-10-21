@@ -1,4 +1,4 @@
-package service
+package ssh
 
 import (
 	"fmt"
@@ -13,17 +13,15 @@ import (
 	"github.com/jeremiergz/nas-cli/config"
 )
 
-type SSHService struct {
+type Service struct {
 	Client *ssh.Client
 }
 
-func NewSSHService() *SSHService {
-	service := &SSHService{}
-
-	return service
+func New() *Service {
+	return &Service{}
 }
 
-func (s *SSHService) Connect() error {
+func (s *Service) Connect() error {
 	sshHost := viper.GetString(config.KeySSHHost)
 	sshKnownHosts := viper.GetString(config.KeySSHClientKnownHosts)
 	sshPort := viper.GetString(config.KeySSHPort)
@@ -69,13 +67,13 @@ func (s *SSHService) Connect() error {
 	return nil
 }
 
-func (s *SSHService) Disconnect() error {
+func (s *Service) Disconnect() error {
 	s.Client.Conn.Close()
 
 	return s.Client.Close()
 }
 
-func (s *SSHService) SendCommands(cmds ...string) ([]byte, error) {
+func (s *Service) SendCommands(cmds ...string) ([]byte, error) {
 	session, err := s.Client.NewSession()
 	if err != nil {
 		log.Fatal(err)

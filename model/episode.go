@@ -8,6 +8,7 @@ import (
 type Episode struct {
 	Basename  string
 	Extension string
+	FilePath  string
 	Index     int
 	Season    *Season
 	Subtitles map[string]string

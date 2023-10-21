@@ -1,4 +1,4 @@
-package service
+package media
 
 import (
 	"fmt"
@@ -18,20 +18,18 @@ import (
 	"github.com/jeremiergz/nas-cli/util/sliceutil"
 )
 
-type MediaService struct{}
+type Service struct{}
 
 var (
 	tvShowFmtRegexp = regexp.MustCompile(`(^.+)(\s-\s)S\d+E\d+\.(.+)$`)
 )
 
-func NewMediaService() *MediaService {
-	service := &MediaService{}
-
-	return service
+func New() *Service {
+	return &Service{}
 }
 
 // Verifies that given path exists and sets WD variable
-func (s *MediaService) InitializeWD(path string) error {
+func (s *Service) InitializeWD(path string) error {
 	config.WD, _ = filepath.Abs(path)
 	stats, err := os.Stat(config.WD)
 	if err != nil || !stats.IsDir() {
@@ -42,7 +40,7 @@ func (s *MediaService) InitializeWD(path string) error {
 }
 
 // Lists files in directory with filter on extensions and RegExp
-func (s *MediaService) List(wd string, extensions []string, regExp *regexp.Regexp) []string {
+func (s *Service) List(wd string, extensions []string, regExp *regexp.Regexp) []string {
 	files, _ := os.ReadDir(wd)
 	filesList := []string{}
 	for _, f := range files {
@@ -64,7 +62,7 @@ var (
 )
 
 // Lists TV shows in folder that must be processed
-func (s *MediaService) LoadTVShows(wd string, extensions []string, subtitlesExt *string, subtitlesLangs []string, anyFiles bool) ([]*model.TVShow, error) {
+func (s *Service) LoadTVShows(wd string, extensions []string, subtitlesExt *string, subtitlesLangs []string, anyFiles bool) ([]*model.TVShow, error) {
 	var selectedRegexp *regexp.Regexp
 	if !anyFiles {
 		selectedRegexp = tvShowFmtRegexp
@@ -91,6 +89,7 @@ func (s *MediaService) LoadTVShows(wd string, extensions []string, subtitlesExt 
 			seasonIndex := s.findSeasonIndex(seasonName, tvShow.Seasons)
 			episode := model.Episode{
 				Basename:  basename,
+				FilePath:  path.Join(wd, basename),
 				Extension: e.Container,
 				Index:     e.Episode,
 			}
@@ -123,19 +122,19 @@ func (s *MediaService) LoadTVShows(wd string, extensions []string, subtitlesExt 
 }
 
 // Returns parsed information from a file name
-func (s *MediaService) ParseTitle(filename string) (*ptn.TorrentInfo, error) {
+func (s *Service) ParseTitle(filename string) (*ptn.TorrentInfo, error) {
 	return ptn.Parse((filename))
 }
 
 // Creates target directory, setting its mode to 755 and setting ownership
-func (s *MediaService) PrepareDirectory(targetDirectory string, owner, group int) {
+func (s *Service) PrepareDirectory(targetDirectory string, owner, group int) {
 	os.Mkdir(targetDirectory, config.DirectoryMode)
 	os.Chmod(targetDirectory, config.DirectoryMode)
 	os.Chown(targetDirectory, owner, group)
 }
 
 // Finds season index in seasons array
-func (s *MediaService) findSeasonIndex(name string, seasons []*model.Season) int {
+func (s *Service) findSeasonIndex(name string, seasons []*model.Season) int {
 	seasonIndex := -1
 	for i, season := range seasons {
 		if season.Name == name {
@@ -148,7 +147,7 @@ func (s *MediaService) findSeasonIndex(name string, seasons []*model.Season) int
 }
 
 // Finds TV Show index in TV Shows array
-func (s *MediaService) findTVShowIndex(name string, tvShows []*model.TVShow) int {
+func (s *Service) findTVShowIndex(name string, tvShows []*model.TVShow) int {
 	tvShowIndex := -1
 	for i, tvShow := range tvShows {
 		if tvShow.Name == name {
@@ -161,7 +160,7 @@ func (s *MediaService) findTVShowIndex(name string, tvShows []*model.TVShow) int
 }
 
 // Lists subtitles with given extension & languages for the file passed as parameter
-func (s *MediaService) listSubtitles(videoFile string, extension *string, languages []string) map[string]string {
+func (s *Service) listSubtitles(videoFile string, extension *string, languages []string) map[string]string {
 	fileName := videoFile[:len(videoFile)-len(filepath.Ext(videoFile))]
 	subtitles := map[string]string{}
 

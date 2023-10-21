@@ -1,4 +1,4 @@
-package merge
+package clean
 
 import (
 	"fmt"
@@ -11,17 +11,11 @@ import (
 	"github.com/jeremiergz/nas-cli/util/ctxutil"
 )
 
-type backup struct {
-	currentPath  string
-	originalPath string
-}
-
 const (
-	mergeCommand string = "mkvmerge"
+	editCommand string = "mkvpropedit"
 )
 
 var (
-	delete            bool
 	dryRun            bool
 	subtitleExtension string
 	subtitleLanguages []string
@@ -31,9 +25,9 @@ var (
 
 func NewCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "merge",
-		Aliases: []string{"mrg"},
-		Short:   "Merge tracks using MKVMerge tool",
+		Use:     "clean",
+		Aliases: []string{"cln"},
+		Short:   "Clean tracks using MKVPropEdit tool",
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 			mediaSvc := ctxutil.Singleton[*mediaservice.Service](ctx)
@@ -43,16 +37,15 @@ func NewCommand() *cobra.Command {
 				return err
 			}
 
-			_, err = exec.LookPath(mergeCommand)
+			_, err = exec.LookPath(editCommand)
 			if err != nil {
-				return fmt.Errorf("command not found: %s", mergeCommand)
+				return fmt.Errorf("command not found: %s", editCommand)
 			}
 
 			return mediaSvc.InitializeWD(args[0])
 		},
 	}
 
-	cmd.PersistentFlags().BoolVarP(&delete, "delete", "d", false, "delete original files")
 	cmd.PersistentFlags().BoolVar(&dryRun, "dry-run", false, "print result without processing it")
 	cmd.PersistentFlags().StringArrayVarP(&subtitleLanguages, "language", "l", []string{"eng", "fre"}, "language tracks to merge")
 	cmd.PersistentFlags().StringVar(&subtitleExtension, "sub-ext", "srt", "subtitles extension")

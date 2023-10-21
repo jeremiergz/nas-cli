@@ -3,21 +3,21 @@ package service
 import (
 	"github.com/pkg/sftp"
 	"golang.org/x/crypto/ssh"
+
+	sshservice "github.com/jeremiergz/nas-cli/service/ssh"
 )
 
-type SFTPService struct {
+type Service struct {
 	Client *sftp.Client
 	ssh    *ssh.Client
 }
 
-func NewSFTPService() *SFTPService {
-	service := &SFTPService{}
-
-	return service
+func New() *Service {
+	return &Service{}
 }
 
-func (s *SFTPService) Connect() error {
-	sshSvc := NewSSHService()
+func (s *Service) Connect() error {
+	sshSvc := sshservice.New()
 
 	err := sshSvc.Connect()
 	if err != nil {
@@ -39,7 +39,7 @@ func (s *SFTPService) Connect() error {
 	return nil
 }
 
-func (s *SFTPService) Disconnect() error {
+func (s *Service) Disconnect() error {
 	s.ssh.Conn.Close()
 
 	return s.Client.Close()

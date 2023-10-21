@@ -1,10 +1,9 @@
 package media
 
 import (
-	"regexp"
-
 	"github.com/spf13/cobra"
 
+	"github.com/jeremiergz/nas-cli/cmd/media/clean"
 	"github.com/jeremiergz/nas-cli/cmd/media/download"
 	"github.com/jeremiergz/nas-cli/cmd/media/format"
 	"github.com/jeremiergz/nas-cli/cmd/media/list"
@@ -15,8 +14,7 @@ import (
 )
 
 var (
-	ownership       string
-	ownershipRegexp = regexp.MustCompile(`^(\w+):?(\w+)?$`)
+	ownership string
 )
 
 func NewCommand() *cobra.Command {
@@ -31,6 +29,7 @@ func NewCommand() *cobra.Command {
 	}
 
 	cmd.PersistentFlags().StringVarP(&ownership, "owner", "o", "", "override default ownership")
+	cmd.AddCommand(clean.NewCommand())
 	cmd.AddCommand(download.NewCommand())
 	cmd.AddCommand(format.NewCommand())
 	cmd.AddCommand(list.NewCommand())

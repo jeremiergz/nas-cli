@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -16,6 +17,20 @@ import (
 var (
 	verbose bool
 )
+
+func NewCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:     "backup",
+		Aliases: []string{"bak"},
+		Short:   "Backup specific applications",
+		Args:    cobra.MinimumNArgs(1),
+	}
+
+	cmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "shows details about compressed files")
+	cmd.AddCommand(newPlexCmd())
+
+	return cmd
+}
 
 func isInFilters(name string, filters []string) bool {
 	for _, filter := range filters {
@@ -40,13 +55,18 @@ func process(ctx context.Context, w io.Writer, source string, destination io.Wri
 
 	hasFilters := len(filters) > 0
 
-	err := filepath.Walk(source, func(filename string, fi os.FileInfo, err error) error {
+	err := filepath.WalkDir(source, func(filename string, d fs.DirEntry, err error) error {
 		filenameInArchive := strings.Replace(filename, source, ".", 1)
 
 		if hasFilters && isInFilters(filenameInArchive, filters) {
 			return nil
 		} else {
-			link := fi.Name()
+			fi, err := d.Info()
+			if err != nil {
+				return err
+			}
+
+			link := d.Name()
 			if fi.Mode()&os.ModeSymlink == os.ModeSymlink {
 				if link, err = os.Readlink(filename); err != nil {
 					return err
@@ -90,18 +110,4 @@ func process(ctx context.Context, w io.Writer, source string, destination io.Wri
 	}
 
 	return nil
-}
-
-func NewCommand() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:     "backup",
-		Aliases: []string{"bak"},
-		Short:   "Backup specific applications",
-		Args:    cobra.MinimumNArgs(1),
-	}
-
-	cmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "shows details about compressed files")
-	cmd.AddCommand(newPlexCmd())
-
-	return cmd
 }

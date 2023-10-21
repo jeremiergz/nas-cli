@@ -17,9 +17,48 @@ import (
 
 	"github.com/jeremiergz/nas-cli/config"
 	"github.com/jeremiergz/nas-cli/model"
-	"github.com/jeremiergz/nas-cli/service"
+	consoleservice "github.com/jeremiergz/nas-cli/service/console"
+	mediaservice "github.com/jeremiergz/nas-cli/service/media"
 	"github.com/jeremiergz/nas-cli/util"
+	"github.com/jeremiergz/nas-cli/util/ctxutil"
 )
+
+func newMovieCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:     "movies <directory>",
+		Aliases: []string{"mov", "m"},
+		Short:   "Movies batch formatting",
+		Args:    cobra.MinimumNArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			ctx := cmd.Context()
+			consoleSvc := ctxutil.Singleton[*consoleservice.Service](ctx)
+
+			w := cmd.OutOrStdout()
+
+			movies, err := loadMovies(cmd.Context(), config.WD, extensions)
+			if err != nil {
+				return err
+			}
+			if len(movies) == 0 {
+				consoleSvc.Success("Nothing to process")
+			} else {
+				printAllMovies(w, config.WD, movies)
+				if !dryRun {
+					err := processMovies(cmd.Context(), w, config.WD, movies, config.UID, config.GID)
+					if err != nil {
+						return err
+					}
+				}
+			}
+
+			return nil
+		},
+	}
+
+	cmd.MarkFlagDirname("directory")
+
+	return cmd
+}
 
 var (
 	movieFmtRegexp = regexp.MustCompile(`(^.+)\s\(([0-9]{4})\)\.(.+)$`)
@@ -28,7 +67,7 @@ var (
 
 // Lists movies in folder that must be processed
 func loadMovies(ctx context.Context, wd string, extensions []string) ([]model.Movie, error) {
-	mediaSvc := ctx.Value(util.ContextKeyMedia).(*service.MediaService)
+	mediaSvc := ctxutil.Singleton[*mediaservice.Service](ctx)
 
 	toProcess := mediaSvc.List(wd, extensions, movieFmtRegexp)
 	movies := []model.Movie{}
@@ -64,7 +103,7 @@ func printAllMovies(w io.Writer, wd string, movies []model.Movie) {
 
 // Processes listed movies by prompting user
 func processMovies(ctx context.Context, w io.Writer, wd string, movies []model.Movie, owner, group int) error {
-	consoleSvc := ctx.Value(util.ContextKeyConsole).(*service.ConsoleService)
+	consoleSvc := ctxutil.Singleton[*consoleservice.Service](ctx)
 
 	for _, m := range movies {
 		fmt.Fprintln(w)
@@ -117,40 +156,4 @@ func processMovies(ctx context.Context, w io.Writer, wd string, movies []model.M
 	}
 
 	return nil
-}
-
-func newMovieCmd() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:     "movies <directory>",
-		Aliases: []string{"mov", "m"},
-		Short:   "Movies batch formatting",
-		Args:    cobra.MinimumNArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			consoleSvc := cmd.Context().Value(util.ContextKeyConsole).(*service.ConsoleService)
-
-			w := cmd.OutOrStdout()
-
-			movies, err := loadMovies(cmd.Context(), config.WD, extensions)
-			if err != nil {
-				return err
-			}
-			if len(movies) == 0 {
-				consoleSvc.Success("Nothing to process")
-			} else {
-				printAllMovies(w, config.WD, movies)
-				if !dryRun {
-					err := processMovies(cmd.Context(), w, config.WD, movies, config.UID, config.GID)
-					if err != nil {
-						return err
-					}
-				}
-			}
-
-			return nil
-		},
-	}
-
-	cmd.MarkFlagDirname("directory")
-
-	return cmd
 }

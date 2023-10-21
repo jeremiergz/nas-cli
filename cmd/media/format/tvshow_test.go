@@ -15,8 +15,12 @@ import (
 
 	"github.com/jeremiergz/nas-cli/cmd"
 	"github.com/jeremiergz/nas-cli/config"
-	"github.com/jeremiergz/nas-cli/service"
-	"github.com/jeremiergz/nas-cli/util"
+	consoleservice "github.com/jeremiergz/nas-cli/service/console"
+	mediaservice "github.com/jeremiergz/nas-cli/service/media"
+	mkvservice "github.com/jeremiergz/nas-cli/service/mkv"
+	sftpservice "github.com/jeremiergz/nas-cli/service/sftp"
+	sshservice "github.com/jeremiergz/nas-cli/service/ssh"
+	"github.com/jeremiergz/nas-cli/util/ctxutil"
 )
 
 func Test_TV_Show_With_Dry_Run(t *testing.T) {
@@ -224,16 +228,11 @@ func getTestContext(t *testing.T, w io.Writer) context.Context {
 	t.Helper()
 
 	ctx := context.Background()
-
-	console := service.NewConsoleService(w)
-	media := service.NewMediaService()
-	sftp := service.NewSFTPService()
-	ssh := service.NewSSHService()
-
-	ctx = context.WithValue(ctx, util.ContextKeyConsole, console)
-	ctx = context.WithValue(ctx, util.ContextKeyMedia, media)
-	ctx = context.WithValue(ctx, util.ContextKeySFTP, sftp)
-	ctx = context.WithValue(ctx, util.ContextKeySSH, ssh)
+	ctx = ctxutil.WithSingleton(ctx, consoleservice.New(w))
+	ctx = ctxutil.WithSingleton(ctx, mediaservice.New())
+	ctx = ctxutil.WithSingleton(ctx, mkvservice.New())
+	ctx = ctxutil.WithSingleton(ctx, sftpservice.New())
+	ctx = ctxutil.WithSingleton(ctx, sshservice.New())
 
 	return ctx
 }

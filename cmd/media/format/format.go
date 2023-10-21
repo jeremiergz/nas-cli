@@ -3,9 +3,9 @@ package format
 import (
 	"github.com/spf13/cobra"
 
-	"github.com/jeremiergz/nas-cli/service"
-	"github.com/jeremiergz/nas-cli/util"
+	mediaservice "github.com/jeremiergz/nas-cli/service/media"
 	"github.com/jeremiergz/nas-cli/util/cmdutil"
+	"github.com/jeremiergz/nas-cli/util/ctxutil"
 )
 
 var (
@@ -19,7 +19,8 @@ func NewCommand() *cobra.Command {
 		Aliases: []string{"fmt"},
 		Short:   "Batch media formatting depending on their type",
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-			mediaSvc := cmd.Context().Value(util.ContextKeyMedia).(*service.MediaService)
+			ctx := cmd.Context()
+			mediaSvc := ctxutil.Singleton[*mediaservice.Service](ctx)
 
 			err := cmdutil.CallParentPersistentPreRunE(cmd.Parent(), args)
 			if err != nil {

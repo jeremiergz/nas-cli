@@ -11,8 +11,12 @@ import (
 	"github.com/jeremiergz/nas-cli/cmd/info"
 	"github.com/jeremiergz/nas-cli/cmd/media"
 	"github.com/jeremiergz/nas-cli/cmd/version"
-	"github.com/jeremiergz/nas-cli/service"
-	"github.com/jeremiergz/nas-cli/util"
+	consoleservice "github.com/jeremiergz/nas-cli/service/console"
+	mediaservice "github.com/jeremiergz/nas-cli/service/media"
+	mkvservice "github.com/jeremiergz/nas-cli/service/mkv"
+	sftpservice "github.com/jeremiergz/nas-cli/service/sftp"
+	sshservice "github.com/jeremiergz/nas-cli/service/ssh"
+	"github.com/jeremiergz/nas-cli/util/ctxutil"
 )
 
 func main() {
@@ -28,15 +32,11 @@ func main() {
 
 	w := rootCmd.OutOrStdout()
 
-	console := service.NewConsoleService(w)
-	media := service.NewMediaService()
-	sftp := service.NewSFTPService()
-	ssh := service.NewSSHService()
-
-	ctx = context.WithValue(ctx, util.ContextKeyConsole, console)
-	ctx = context.WithValue(ctx, util.ContextKeyMedia, media)
-	ctx = context.WithValue(ctx, util.ContextKeySFTP, sftp)
-	ctx = context.WithValue(ctx, util.ContextKeySSH, ssh)
+	ctx = ctxutil.WithSingleton(ctx, consoleservice.New(w))
+	ctx = ctxutil.WithSingleton(ctx, mediaservice.New())
+	ctx = ctxutil.WithSingleton(ctx, mkvservice.New())
+	ctx = ctxutil.WithSingleton(ctx, sftpservice.New())
+	ctx = ctxutil.WithSingleton(ctx, sshservice.New())
 
 	if err := rootCmd.ExecuteContext(ctx); err != nil {
 		os.Exit(1)

@@ -20,8 +20,10 @@ import (
 	"github.com/spf13/viper"
 
 	"github.com/jeremiergz/nas-cli/config"
-	"github.com/jeremiergz/nas-cli/service"
+	consoleservice "github.com/jeremiergz/nas-cli/service/console"
+	mediaservice "github.com/jeremiergz/nas-cli/service/media"
 	"github.com/jeremiergz/nas-cli/util"
+	"github.com/jeremiergz/nas-cli/util/ctxutil"
 )
 
 const (
@@ -39,120 +41,6 @@ var (
 	yes                         bool
 )
 
-type result struct {
-	Characteristics map[string]string
-	IsSuccessful    bool
-	Message         string
-}
-
-func formatPoints(points int) string {
-	var pointsStyle func(interface{}) string
-	if points < 30 {
-		pointsStyle = promptui.Styler(promptui.FGRed)
-	} else if points < 60 {
-		pointsStyle = promptui.Styler(promptui.FGYellow)
-	} else {
-		pointsStyle = promptui.Styler(promptui.FGGreen)
-	}
-
-	return pointsStyle(fmt.Sprintf("%-3s", strconv.Itoa(points)))
-}
-
-// Prints files as a tree
-func printAll(w io.Writer, videos []string, subtitles []string) {
-	rootTree := gotree.New(config.WD)
-	for index, video := range videos {
-		fileIndex := strconv.FormatInt(int64(index+1), 10)
-		subTree := rootTree.Add(fileIndex)
-		subtitle := subtitles[index]
-		subTree.Add(subtitle)
-		subTree.Add(video)
-	}
-	toPrint := rootTree.Print()
-	fmt.Fprintln(w, toPrint)
-}
-
-// Attempts to synchronize given subtitle with given video file
-func process(ctx context.Context, video string, videoLang string, subtitle string, subtitleLang string, streamLang string, outFile string) (duration time.Duration, matchingPoints int, ok bool) {
-	consoleSvc := ctx.Value(util.ContextKeyConsole).(*service.ConsoleService)
-
-	start := time.Now()
-
-	videoPath := path.Join(config.WD, video)
-	subtitlePath := path.Join(config.WD, subtitle)
-	outFilePath := path.Join(config.WD, outFile)
-
-	baseOptions := []string{
-		"sync",
-		"--ref",
-		videoPath,
-		"--ref-lang",
-		videoLang,
-		"--sub",
-		subtitlePath,
-		"--sub-lang",
-		subtitleLang,
-		"--out",
-		outFilePath,
-	}
-
-	subsyncOptions := viper.GetString(config.KeySubsyncOptions)
-
-	if subsyncOptions != "" {
-		baseOptions = append(strings.Split(subsyncOptions, " "), baseOptions...)
-	}
-
-	runOptions := []string{}
-	runOptions = append(runOptions, baseOptions...)
-
-	if streamLang != "" {
-		runOptions = append(runOptions, "--ref-stream-by-lang", streamLang)
-	}
-
-	runCommand := func(opts []string) (string, error) {
-		consoleSvc.Info(fmt.Sprintf("%s %s", subsyncCommand, strings.Join(opts, " ")))
-		var buf bytes.Buffer
-		mw := io.MultiWriter(os.Stdout, &buf)
-
-		subsync := exec.Command(subsyncCommand, opts...)
-		subsync.Stdout = mw
-
-		err := subsync.Run()
-
-		return buf.String(), err
-	}
-
-	var err error
-	var output string
-
-	output, err = runCommand(runOptions)
-
-	if err != nil {
-		rerunOptions := []string{}
-		rerunOptions = append(rerunOptions, baseOptions...)
-		if streamLang == "" {
-			rerunOptions = append(rerunOptions, "--ref-stream-by-lang", "eng")
-		}
-		output, err = runCommand(rerunOptions)
-		if err != nil {
-			return time.Since(start), 0, false
-		}
-	}
-
-	matches := subsyncMatchingPointsRegexp.FindAllStringSubmatch(output, -1)
-	if len(matches) > 0 {
-		parsed, err := strconv.Atoi(matches[len(matches)-1][1])
-		if err == nil {
-			matchingPoints = parsed
-		}
-	}
-
-	os.Chown(outFilePath, config.UID, config.GID)
-	os.Chmod(outFilePath, config.FileMode)
-
-	return time.Since(start), matchingPoints, true
-}
-
 func NewCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "subsync <directory>",
@@ -160,7 +48,8 @@ func NewCommand() *cobra.Command {
 		Short:   "Synchronize subtitle using SubSync tool",
 		Args:    cobra.MinimumNArgs(1),
 		PreRunE: func(cmd *cobra.Command, args []string) error {
-			mediaSvc := cmd.Context().Value(util.ContextKeyMedia).(*service.MediaService)
+			ctx := cmd.Context()
+			mediaSvc := ctxutil.Singleton[*mediaservice.Service](ctx)
 
 			_, err := exec.LookPath(subsyncCommand)
 			if err != nil {
@@ -170,8 +59,9 @@ func NewCommand() *cobra.Command {
 			return mediaSvc.InitializeWD(args[0])
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			consoleSvc := cmd.Context().Value(util.ContextKeyConsole).(*service.ConsoleService)
-			mediaSvc := cmd.Context().Value(util.ContextKeyMedia).(*service.MediaService)
+			ctx := cmd.Context()
+			consoleSvc := ctxutil.Singleton[*consoleservice.Service](ctx)
+			mediaSvc := ctxutil.Singleton[*mediaservice.Service](ctx)
 
 			subtitleFiles := mediaSvc.List(config.WD, subtitleExtensions, nil)
 			sort.Sort(util.SortAlphabetic(subtitleFiles))
@@ -273,4 +163,118 @@ func NewCommand() *cobra.Command {
 	cmd.Flags().BoolVarP(&yes, "yes", "y", false, "automatic yes to prompts")
 
 	return cmd
+}
+
+type result struct {
+	Characteristics map[string]string
+	IsSuccessful    bool
+	Message         string
+}
+
+func formatPoints(points int) string {
+	var pointsStyle func(interface{}) string
+	if points < 30 {
+		pointsStyle = promptui.Styler(promptui.FGRed)
+	} else if points < 60 {
+		pointsStyle = promptui.Styler(promptui.FGYellow)
+	} else {
+		pointsStyle = promptui.Styler(promptui.FGGreen)
+	}
+
+	return pointsStyle(fmt.Sprintf("%-3s", strconv.Itoa(points)))
+}
+
+// Prints files as a tree
+func printAll(w io.Writer, videos []string, subtitles []string) {
+	rootTree := gotree.New(config.WD)
+	for index, video := range videos {
+		fileIndex := strconv.FormatInt(int64(index+1), 10)
+		subTree := rootTree.Add(fileIndex)
+		subtitle := subtitles[index]
+		subTree.Add(subtitle)
+		subTree.Add(video)
+	}
+	toPrint := rootTree.Print()
+	fmt.Fprintln(w, toPrint)
+}
+
+// Attempts to synchronize given subtitle with given video file
+func process(ctx context.Context, video string, videoLang string, subtitle string, subtitleLang string, streamLang string, outFile string) (duration time.Duration, matchingPoints int, ok bool) {
+	consoleSvc := ctxutil.Singleton[*consoleservice.Service](ctx)
+
+	start := time.Now()
+
+	videoPath := path.Join(config.WD, video)
+	subtitlePath := path.Join(config.WD, subtitle)
+	outFilePath := path.Join(config.WD, outFile)
+
+	baseOptions := []string{
+		"sync",
+		"--ref",
+		videoPath,
+		"--ref-lang",
+		videoLang,
+		"--sub",
+		subtitlePath,
+		"--sub-lang",
+		subtitleLang,
+		"--out",
+		outFilePath,
+	}
+
+	subsyncOptions := viper.GetString(config.KeySubsyncOptions)
+
+	if subsyncOptions != "" {
+		baseOptions = append(strings.Split(subsyncOptions, " "), baseOptions...)
+	}
+
+	runOptions := []string{}
+	runOptions = append(runOptions, baseOptions...)
+
+	if streamLang != "" {
+		runOptions = append(runOptions, "--ref-stream-by-lang", streamLang)
+	}
+
+	runCommand := func(opts []string) (string, error) {
+		consoleSvc.Info(fmt.Sprintf("%s %s", subsyncCommand, strings.Join(opts, " ")))
+		var buf bytes.Buffer
+		mw := io.MultiWriter(os.Stdout, &buf)
+
+		subsync := exec.Command(subsyncCommand, opts...)
+		subsync.Stdout = mw
+
+		err := subsync.Run()
+
+		return buf.String(), err
+	}
+
+	var err error
+	var output string
+
+	output, err = runCommand(runOptions)
+
+	if err != nil {
+		rerunOptions := []string{}
+		rerunOptions = append(rerunOptions, baseOptions...)
+		if streamLang == "" {
+			rerunOptions = append(rerunOptions, "--ref-stream-by-lang", "eng")
+		}
+		output, err = runCommand(rerunOptions)
+		if err != nil {
+			return time.Since(start), 0, false
+		}
+	}
+
+	matches := subsyncMatchingPointsRegexp.FindAllStringSubmatch(output, -1)
+	if len(matches) > 0 {
+		parsed, err := strconv.Atoi(matches[len(matches)-1][1])
+		if err == nil {
+			matchingPoints = parsed
+		}
+	}
+
+	os.Chown(outFilePath, config.UID, config.GID)
+	os.Chmod(outFilePath, config.FileMode)
+
+	return time.Since(start), matchingPoints, true
 }

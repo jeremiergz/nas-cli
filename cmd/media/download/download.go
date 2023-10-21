@@ -13,8 +13,10 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/jeremiergz/nas-cli/config"
-	"github.com/jeremiergz/nas-cli/service"
+	consoleservice "github.com/jeremiergz/nas-cli/service/console"
+	mediaservice "github.com/jeremiergz/nas-cli/service/media"
 	"github.com/jeremiergz/nas-cli/util"
+	"github.com/jeremiergz/nas-cli/util/ctxutil"
 )
 
 var (
@@ -57,8 +59,9 @@ func NewCommand() *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			consoleSvc := cmd.Context().Value(util.ContextKeyConsole).(*service.ConsoleService)
-			mediaSvc := cmd.Context().Value(util.ContextKeyMedia).(*service.MediaService)
+			ctx := cmd.Context()
+			consoleSvc := ctxutil.Singleton[*consoleservice.Service](ctx)
+			mediaSvc := ctxutil.Singleton[*mediaservice.Service](ctx)
 
 			w := cmd.OutOrStdout()
 

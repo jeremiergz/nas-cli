@@ -32,7 +32,7 @@ func newTVShowCmd() *cobra.Command {
 		},
 	}
 
-	cmd.PersistentFlags().BoolVarP(&recursive, "recursive", "r", false, "find files and folders recursively")
+	cmd.Flags().BoolVarP(&recursive, "recursive", "r", false, "find files and folders recursively")
 
 	return cmd
 }
