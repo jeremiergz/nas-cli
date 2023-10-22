@@ -6,6 +6,7 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strings"
 
 	ptn "github.com/middelink/go-parse-torrent-name"
@@ -15,7 +16,6 @@ import (
 	"github.com/jeremiergz/nas-cli/config"
 	"github.com/jeremiergz/nas-cli/model"
 	"github.com/jeremiergz/nas-cli/util"
-	"github.com/jeremiergz/nas-cli/util/sliceutil"
 )
 
 type Service struct{}
@@ -45,7 +45,7 @@ func (s *Service) List(wd string, extensions []string, regExp *regexp.Regexp) []
 	filesList := []string{}
 	for _, f := range files {
 		ext := strings.Replace(path.Ext(f.Name()), ".", "", 1)
-		isValidExt := sliceutil.Contains(extensions, ext)
+		isValidExt := slices.Contains(extensions, ext)
 		shouldProcess := !f.IsDir() && isValidExt
 		if shouldProcess {
 			if regExp == nil || !regExp.Match([]byte(f.Name())) {

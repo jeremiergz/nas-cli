@@ -2,10 +2,9 @@ package cmdutil
 
 import (
 	"fmt"
+	"slices"
 
 	"github.com/spf13/cobra"
-
-	"github.com/jeremiergz/nas-cli/util/sliceutil"
 )
 
 const (
@@ -53,7 +52,7 @@ func CallParentPersistentPreRunE(cmd *cobra.Command, args []string) error {
 
 // Checks that value passed to --output is valid
 func OnlyValidOutputs() error {
-	if !sliceutil.Contains(OutputFormats, OutputFormat) {
+	if !slices.Contains(OutputFormats, OutputFormat) {
 		return fmt.Errorf("invalid value %s for --output", OutputFormat)
 	}
 
