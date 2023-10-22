@@ -20,7 +20,7 @@ import (
 )
 
 // Attempts to synchronize given subtitle with given video file.
-func Synchronize(tracker *progress.Tracker, video, videoLang, subtitle, subtitleLang, streamLang, outFile string) error {
+func Synchronize(tracker *progress.Tracker, video, videoLang, subtitle, subtitleLang, streamLang, streamType, outFile string) error {
 	videoPath := path.Join(config.WD, video)
 	subtitlePath := path.Join(config.WD, subtitle)
 	outFilePath := path.Join(config.WD, outFile)
@@ -44,6 +44,10 @@ func Synchronize(tracker *progress.Tracker, video, videoLang, subtitle, subtitle
 
 	if streamLang != "" {
 		options = append(options, "--ref-stream-by-lang", streamLang)
+	}
+
+	if streamType != "" {
+		options = append(options, "--ref-stream-by-type", streamType)
 	}
 
 	var buf bytes.Buffer

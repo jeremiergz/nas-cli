@@ -28,6 +28,7 @@ import (
 var (
 	dryRun             bool
 	streamLang         string
+	streamType         string
 	subtitleExtensions []string
 	subtitleLang       string
 	videoExtensions    []string
@@ -103,6 +104,7 @@ func NewCommand() *cobra.Command {
 
 	cmd.PersistentFlags().BoolVar(&dryRun, "dry-run", false, "print result without processing it")
 	cmd.Flags().StringVar(&streamLang, "stream", "eng", "stream ISO 639-3 language code")
+	cmd.Flags().StringVar(&streamType, "stream-type", "", "stream type (audio|sub)")
 	cmd.Flags().StringArrayVar(&subtitleExtensions, "sub-ext", []string{"srt"}, "filter subtitles by extension")
 	cmd.Flags().StringVar(&subtitleLang, "sub-lang", "eng", "subtitle ISO 639-3 language code")
 	cmd.Flags().StringArrayVarP(&videoExtensions, "video-ext", "e", []string{"avi", "mkv", "mp4"}, "filter video files by extension")
@@ -172,6 +174,7 @@ func process(videoFiles, subtitleFiles []string) error {
 				subtitleFile,
 				subtitleLang,
 				streamLang,
+				streamType,
 				outFile,
 			)
 			if err != nil {
