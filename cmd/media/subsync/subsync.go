@@ -225,7 +225,7 @@ func process(ctx context.Context, video string, videoLang string, subtitle strin
 	subsyncOptions := viper.GetString(config.KeySubsyncOptions)
 
 	if subsyncOptions != "" {
-		baseOptions = append(strings.Split(subsyncOptions, " "), baseOptions...)
+		baseOptions = append(baseOptions, strings.Split(subsyncOptions, " ")...)
 	}
 
 	runOptions := []string{}
