@@ -21,10 +21,6 @@ import (
 	"github.com/jeremiergz/nas-cli/util/ctxutil"
 )
 
-const (
-	scpCommand string = "scp"
-)
-
 var (
 	assets    []string
 	delete    bool
@@ -44,9 +40,9 @@ func NewCommand() *cobra.Command {
 				return err
 			}
 
-			_, err = exec.LookPath(scpCommand)
+			_, err = exec.LookPath(cmdutil.CommandSCP)
 			if err != nil {
-				return fmt.Errorf("command not found: %s", scpCommand)
+				return fmt.Errorf("command not found: %s", cmdutil.CommandSCP)
 			}
 
 			if viper.GetString(config.KeyNASFQDN) == "" {
@@ -96,10 +92,10 @@ func process(ctx context.Context, assets []string, destination string, subdestin
 	fullDestination := path.Join(destination, subdestination)
 	args = append(args, fmt.Sprintf("%s:%s", viper.GetString(config.KeyNASFQDN), fullDestination))
 
-	consoleSvc.Info(fmt.Sprintf("%s %s\n", scpCommand, strings.Join(args, " ")))
+	consoleSvc.Info(fmt.Sprintf("%s %s\n", cmdutil.CommandSCP, strings.Join(args, " ")))
 	var stderr bytes.Buffer
 	runCommand := func(opts []string) error {
-		scp := exec.Command(scpCommand, opts...)
+		scp := exec.Command(cmdutil.CommandSCP, opts...)
 		scp.Stderr = &stderr
 		scp.Stdout = os.Stdout
 		return scp.Run()

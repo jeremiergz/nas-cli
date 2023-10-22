@@ -16,10 +16,6 @@ type backup struct {
 	originalPath string
 }
 
-const (
-	mergeCommand string = "mkvmerge"
-)
-
 var (
 	delete            bool
 	dryRun            bool
@@ -43,9 +39,9 @@ func NewCommand() *cobra.Command {
 				return err
 			}
 
-			_, err = exec.LookPath(mergeCommand)
+			_, err = exec.LookPath(cmdutil.CommandMKVMerge)
 			if err != nil {
-				return fmt.Errorf("command not found: %s", mergeCommand)
+				return fmt.Errorf("command not found: %s", cmdutil.CommandMKVMerge)
 			}
 
 			return mediaSvc.InitializeWD(args[0])

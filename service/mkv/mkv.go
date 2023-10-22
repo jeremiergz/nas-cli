@@ -11,6 +11,7 @@ import (
 
 	"github.com/jeremiergz/nas-cli/model"
 	"github.com/jeremiergz/nas-cli/util"
+	"github.com/jeremiergz/nas-cli/util/cmdutil"
 )
 
 type Service struct{}
@@ -43,10 +44,6 @@ type MKVContainerProperties struct {
 	WritingApplication    string    `json:"writing_application"`
 }
 
-const (
-	mergeCommand string = "mkvmerge"
-)
-
 // Retrieves the characteristics of given MKV file.
 func (s *Service) GetCharacteristics(filePath string) (*MkvmergeIdentificationOutput, error) {
 	options := []string{
@@ -58,7 +55,7 @@ func (s *Service) GetCharacteristics(filePath string) (*MkvmergeIdentificationOu
 
 	buf := new(bytes.Buffer)
 
-	merge := exec.Command(mergeCommand, options...)
+	merge := exec.Command(cmdutil.CommandMKVMerge, options...)
 	merge.Stdout = buf
 	merge.Stderr = os.Stderr
 	err := merge.Run()
@@ -157,7 +154,7 @@ func (s *Service) CleanEpisodeTracks(wd string, ep *model.Episode) util.Result {
 
 	options = append(options, ep.FilePath)
 
-	propedit := exec.Command("mkvpropedit", options...)
+	propedit := exec.Command(cmdutil.CommandMKVPropEdit, options...)
 
 	err = propedit.Run()
 	if err != nil {

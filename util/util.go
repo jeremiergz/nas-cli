@@ -4,9 +4,16 @@ import (
 	"strings"
 	"unicode"
 
+	"github.com/manifoldco/promptui"
 	"golang.org/x/text/runes"
 	"golang.org/x/text/transform"
 	"golang.org/x/text/unicode/norm"
+)
+
+var (
+	StyleError   = promptui.Styler(promptui.FGRed)
+	StyleWarning = promptui.Styler(promptui.FGYellow)
+	StyleSuccess = promptui.Styler(promptui.FGGreen)
 )
 
 type SortAlphabetic []string

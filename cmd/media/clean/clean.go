@@ -11,10 +11,6 @@ import (
 	"github.com/jeremiergz/nas-cli/util/ctxutil"
 )
 
-const (
-	editCommand string = "mkvpropedit"
-)
-
 var (
 	dryRun            bool
 	subtitleExtension string
@@ -37,9 +33,9 @@ func NewCommand() *cobra.Command {
 				return err
 			}
 
-			_, err = exec.LookPath(editCommand)
+			_, err = exec.LookPath(cmdutil.CommandMKVPropEdit)
 			if err != nil {
-				return fmt.Errorf("command not found: %s", editCommand)
+				return fmt.Errorf("command not found: %s", cmdutil.CommandMKVPropEdit)
 			}
 
 			return mediaSvc.InitializeWD(args[0])

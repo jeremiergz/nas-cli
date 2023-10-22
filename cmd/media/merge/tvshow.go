@@ -25,6 +25,7 @@ import (
 	mediaservice "github.com/jeremiergz/nas-cli/service/media"
 	mkvservice "github.com/jeremiergz/nas-cli/service/mkv"
 	"github.com/jeremiergz/nas-cli/util"
+	"github.com/jeremiergz/nas-cli/util/cmdutil"
 	"github.com/jeremiergz/nas-cli/util/ctxutil"
 )
 
@@ -223,7 +224,7 @@ func processTVShows(ctx context.Context, w io.Writer, wd string, tvShows []*mode
 							}
 							options = append(options, videoBackupPath)
 
-							merge := exec.Command(mergeCommand, options...)
+							merge := exec.Command(cmdutil.CommandMKVMerge, options...)
 							merge.Stderr = w
 							err := merge.Run()
 

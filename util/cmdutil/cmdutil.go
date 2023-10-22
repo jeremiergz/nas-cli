@@ -8,6 +8,13 @@ import (
 	"github.com/jeremiergz/nas-cli/util/sliceutil"
 )
 
+const (
+	CommandMKVMerge    string = "mkvmerge"
+	CommandMKVPropEdit string = "mkvpropedit"
+	CommandSCP         string = "scp"
+	CommandSubsync     string = "subsync"
+)
+
 var (
 	// All possible --output values
 	OutputFormats = []string{"json", "text", "yaml"}
