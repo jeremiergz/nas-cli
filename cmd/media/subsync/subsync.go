@@ -6,15 +6,14 @@ import (
 	"os/exec"
 	"path"
 	"sort"
-	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/jedib0t/go-pretty/v6/list"
 	"github.com/jedib0t/go-pretty/v6/progress"
 	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
+	"golang.org/x/sync/errgroup"
 
 	"github.com/jeremiergz/nas-cli/cmd/media/subsync/internal"
 	"github.com/jeremiergz/nas-cli/config"
@@ -27,6 +26,7 @@ import (
 
 var (
 	dryRun             bool
+	maxParallel        int
 	streamLang         string
 	streamType         string
 	subtitleExtensions []string
@@ -103,6 +103,7 @@ func NewCommand() *cobra.Command {
 	}
 
 	cmd.PersistentFlags().BoolVar(&dryRun, "dry-run", false, "print result without processing it")
+	cmd.Flags().IntVar(&maxParallel, "max-parallel", 3, "maximum number of parallel processes")
 	cmd.Flags().StringVar(&streamLang, "stream", "eng", "stream ISO 639-3 language code")
 	cmd.Flags().StringVar(&streamType, "stream-type", "", "stream type (audio|sub)")
 	cmd.Flags().StringArrayVar(&subtitleExtensions, "sub-ext", []string{"srt"}, "filter subtitles by extension")
@@ -117,16 +118,13 @@ func NewCommand() *cobra.Command {
 func printAll(out io.Writer, videos []string, subtitles []string) {
 	tree := list.NewWriter()
 	tree.SetStyle(list.StyleConnectedLight)
-
 	tree.AppendItem(config.WD)
 	for index, video := range videos {
-		fileIndex := strconv.FormatInt(int64(index+1), 10)
 		tree.Indent()
-		tree.AppendItem(fileIndex)
+		tree.AppendItem(index + 1)
 
-		subtitle := subtitles[index]
 		tree.Indent()
-		tree.AppendItem(subtitle)
+		tree.AppendItem(subtitles[index])
 		tree.AppendItem(video)
 
 		tree.UnIndentAll()
@@ -154,19 +152,21 @@ func process(videoFiles, subtitleFiles []string) error {
 	pw.Style().Chars.BoxRight = ""
 	go pw.Render()
 
-	wg := sync.WaitGroup{}
+	eg := errgroup.Group{}
+	eg.SetLimit(maxParallel)
 
 	for i, v := range videoFiles {
 		index, videoFile := i, v
-		tracker := &progress.Tracker{Message: videoFile, Total: 100}
+		tracker := &progress.Tracker{
+			DeferStart: true,
+			Message:    fmt.Sprintf("%s%11s", videoFile, ""),
+			Total:      100,
+		}
 		pw.AppendTracker(tracker)
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		eg.Go(func() error {
 			videoFileExtension := path.Ext(videoFile)
 			outFile := strings.Replace(videoFile, videoFileExtension, fmt.Sprintf(".%s.srt", subtitleLang), 1)
 			subtitleFile := subtitleFiles[index]
-
 			err := internal.Synchronize(
 				tracker,
 				videoFile,
@@ -179,12 +179,16 @@ func process(videoFiles, subtitleFiles []string) error {
 			)
 			if err != nil {
 				tracker.MarkAsErrored()
+				return err
 			}
 			tracker.MarkAsDone()
-		}()
+			return nil
+		})
 	}
-
-	wg.Wait()
+	err := eg.Wait()
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
