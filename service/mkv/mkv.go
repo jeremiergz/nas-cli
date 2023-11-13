@@ -147,6 +147,8 @@ func (s *Service) CleanEpisodeTracks(wd string, ep *model.Episode) util.Result {
 				fmt.Sprintf("track:v%d", videoTrackNumber),
 				"--set",
 				"language=und",
+				"--set",
+				"name=",
 			)
 			videoTrackNumber++
 		}
