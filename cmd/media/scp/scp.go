@@ -1,31 +1,32 @@
 package scp
 
 import (
-	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path"
 	"path/filepath"
-	"strings"
 
+	"github.com/jedib0t/go-pretty/v6/progress"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"golang.org/x/sync/errgroup"
 
+	"github.com/jeremiergz/nas-cli/cmd/media/scp/internal"
 	"github.com/jeremiergz/nas-cli/config"
-	consoleservice "github.com/jeremiergz/nas-cli/service/console"
-	sshservice "github.com/jeremiergz/nas-cli/service/ssh"
+	sftpservice "github.com/jeremiergz/nas-cli/service/sftp"
 	"github.com/jeremiergz/nas-cli/util/cmdutil"
 	"github.com/jeremiergz/nas-cli/util/ctxutil"
 )
 
 var (
-	assets    []string
-	delete    bool
-	recursive bool
-	subpath   string
+	assets      []string
+	delete      bool
+	maxParallel int
+	recursive   bool
+	subpath     string
 )
 
 func NewCommand() *cobra.Command {
@@ -71,6 +72,7 @@ func NewCommand() *cobra.Command {
 	}
 
 	cmd.PersistentFlags().BoolVarP(&delete, "delete", "d", false, "remove source files after upload")
+	cmd.PersistentFlags().IntVarP(&maxParallel, "max-parallel", "p", 0, "maximum number of parallel processes. 0 means no limit")
 	cmd.PersistentFlags().BoolVarP(&recursive, "recursive", "r", false, "find files and folders recursively")
 	cmd.AddCommand(newAnimeCmd())
 	cmd.AddCommand(newMovieCmd())
@@ -80,72 +82,65 @@ func NewCommand() *cobra.Command {
 }
 
 // Uploads files & folders to configured destination using SFTP
-func process(ctx context.Context, assets []string, destination string, subdestination string) error {
-	consoleSvc := ctxutil.Singleton[*consoleservice.Service](ctx)
-	sshSvc := ctxutil.Singleton[*sshservice.Service](ctx)
+func process(ctx context.Context, out io.Writer, files []string, destination string, subdestination string) error {
+	sftpSvc := ctxutil.Singleton[*sftpservice.Service](ctx)
 
-	args := []string{}
-	if recursive {
-		args = append(args, "-r")
-	}
-	args = append(args, assets...)
-	fullDestination := path.Join(destination, subdestination)
-	args = append(args, fmt.Sprintf("%s:%s", viper.GetString(config.KeyNASFQDN), fullDestination))
-
-	consoleSvc.Info(fmt.Sprintf("%s %s\n", cmdutil.CommandSCP, strings.Join(args, " ")))
-	var stderr bytes.Buffer
-	runCommand := func(opts []string) error {
-		scp := exec.Command(cmdutil.CommandSCP, opts...)
-		scp.Stderr = &stderr
-		scp.Stdout = os.Stdout
-		return scp.Run()
-	}
-
-	err := runCommand(args)
-	if err != nil {
-		commandErr := fmt.Errorf("%s: %s", err.Error(), stderr.String())
-		return commandErr
-	}
-
-	err = sshSvc.Connect()
+	err := sftpSvc.Connect()
 	if err != nil {
 		return err
 	}
-	defer sshSvc.Disconnect()
+	defer sftpSvc.Disconnect()
 
-	g := new(errgroup.Group)
+	pw := cmdutil.NewProgressWriter(out, len(files))
+	go pw.Render()
 
-	commands := []string{
-		fmt.Sprintf("cd \"%s\"", destination),
-		"find . -type d -exec chmod 755 {} +",
-		"find . -type f -exec chmod 644 {} +",
+	eg, _ := errgroup.WithContext(ctx)
+	if maxParallel > 0 {
+		eg.SetLimit(maxParallel)
 	}
 
-	var user string
-	if user = viper.GetString(config.KeySCPChownUser); user == "" {
-		user = "media"
-	}
-	var group string
-	if group = viper.GetString(config.KeySCPChownGroup); group == "" {
-		group = "media"
-	}
+	destinationDir := path.Join(destination, subdestination)
 
-	commands = append(commands, fmt.Sprintf("chown -R %s:%s ./*", user, group))
-
-	g.Go(func() error {
-		_, err = sshSvc.SendCommands(commands...)
+	for _, f := range files {
+		srcFile := f
+		tracker := &progress.Tracker{
+			DeferStart: true,
+			Message:    srcFile,
+			Total:      100,
+		}
+		pw.AppendTracker(tracker)
+		eg.Go(func() error {
+			destinationFile := path.Join(destinationDir, filepath.Base(srcFile))
+			err := internal.Upload(
+				ctx,
+				sftpSvc.Client,
+				tracker,
+				srcFile,
+				destinationFile,
+			)
+			if err != nil {
+				tracker.MarkAsErrored()
+				return err
+			}
+			tracker.MarkAsDone()
+			return nil
+		})
+	}
+	if err := eg.Wait(); err != nil {
 		return err
-	})
+	}
 
 	if delete {
 		for _, asset := range assets {
-			func(a string) {
-				g.Go(func() error {
-					return os.RemoveAll(a)
-				})
-			}(asset)
+			asset := asset
+			eg.Go(func() error {
+				return os.RemoveAll(asset)
+			})
 		}
 	}
+	if err := eg.Wait(); err != nil {
+		return err
+	}
 
-	return g.Wait()
+	return nil
 }

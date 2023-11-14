@@ -2,8 +2,13 @@ package cmdutil
 
 import (
 	"fmt"
+	"io"
 	"slices"
+	"time"
 
+	"github.com/jedib0t/go-pretty/v6/list"
+	"github.com/jedib0t/go-pretty/v6/progress"
+	"github.com/jeremiergz/nas-cli/util"
 	"github.com/spf13/cobra"
 )
 
@@ -48,6 +53,35 @@ func CallParentPersistentPreRunE(cmd *cobra.Command, args []string) error {
 	}
 
 	return nil
+}
+
+func NewListWriter() list.Writer {
+	lw := list.NewWriter()
+	lw.SetStyle(list.StyleConnectedLight)
+	return lw
+
+}
+
+func NewProgressWriter(out io.Writer, expectedLength int) progress.Writer {
+	pw := progress.NewWriter()
+	pw.SetOutputWriter(out)
+	pw.SetTrackerLength(25)
+	pw.SetNumTrackersExpected(expectedLength)
+	pw.SetSortBy(progress.SortByNone)
+	pw.SetStyle(progress.StyleCircle)
+	pw.SetTrackerPosition(progress.PositionRight)
+	pw.SetUpdateFrequency(time.Millisecond * 100)
+	pw.Style().Colors = progress.StyleColorsDefault
+	pw.Style().Options.PercentFormat = "%3.0f%%"
+	pw.Style().Options.TimeDonePrecision = time.Second
+	pw.Style().Options.TimeInProgressPrecision = time.Second
+	pw.Style().Options.TimeOverallPrecision = time.Second
+	pw.Style().Visibility.Value = false
+	pw.Style().Options.DoneString = fmt.Sprintf("  %s", util.StyleSuccess("✔"))
+	pw.Style().Options.Separator = ""
+	pw.Style().Chars.BoxLeft = ""
+	pw.Style().Chars.BoxRight = ""
+	return pw
 }
 
 // Checks that value passed to --output is valid

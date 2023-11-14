@@ -21,7 +21,7 @@ func newMovieCmd() *cobra.Command {
 				return fmt.Errorf("%s configuration entry is missing", config.KeySCPDestMoviesPath)
 			}
 
-			return process(cmd.Context(), assets, moviesDest, subpath)
+			return process(cmd.Context(), cmd.OutOrStdout(), assets, moviesDest, subpath)
 		},
 	}
 

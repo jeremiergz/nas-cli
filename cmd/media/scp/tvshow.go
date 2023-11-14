@@ -21,7 +21,7 @@ func newTVShowCmd() *cobra.Command {
 				return fmt.Errorf("%s configuration entry is missing", config.KeySCPDestTVShowsPath)
 			}
 
-			return process(cmd.Context(), assets, tvShowsDest, subpath)
+			return process(cmd.Context(), cmd.OutOrStdout(), assets, tvShowsDest, subpath)
 		},
 	}
 

@@ -54,8 +54,7 @@ func Synchronize(tracker *progress.Tracker, video, videoLang, subtitle, subtitle
 	subsync := exec.Command(cmdutil.CommandSubsync, options...)
 	subsync.Stdout = &buf
 
-	err := subsync.Start()
-	if err != nil {
+	if err := subsync.Start(); err != nil {
 		return err
 	}
 
@@ -71,8 +70,7 @@ func Synchronize(tracker *progress.Tracker, video, videoLang, subtitle, subtitle
 		}
 	}()
 
-	err = subsync.Wait()
-	if err != nil {
+	if err := subsync.Wait(); err != nil {
 		return err
 	}
 

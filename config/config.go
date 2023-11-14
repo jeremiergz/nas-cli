@@ -27,7 +27,9 @@ const (
 	KeyBackupPlexDest      string = "backup.plex.dest"
 	KeyBackupPlexSrc       string = "backup.plex.src"
 	KeyNASFQDN             string = "nas.fqdn"
+	KeySCPChownGID         string = "scp.chown.gid"
 	KeySCPChownGroup       string = "scp.chown.group"
+	KeySCPChownUID         string = "scp.chown.uid"
 	KeySCPChownUser        string = "scp.chown.user"
 	KeySCPDestAnimesPath   string = "scp.dest.animespath"
 	KeySCPDestMoviesPath   string = "scp.dest.moviespath"
@@ -55,7 +57,9 @@ var (
 		KeyNASFQDN,
 		KeyBackupPlexSrc,
 		KeyBackupPlexDest,
+		KeySCPChownGID,
 		KeySCPChownGroup,
+		KeySCPChownUID,
 		KeySCPChownUser,
 		KeySCPDestAnimesPath,
 		KeySCPDestMoviesPath,
@@ -110,7 +114,9 @@ func init() {
 			viper.Set(KeyBackupPlexDest, backupPlexDestPath)
 		}
 
+		viper.SetDefault(KeySCPChownGID, 1000)
 		viper.SetDefault(KeySCPChownGroup, "media")
+		viper.SetDefault(KeySCPChownUID, 1000)
 		viper.SetDefault(KeySCPChownUser, "media")
 
 		viper.SetDefault(KeySCPDestAnimesPath, "")

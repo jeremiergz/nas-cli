@@ -21,7 +21,7 @@ func newAnimeCmd() *cobra.Command {
 				return fmt.Errorf("%s configuration entry is missing", config.KeySCPDestAnimesPath)
 			}
 
-			return process(cmd.Context(), assets, animesDest, subpath)
+			return process(cmd.Context(), cmd.OutOrStdout(), assets, animesDest, subpath)
 		},
 	}
 
