@@ -93,7 +93,7 @@ func (s *Service) CleanEpisodeTracks(wd string, ep *model.Episode) util.Result {
 		"--set",
 		"title=",
 		"--tags",
-		"global:",
+		"all:",
 	}
 
 	audioTrackNumber := 1
