@@ -52,7 +52,7 @@ func Test_Config_Set(t *testing.T) {
 			content, _ := os.ReadFile(path.Join(tempDir, config.FileName))
 			subKey := strings.ReplaceAll(filepath.Ext(try.key), ".", "")
 
-			configLineRegExp := regexp.MustCompile(fmt.Sprintf(`%s\s*=\s*%s`, subKey, try.value))
+			configLineRegExp := regexp.MustCompile(fmt.Sprintf(`%s\s*:\s*%s`, subKey, try.value))
 			assert.Regexp(t, configLineRegExp, string(content))
 		})
 	}
