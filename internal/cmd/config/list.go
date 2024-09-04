@@ -40,8 +40,8 @@ func newListCmd() *cobra.Command {
 				case "text":
 					values := []string{}
 					for _, key := range config.OrderedKeys {
-						format := "%s=%s"
-						values = append(values, fmt.Sprintf(format, key, viper.GetString(key)))
+						format := "%s=%v"
+						values = append(values, fmt.Sprintf(format, key, viper.Get(key)))
 					}
 					toPrint = strings.Join(values, "\n")
 
