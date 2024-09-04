@@ -40,5 +40,6 @@ coverage/
 *.out
 *.so
 *.test
+.nascliconfig
 nas-cli*
 !nas-cli.rb

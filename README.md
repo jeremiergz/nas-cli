@@ -8,6 +8,19 @@ CLI application for managing my NAS.
 
 <img alt="logo" src="https://github.com/jeremiergz/nas-cli/blob/main/logo.png?raw=true" width="100" />
 
+## Table of Contents
+
+- [NAS CLI](#nas-cli)
+  - [Table of Contents](#table-of-contents)
+  - [Toolchain](#toolchain)
+  - [Authors](#authors)
+  - [License](#license)
+
+## Toolchain
+
+- [golang](https://go.dev) `>=1.23` - _programming language_
+- [make](https://www.gnu.org/software/make) `>=3.81` - _build tool_
+
 ## Authors
 
 - [**Jeremie Rodriguez**](https://github.com/jeremiergz) &lt;[contact@jeremierodriguez.com](mailto:contact@jeremierodriguez.com)&gt; - Main developer

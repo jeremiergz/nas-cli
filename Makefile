@@ -35,10 +35,10 @@ NEXT_VERSION			:= v${NEXT_VERSION_BASE}.${NEXT_VERSION_PATCH}
 
 LDFLAGS					:= -ldflags
 LDFLAGS					+= "
-LDFLAGS					+= -X '${MODULE}/util/processutil.AppName=${BINARY}'
-LDFLAGS					+= -X '${MODULE}/util/processutil.BuildDate=${BUILD_DATE}'
-LDFLAGS					+= -X '${MODULE}/util/processutil.GitCommit=${GIT_COMMIT}'
-LDFLAGS					+= -X '${MODULE}/util/processutil.Version=${TAG}'
+LDFLAGS					+= -X '${MODULE}/internal/config.AppName=${BINARY}'
+LDFLAGS					+= -X '${MODULE}/internal/config.BuildDate=${BUILD_DATE}'
+LDFLAGS					+= -X '${MODULE}/internal/config.GitCommit=${GIT_COMMIT}'
+LDFLAGS					+= -X '${MODULE}/internal/config.Version=${TAG}'
 LDFLAGS					+= "
 
 define generate_binary

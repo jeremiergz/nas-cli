@@ -4,39 +4,39 @@ import (
 	"context"
 	"os"
 
-	"github.com/jeremiergz/nas-cli/cmd"
-	"github.com/jeremiergz/nas-cli/cmd/backup"
-	"github.com/jeremiergz/nas-cli/cmd/completion"
-	"github.com/jeremiergz/nas-cli/cmd/config"
-	"github.com/jeremiergz/nas-cli/cmd/info"
-	"github.com/jeremiergz/nas-cli/cmd/media"
-	"github.com/jeremiergz/nas-cli/cmd/version"
-	consoleservice "github.com/jeremiergz/nas-cli/service/console"
-	mediaservice "github.com/jeremiergz/nas-cli/service/media"
-	mkvservice "github.com/jeremiergz/nas-cli/service/mkv"
-	sftpservice "github.com/jeremiergz/nas-cli/service/sftp"
-	sshservice "github.com/jeremiergz/nas-cli/service/ssh"
-	"github.com/jeremiergz/nas-cli/util/ctxutil"
+	"github.com/jeremiergz/nas-cli/internal/cmd"
+	"github.com/jeremiergz/nas-cli/internal/cmd/backup"
+	"github.com/jeremiergz/nas-cli/internal/cmd/completion"
+	"github.com/jeremiergz/nas-cli/internal/cmd/config"
+	"github.com/jeremiergz/nas-cli/internal/cmd/info"
+	"github.com/jeremiergz/nas-cli/internal/cmd/media"
+	"github.com/jeremiergz/nas-cli/internal/cmd/version"
+	consolesvc "github.com/jeremiergz/nas-cli/internal/service/console"
+	mediasvc "github.com/jeremiergz/nas-cli/internal/service/media"
+	mkvsvc "github.com/jeremiergz/nas-cli/internal/service/mkv"
+	sftpsvc "github.com/jeremiergz/nas-cli/internal/service/sftp"
+	sshsvc "github.com/jeremiergz/nas-cli/internal/service/ssh"
+	"github.com/jeremiergz/nas-cli/internal/util/ctxutil"
 )
 
 func main() {
-	rootCmd := cmd.NewCommand()
-	rootCmd.AddCommand(backup.NewCommand())
-	rootCmd.AddCommand(completion.NewCommand())
-	rootCmd.AddCommand(config.NewCommand())
-	rootCmd.AddCommand(info.NewCommand())
-	rootCmd.AddCommand(media.NewCommand())
-	rootCmd.AddCommand(version.NewCommand())
+	rootCmd := cmd.New()
+	rootCmd.AddCommand(backup.New())
+	rootCmd.AddCommand(completion.New())
+	rootCmd.AddCommand(config.New())
+	rootCmd.AddCommand(info.New())
+	rootCmd.AddCommand(media.New())
+	rootCmd.AddCommand(version.New())
 
 	ctx := context.Background()
 
 	w := rootCmd.OutOrStdout()
 
-	ctx = ctxutil.WithSingleton(ctx, consoleservice.New(w))
-	ctx = ctxutil.WithSingleton(ctx, mediaservice.New())
-	ctx = ctxutil.WithSingleton(ctx, mkvservice.New())
-	ctx = ctxutil.WithSingleton(ctx, sftpservice.New())
-	ctx = ctxutil.WithSingleton(ctx, sshservice.New())
+	ctx = ctxutil.WithSingleton(ctx, consolesvc.New(w))
+	ctx = ctxutil.WithSingleton(ctx, mediasvc.New())
+	ctx = ctxutil.WithSingleton(ctx, mkvsvc.New())
+	ctx = ctxutil.WithSingleton(ctx, sftpsvc.New())
+	ctx = ctxutil.WithSingleton(ctx, sshsvc.New())
 
 	if err := rootCmd.ExecuteContext(ctx); err != nil {
 		os.Exit(1)
