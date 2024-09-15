@@ -4,7 +4,6 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/jeremiergz/nas-cli/internal/cmd/media/clean"
-	"github.com/jeremiergz/nas-cli/internal/cmd/media/download"
 	"github.com/jeremiergz/nas-cli/internal/cmd/media/format"
 	"github.com/jeremiergz/nas-cli/internal/cmd/media/list"
 	"github.com/jeremiergz/nas-cli/internal/cmd/media/merge"
@@ -30,7 +29,6 @@ func New() *cobra.Command {
 
 	cmd.PersistentFlags().StringVarP(&ownership, "owner", "o", "", "override default ownership")
 	cmd.AddCommand(clean.New())
-	cmd.AddCommand(download.New())
 	cmd.AddCommand(format.New())
 	cmd.AddCommand(list.New())
 	cmd.AddCommand(merge.New())

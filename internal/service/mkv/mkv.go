@@ -72,7 +72,7 @@ func (s *Service) GetCharacteristics(filePath string) (*MkvmergeIdentificationOu
 	return characteristics, nil
 }
 
-// Cleans given TV show episode tracks.
+// Cleans given show episode tracks.
 func (s *Service) CleanEpisodeTracks(wd string, ep *model.Episode) util.Result {
 	start := time.Now()
 
@@ -107,6 +107,8 @@ func (s *Service) CleanEpisodeTracks(wd string, ep *model.Episode) util.Result {
 				"--edit",
 				fmt.Sprintf("track:a%d", audioTrackNumber),
 				"--set",
+				fmt.Sprintf("language=%s", util.ToLanguageRegionalized(track.Properties.Language)),
+				"--set",
 				"name=",
 			)
 			audioTrackNumber++
@@ -121,6 +123,8 @@ func (s *Service) CleanEpisodeTracks(wd string, ep *model.Episode) util.Result {
 			options = append(options,
 				"--edit",
 				fmt.Sprintf("track:s%d", subtitleTrackNumber),
+				"--set",
+				fmt.Sprintf("language=%s", util.ToLanguageRegionalized(track.Properties.Language)),
 				"--set",
 				fmt.Sprintf("name=%s", util.ToLanguageDisplayName(track.Properties.Language, isForced)),
 			)

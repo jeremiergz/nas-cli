@@ -30,30 +30,30 @@ import (
 )
 
 var (
-	tvShowNames []string
+	showNames []string
 )
 
-func newTVShowCmd() *cobra.Command {
+func newShowCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "tvshows <directory>",
-		Aliases: []string{"tv", "t"},
-		Short:   "Merge TV Shows tracks",
+		Use:     "shows <directory>",
+		Aliases: []string{"show", "s"},
+		Short:   "Merge Shows tracks",
 		Args:    cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 			consoleSvc := ctxutil.Singleton[*consolesvc.Service](ctx)
 			mediaSvc := ctxutil.Singleton[*mediasvc.Service](ctx)
 
-			tvShows, err := mediaSvc.LoadTVShows(config.WD, videoExtensions, &subtitleExtension, subtitleLanguages, true)
+			shows, err := mediaSvc.LoadShows(config.WD, videoExtensions, &subtitleExtension, subtitleLanguages, true)
 
 			w := cmd.OutOrStdout()
 
-			if len(tvShowNames) > 0 {
-				if len(tvShowNames) != len(tvShows) {
-					return fmt.Errorf("names must be provided for all TV shows")
+			if len(showNames) > 0 {
+				if len(showNames) != len(shows) {
+					return fmt.Errorf("names must be provided for all shows")
 				}
-				for index, tvShowName := range tvShowNames {
-					tvShows[index].Name = tvShowName
+				for index, showName := range showNames {
+					shows[index].Name = showName
 				}
 			}
 
@@ -61,10 +61,10 @@ func newTVShowCmd() *cobra.Command {
 				return err
 			}
 
-			if len(tvShows) == 0 {
+			if len(shows) == 0 {
 				consoleSvc.Success("No video file to process")
 			} else {
-				printAllTVShows(w, config.WD, tvShows)
+				printShows(w, config.WD, shows)
 
 				if !dryRun {
 					fmt.Fprintln(w)
@@ -85,7 +85,7 @@ func newTVShowCmd() *cobra.Command {
 						}
 					} else {
 						hasError := false
-						ok, results := processTVShows(cmd.Context(), w, config.WD, tvShows, !delete, config.UID, config.GID)
+						ok, results := processShows(cmd.Context(), w, config.WD, shows, !delete, config.UID, config.GID)
 						if !ok {
 							hasError = true
 						}
@@ -114,12 +114,12 @@ func newTVShowCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringArrayVarP(&tvShowNames, "name", "n", nil, "override TV show name")
+	cmd.Flags().StringArrayVarP(&showNames, "name", "n", nil, "override show name")
 
 	return cmd
 }
 
-// Checks whether given season has episodes with subtitles or not
+// Checks whether given season has episodes with subtitles or not.
 func hasSubtitlesInSeason(season *model.Season) bool {
 	for _, episode := range season.Episodes {
 		if len(episode.Subtitles) > 0 {
@@ -130,9 +130,9 @@ func hasSubtitlesInSeason(season *model.Season) bool {
 	return false
 }
 
-// Checks whether given TV Show has a season with episodes with subtitles or not
-func hasSubtitlesInTVShow(tvShow *model.TVShow) bool {
-	for _, season := range tvShow.Seasons {
+// Checks whether given Show has a season with episodes with subtitles or not.
+func hasSubtitlesInShow(show *model.Show) bool {
+	for _, season := range show.Seasons {
 		if hasSubtitlesInSeason(season) {
 			return true
 		}
@@ -141,18 +141,18 @@ func hasSubtitlesInTVShow(tvShow *model.TVShow) bool {
 	return false
 }
 
-// Prints given TV shows and their subtitles as a tree
-func printAllTVShows(w io.Writer, wd string, tvShows []*model.TVShow) {
+// Prints given shows and their subtitles as a tree.
+func printShows(w io.Writer, wd string, shows []*model.Show) {
 	rootTree := gotree.New(wd)
-	for _, tvShow := range tvShows {
-		tvShowTree := rootTree.Add(tvShow.Name)
-		for _, season := range tvShow.Seasons {
+	for _, show := range shows {
+		showTree := rootTree.Add(show.Name)
+		for _, season := range show.Seasons {
 			filesCount := len(season.Episodes)
 			fileString := "files"
 			if filesCount == 1 {
 				fileString = "file"
 			}
-			seasonsTree := tvShowTree.Add(fmt.Sprintf("%s (%d %s)", season.Name, filesCount, fileString))
+			seasonsTree := showTree.Add(fmt.Sprintf("%s (%d %s)", season.Name, filesCount, fileString))
 			for _, episode := range season.Episodes {
 				episodeTree := seasonsTree.Add(episode.Name())
 				episodeTree.Add(fmt.Sprintf("📼  %s", episode.Basename))
@@ -174,30 +174,29 @@ func printAllTVShows(w io.Writer, wd string, tvShows []*model.TVShow) {
 	fmt.Fprintln(w, toPrint)
 }
 
-// Merges TV show language tracks into one video file
-func processTVShows(ctx context.Context, w io.Writer, wd string, tvShows []*model.TVShow, keepOriginalFiles bool, owner, group int) (bool, []util.Result) {
-	// consoleSvc := ctxutil.Singleton[*consolesvc.Service](ctx)
+// Merges show language tracks into one video file..
+func processShows(ctx context.Context, w io.Writer, wd string, shows []*model.Show, keepOriginalFiles bool, owner, group int) (bool, []util.Result) {
 	mediaSvc := ctxutil.Singleton[*mediasvc.Service](ctx)
 
 	ok := true
 	results := []util.Result{}
 
-	for _, tvShow := range tvShows {
-		shouldContinue := hasSubtitlesInTVShow(tvShow)
+	for _, show := range shows {
+		shouldContinue := hasSubtitlesInShow(show)
 
 		if shouldContinue {
-			tvShowPath := path.Join(wd, tvShow.Name)
-			mediaSvc.PrepareDirectory(tvShowPath, owner, group)
+			showPath := path.Join(wd, show.Name)
+			mediaSvc.PrepareDirectory(showPath, owner, group)
 
-			for _, season := range tvShow.Seasons {
+			for _, season := range show.Seasons {
 				shouldContinue = hasSubtitlesInSeason(season)
 
 				if shouldContinue {
-					seasonPath := path.Join(tvShowPath, season.Name)
+					seasonPath := path.Join(showPath, season.Name)
 					mediaSvc.PrepareDirectory(seasonPath, owner, group)
 
 					lop.ForEach(season.Episodes, func(episode *model.Episode, _ int) {
-						// Nothing to do if there are no subtitles
+						// Nothing to do if there are no subtitles.
 						if len(episode.Subtitles) > 0 {
 							start := time.Now()
 

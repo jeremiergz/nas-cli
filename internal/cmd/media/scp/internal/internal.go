@@ -65,12 +65,12 @@ func Upload(ctx context.Context, client *sftp.Client, tracker *progress.Tracker,
 	})
 
 	eg.Go(func() error {
-		srcFileName := filepath.Base(src)
+		srcFilename := filepath.Base(src)
 		for !tracker.IsDone() {
 			progressPercentage := int64(float64(progress.Written()) / float64(srcStats.Size()) * 100)
 			if err == nil {
 				tracker.SetValue(progressPercentage)
-				tracker.UpdateMessage(srcFileName)
+				tracker.UpdateMessage(srcFilename)
 			}
 			time.Sleep(100 * time.Millisecond)
 		}

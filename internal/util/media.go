@@ -65,7 +65,7 @@ func InitOwnership(ownership string) (err error) {
 	return nil
 }
 
-// Returns formatted TV show episode name from given parameters
+// Returns formatted show episode name from given parameters
 func ToEpisodeName(title string, season int, episode int, extension string) string {
 	return fmt.Sprintf("%s - S%02dE%02d.%s", title, season, episode, extension)
 }
@@ -90,23 +90,6 @@ var (
 		"jpn": "Japanese",
 		"spa": "Spanish",
 	}
-	langFlagsMapping = map[string]string{
-		"eng":    "🇺🇸", // English (All)
-		"eng-ca": "🇨🇦", // English (Canada)
-		"eng-uk": "🇬🇧", // English (UK)
-		"eng-us": "🇺🇸", // English (US)
-		"fre":    "🇫🇷", // French
-		"fre-ca": "🇨🇦", // French (Canada)
-		"fre-fr": "🇫🇷", // French (France)
-		"ger":    "🇩🇪", // German (All)
-		"ger-at": "🇦🇹", // German (Austria)
-		"ger-de": "🇩🇪", // German (Germany)
-		"ita":    "🇮🇹", // Italian
-		"jpn":    "🇯🇵", // Japanese
-		"spa":    "🇪🇸", // Spanish (All)
-		"spa-es": "🇪🇸", // Spanish (Mexico)
-		"spa-mx": "🇲🇽", // Spanish (Mexico)
-	}
 )
 
 // Returns language display flag from given language code.
@@ -129,6 +112,26 @@ func ToLanguageDisplayName(lang string, forced bool) string {
 	return strings.Join(stringsArr, " ")
 }
 
+var (
+	langFlagsMapping = map[string]string{
+		"eng":    "🇺🇸", // English (All)
+		"eng-ca": "🇨🇦", // English (Canada)
+		"eng-uk": "🇬🇧", // English (UK)
+		"eng-us": "🇺🇸", // English (US)
+		"fre":    "🇫🇷", // French (All)
+		"fre-ca": "🇨🇦", // French (Canada)
+		"fre-fr": "🇫🇷", // French (France)
+		"ger":    "🇩🇪", // German (All)
+		"ger-at": "🇦🇹", // German (Austria)
+		"ger-de": "🇩🇪", // German (Germany)
+		"ita":    "🇮🇹", // Italian
+		"jpn":    "🇯🇵", // Japanese
+		"spa":    "🇪🇸", // Spanish (All)
+		"spa-es": "🇪🇸", // Spanish (Mexico)
+		"spa-mx": "🇲🇽", // Spanish (Mexico)
+	}
+)
+
 // Returns language display flag from given language code.
 func ToLanguageFlag(lang string) string {
 	flag, ok := langFlagsMapping[lang]
@@ -140,4 +143,47 @@ func ToLanguageFlag(lang string) string {
 		}
 	}
 	return flag
+}
+
+var (
+	langRegionalsMapping = map[string]map[string]string{
+		"eng": {
+			"":   "eng-us", // English (Default)
+			"ca": "eng-ca", // English (Canada)
+			"uk": "eng-uk", // English (UK)
+			"us": "eng-us", // English (US)
+		},
+		"fre": {
+			"":   "fre-fr", // French (Default)
+			"ca": "fre-ca", // French (Canada)
+			"fr": "fre-fr", // French (France)
+		},
+		"ger": {
+			"":   "ger-de", // German (Default)
+			"at": "ger-at", // German (Austria)
+			"de": "ger-de", // German (Germany)
+		},
+		"spa": {
+			"":   "spa-es", // Spanish (Default)
+			"es": "spa-es", // Spanish (Spain)
+			"mx": "spa-mx", // Spanish (Mexico)
+		},
+	}
+)
+
+// Returns regionalized language code. If not found, it returns the original language code.
+func ToLanguageRegionalized(lang string) string {
+	countryCode := countryCodeRegexp.FindString(lang)
+
+	langIndex, ok := langRegionalsMapping[lang]
+	if !ok {
+		return lang
+	}
+
+	langRegional, ok := langIndex[countryCode]
+	if !ok {
+		return langIndex[""]
+	}
+
+	return langRegional
 }

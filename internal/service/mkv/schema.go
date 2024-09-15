@@ -4,7 +4,7 @@ package mkv
 type AttachmentsItems struct {
 	ContentType string      `json:"content_type,omitempty"`
 	Description string      `json:"description,omitempty"`
-	FileName    string      `json:"file_name"`
+	Filename    string      `json:"file_name"`
 	ID          int         `json:"id"`
 	Properties  *Properties `json:"properties"`
 	Size        int         `json:"size"`
@@ -43,7 +43,7 @@ type MkvmergeIdentificationOutput struct {
 	Container *Container `json:"container,omitempty"`
 
 	// the identified file's name
-	FileName   string        `json:"file_name,omitempty"`
+	Filename   string        `json:"file_name,omitempty"`
 	GlobalTags []interface{} `json:"global_tags,omitempty"`
 
 	// The output format's version

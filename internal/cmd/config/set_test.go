@@ -49,7 +49,7 @@ func Test_Config_Set(t *testing.T) {
 			assert.NoError(t, err)
 
 			assert.Equal(t, try.value, viper.GetString(try.key))
-			content, _ := os.ReadFile(path.Join(tempDir, config.FileName))
+			content, _ := os.ReadFile(path.Join(tempDir, config.Filename))
 			subKey := strings.ReplaceAll(filepath.Ext(try.key), ".", "")
 
 			configLineRegExp := regexp.MustCompile(fmt.Sprintf(`%s\s*:\s*%s`, subKey, try.value))

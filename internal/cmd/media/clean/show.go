@@ -23,28 +23,28 @@ import (
 	"github.com/jeremiergz/nas-cli/internal/util/ctxutil"
 )
 
-func newTVShowCmd() *cobra.Command {
+func newShowCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "tvshows <directory>",
-		Aliases: []string{"tv", "t"},
-		Short:   "Clean TV Shows tracks",
+		Use:     "shows <directory>",
+		Aliases: []string{"show", "s"},
+		Short:   "Clean Shows tracks",
 		Args:    cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 			consoleSvc := ctxutil.Singleton[*consolesvc.Service](ctx)
 			mediaSvc := ctxutil.Singleton[*mediasvc.Service](ctx)
 
-			tvShows, err := mediaSvc.LoadTVShows(config.WD, videoExtensions, &subtitleExtension, subtitleLanguages, true)
+			shows, err := mediaSvc.LoadShows(config.WD, videoExtensions, &subtitleExtension, subtitleLanguages, true)
 			if err != nil {
 				return err
 			}
 
 			w := cmd.OutOrStdout()
 
-			if len(tvShows) == 0 {
+			if len(shows) == 0 {
 				consoleSvc.Success("No video file to process")
 			} else {
-				printAllTVShows(w, config.WD, tvShows)
+				printShows(w, config.WD, shows)
 
 				if !dryRun {
 					fmt.Fprintln(w)
@@ -65,7 +65,7 @@ func newTVShowCmd() *cobra.Command {
 						}
 					} else {
 						hasError := false
-						ok, results := processTVShows(cmd.Context(), config.WD, tvShows)
+						ok, results := processShows(cmd.Context(), config.WD, shows)
 						if !ok {
 							hasError = true
 						}
@@ -97,18 +97,18 @@ func newTVShowCmd() *cobra.Command {
 	return cmd
 }
 
-// Prints given TV shows as a tree.
-func printAllTVShows(w io.Writer, wd string, tvShows []*model.TVShow) {
+// Prints given shows as a tree.
+func printShows(w io.Writer, wd string, shows []*model.Show) {
 	rootTree := gotree.New(wd)
-	for _, tvShow := range tvShows {
-		tvShowTree := rootTree.Add(tvShow.Name)
-		for _, season := range tvShow.Seasons {
+	for _, show := range shows {
+		showTree := rootTree.Add(show.Name)
+		for _, season := range show.Seasons {
 			filesCount := len(season.Episodes)
 			fileString := "files"
 			if filesCount == 1 {
 				fileString = "file"
 			}
-			seasonsTree := tvShowTree.Add(fmt.Sprintf("%s (%d %s)", season.Name, filesCount, fileString))
+			seasonsTree := showTree.Add(fmt.Sprintf("%s (%d %s)", season.Name, filesCount, fileString))
 			for _, episode := range season.Episodes {
 				seasonsTree.Add(episode.Basename)
 			}
@@ -120,16 +120,16 @@ func printAllTVShows(w io.Writer, wd string, tvShows []*model.TVShow) {
 	fmt.Fprintln(w, toPrint)
 }
 
-// Merges TV show language tracks into one video file.
-func processTVShows(ctx context.Context, wd string, tvShows []*model.TVShow) (bool, []util.Result) {
+// Merges show language tracks into one video file.
+func processShows(ctx context.Context, wd string, shows []*model.Show) (bool, []util.Result) {
 	mkvSvc := ctxutil.Singleton[*mkvsvc.Service](ctx)
 
 	ok := true
 	results := []util.Result{}
 	mu := sync.Mutex{}
 
-	for _, tvShow := range tvShows {
-		for _, season := range tvShow.Seasons {
+	for _, show := range shows {
+		for _, season := range show.Seasons {
 			lop.ForEach(season.Episodes, func(episode *model.Episode, _ int) {
 				result := mkvSvc.CleanEpisodeTracks(wd, episode)
 				mu.Lock()

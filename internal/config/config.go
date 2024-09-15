@@ -72,7 +72,7 @@ var (
 	Dir string
 
 	// Configuration file name
-	FileName string = ".nascliconfig"
+	Filename string = ".nascliconfig"
 
 	// Configuration keys in INI file order
 	OrderedKeys = []string{
@@ -104,7 +104,7 @@ var (
 func init() {
 	Dir, _ = os.UserHomeDir()
 	cobra.OnInitialize(func() {
-		viper.SetConfigName(FileName)
+		viper.SetConfigName(Filename)
 		viper.AddConfigPath(Dir)
 		viper.SetConfigType("yaml")
 		viper.AutomaticEnv()
@@ -281,7 +281,7 @@ func Save() error {
 		},
 	}
 
-	file, err := os.Create(path.Join(Dir, FileName))
+	file, err := os.Create(path.Join(Dir, Filename))
 	if err != nil {
 		return fmt.Errorf("could not open file for write: %v", err)
 	}

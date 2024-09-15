@@ -9,26 +9,28 @@ import (
 	"slices"
 	"strings"
 
-	ptn "github.com/middelink/go-parse-torrent-name"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 
 	"github.com/jeremiergz/nas-cli/internal/config"
 	"github.com/jeremiergz/nas-cli/internal/model"
+	"github.com/jeremiergz/nas-cli/internal/service/media/internal"
 	"github.com/jeremiergz/nas-cli/internal/util"
 )
 
 type Service struct{}
 
 var (
-	tvShowFmtRegexp = regexp.MustCompile(`(^.+)(\s-\s)S\d+E\d+\.(.+)$`)
+	episodeNameCaser = cases.Title(language.Und)
+	movieFmtRegexp   = regexp.MustCompile(`(^.+)\s\(([0-9]{4})\)\.(.+)$`)
+	showFmtRegexp    = regexp.MustCompile(`(^.+)(\s-\s)S\d+E\d+\.(.+)$`)
 )
 
 func New() *Service {
 	return &Service{}
 }
 
-// Verifies that given path exists and sets WD variable
+// Verifies that given path exists and sets WD variable.
 func (s *Service) InitializeWD(path string) error {
 	config.WD, _ = filepath.Abs(path)
 	stats, err := os.Stat(config.WD)
@@ -39,7 +41,7 @@ func (s *Service) InitializeWD(path string) error {
 	return nil
 }
 
-// Lists files in directory with filter on extensions and RegExp
+// Lists files in directory with filter on extensions and RegExp.
 func (s *Service) List(wd string, extensions []string, regExp *regexp.Regexp) []string {
 	files, _ := os.ReadDir(wd)
 	filesList := []string{}
@@ -57,36 +59,53 @@ func (s *Service) List(wd string, extensions []string, regExp *regexp.Regexp) []
 	return filesList
 }
 
-var (
-	episodeNameCaser = cases.Title(language.Und)
-)
+// Lists movies in folder that must be processed
+func (s *Service) LoadMovies(wd string, extensions []string) ([]*model.Movie, error) {
+	toProcess := s.List(wd, extensions, movieFmtRegexp)
+	movies := []*model.Movie{}
+	for _, basename := range toProcess {
+		m, err := s.ParseTitle(basename)
+		if err == nil {
+			movies = append(movies, &model.Movie{
+				Basename:  basename,
+				Extension: m.Container,
+				Fullname:  util.ToMovieName(m.Title, m.Year, m.Container),
+				Title:     m.Title,
+				Year:      m.Year,
+			})
+		} else {
+			return nil, err
+		}
+	}
+	return movies, nil
+}
 
-// Lists TV shows in folder that must be processed
-func (s *Service) LoadTVShows(wd string, extensions []string, subtitlesExt *string, subtitlesLangs []string, anyFiles bool) ([]*model.TVShow, error) {
+// Lists shows in folder that must be processed.
+func (s *Service) LoadShows(wd string, extensions []string, subtitlesExt *string, subtitlesLangs []string, anyFiles bool) ([]*model.Show, error) {
 	var selectedRegexp *regexp.Regexp
 	if !anyFiles {
-		selectedRegexp = tvShowFmtRegexp
+		selectedRegexp = showFmtRegexp
 	}
 
 	toProcess := s.List(wd, extensions, selectedRegexp)
-	tvShows := []*model.TVShow{}
+	shows := []*model.Show{}
 	for _, basename := range toProcess {
 		e, err := s.ParseTitle(basename)
 
 		e.Title = episodeNameCaser.String(e.Title)
 		if err == nil {
-			var tvShow *model.TVShow
-			tvShowIndex := s.findTVShowIndex(e.Title, tvShows)
-			if tvShowIndex == -1 {
-				tvShow = &model.TVShow{
+			var show *model.Show
+			showIndex := s.findShowIndex(e.Title, shows)
+			if showIndex == -1 {
+				show = &model.Show{
 					Name:    e.Title,
 					Seasons: []*model.Season{},
 				}
 			} else {
-				tvShow = tvShows[tvShowIndex]
+				show = shows[showIndex]
 			}
 			seasonName := util.ToSeasonName(e.Season)
-			seasonIndex := s.findSeasonIndex(seasonName, tvShow.Seasons)
+			seasonIndex := s.findSeasonIndex(seasonName, show.Seasons)
 			episode := model.Episode{
 				Basename:  basename,
 				FilePath:  path.Join(wd, basename),
@@ -100,40 +119,47 @@ func (s *Service) LoadTVShows(wd string, extensions []string, subtitlesExt *stri
 					Episodes: []*model.Episode{},
 					Index:    e.Season,
 					Name:     seasonName,
-					TVShow:   tvShow,
+					Show:     show,
 				}
 				episode.Season = season
 				season.Episodes = append(season.Episodes, &episode)
-				tvShow.Seasons = append(tvShow.Seasons, season)
+				show.Seasons = append(show.Seasons, season)
 			} else {
-				season := tvShow.Seasons[seasonIndex]
+				season := show.Seasons[seasonIndex]
 				episode.Season = season
 				season.Episodes = append(season.Episodes, &episode)
 			}
-			if tvShowIndex == -1 {
-				tvShows = append(tvShows, tvShow)
+			if showIndex == -1 {
+				shows = append(shows, show)
 			}
 		} else {
 			return nil, err
 		}
 	}
 
-	return tvShows, nil
+	for _, show := range shows {
+		show.SeasonsCount = len(show.Seasons)
+		for _, season := range show.Seasons {
+			show.EpisodesCount += len(season.Episodes)
+		}
+	}
+
+	return shows, nil
 }
 
-// Returns parsed information from a file name
-func (s *Service) ParseTitle(filename string) (*ptn.TorrentInfo, error) {
-	return ptn.Parse((filename))
+// Returns parsed information from a file name.
+func (s *Service) ParseTitle(filename string) (*internal.DownloadedFile, error) {
+	return internal.Parse((filename))
 }
 
-// Creates target directory, setting its mode to 755 and setting ownership
+// Creates target directory, setting its mode to 755 and setting ownership.
 func (s *Service) PrepareDirectory(targetDirectory string, owner, group int) {
 	os.Mkdir(targetDirectory, config.DirectoryMode)
 	os.Chmod(targetDirectory, config.DirectoryMode)
 	os.Chown(targetDirectory, owner, group)
 }
 
-// Finds season index in seasons array
+// Finds season index in seasons array.
 func (s *Service) findSeasonIndex(name string, seasons []*model.Season) int {
 	seasonIndex := -1
 	for i, season := range seasons {
@@ -146,31 +172,31 @@ func (s *Service) findSeasonIndex(name string, seasons []*model.Season) int {
 	return seasonIndex
 }
 
-// Finds TV Show index in TV Shows array
-func (s *Service) findTVShowIndex(name string, tvShows []*model.TVShow) int {
-	tvShowIndex := -1
-	for i, tvShow := range tvShows {
-		if tvShow.Name == name {
-			tvShowIndex = i
+// Finds Show index in Shows array.
+func (s *Service) findShowIndex(name string, shows []*model.Show) int {
+	showIndex := -1
+	for i, show := range shows {
+		if show.Name == name {
+			showIndex = i
 			continue
 		}
 	}
 
-	return tvShowIndex
+	return showIndex
 }
 
-// Lists subtitles with given extension & languages for the file passed as parameter
+// Lists subtitles with given extension & languages for the file passed as parameter.
 func (s *Service) listSubtitles(videoFile string, extension *string, languages []string) map[string]string {
 	fileName := videoFile[:len(videoFile)-len(filepath.Ext(videoFile))]
 	subtitles := map[string]string{}
 
 	if extension != nil && languages != nil {
 		for _, lang := range languages {
-			subtitleFileName := fmt.Sprintf("%s.%s.%s", fileName, lang, *extension)
-			subtitleFilePath, _ := filepath.Abs(path.Join(config.WD, subtitleFileName))
+			subtitleFilename := fmt.Sprintf("%s.%s.%s", fileName, lang, *extension)
+			subtitleFilePath, _ := filepath.Abs(path.Join(config.WD, subtitleFilename))
 			stats, err := os.Stat(subtitleFilePath)
 			if err == nil && !stats.IsDir() {
-				subtitles[lang] = subtitleFileName
+				subtitles[lang] = subtitleFilename
 			}
 		}
 	}

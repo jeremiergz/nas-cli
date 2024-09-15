@@ -54,7 +54,7 @@ func New() *cobra.Command {
 	cmd.PersistentFlags().StringVar(&subtitleExtension, "sub-ext", "srt", "subtitles extension")
 	cmd.PersistentFlags().StringArrayVarP(&videoExtensions, "video-ext", "e", []string{"avi", "mkv", "mp4"}, "filter video files by extension")
 	cmd.PersistentFlags().BoolVarP(&yes, "yes", "y", false, "automatic yes to prompts")
-	cmd.AddCommand(newTVShowCmd())
+	cmd.AddCommand(newShowCmd())
 
 	return cmd
 }
