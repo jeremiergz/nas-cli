@@ -13,11 +13,16 @@ import (
 	"github.com/jeremiergz/nas-cli/internal/util/cmdutil"
 )
 
+var (
+	plexDesc = "Backup Plex Media Server"
+)
+
 func newPlexCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "plex",
 		Aliases: []string{"px", "p"},
-		Short:   "Plex backuping",
+		Short:   plexDesc,
+		Long:    plexDesc + ".",
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			err := cmdutil.CallParentPersistentPreRunE(cmd.Parent(), args)
 			if err != nil {

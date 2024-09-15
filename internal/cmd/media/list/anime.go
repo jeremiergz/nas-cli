@@ -14,12 +14,17 @@ type animeCommand struct {
 	c *cobra.Command
 }
 
+var (
+	animeDesc = "List animes"
+)
+
 func newAnimeCmd() *animeCommand {
 	cmd := &animeCommand{}
 	cmd.c = &cobra.Command{
 		Use:     "animes [name]",
 		Aliases: []string{"ani", "a"},
-		Short:   "Animes listing",
+		Short:   animeDesc,
+		Long:    animeDesc + ".",
 		Args:    cobra.MaximumNArgs(1),
 		RunE: func(_ *cobra.Command, args []string) error {
 			animesFolders := viper.GetStringSlice(config.KeySCPDestAnimesPaths)

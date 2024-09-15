@@ -8,10 +8,15 @@ import (
 	"github.com/jeremiergz/nas-cli/internal/config"
 )
 
+var (
+	versionDesc = "Print application version"
+)
+
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "version",
-		Short: "Print application version",
+		Short: versionDesc,
+		Long:  versionDesc + ".",
 		Run: func(cmd *cobra.Command, args []string) {
 			w := cmd.OutOrStdout()
 

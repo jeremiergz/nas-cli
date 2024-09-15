@@ -18,6 +18,7 @@ import (
 )
 
 var (
+	showDesc  = "Batch format shows"
 	yes       bool
 	showNames []string
 )
@@ -26,7 +27,8 @@ func newShowCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "shows <directory>",
 		Aliases: []string{"show", "s"},
-		Short:   "Shows batch formatting",
+		Short:   showDesc,
+		Long:    showDesc + ".",
 		Args:    cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()

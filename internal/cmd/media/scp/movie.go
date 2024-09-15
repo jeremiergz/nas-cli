@@ -4,11 +4,16 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var (
+	movieDesc = "Upload movies"
+)
+
 func newMovieCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "movies <assets> <subpath>",
 		Aliases: []string{"mov", "m"},
-		Short:   "Movies uploading",
+		Short:   movieDesc,
+		Long:    movieDesc + ".",
 		Args:    cobra.MinimumNArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// moviesDest := viper.GetString(config.KeySCPDestMoviesPath)

@@ -14,12 +14,17 @@ type movieCommand struct {
 	c *cobra.Command
 }
 
+var (
+	movieDesc = "List movies"
+)
+
 func newMovieCmd() *movieCommand {
 	cmd := &movieCommand{}
 	cmd.c = &cobra.Command{
 		Use:     "movies [name]",
 		Aliases: []string{"mov", "m"},
-		Short:   "Movies listing",
+		Short:   movieDesc,
+		Long:    movieDesc + ".",
 		Args:    cobra.MaximumNArgs(1),
 		RunE: func(_ *cobra.Command, args []string) error {
 			moviesFolders := viper.GetStringSlice(config.KeySCPDestMoviesPaths)

@@ -14,10 +14,15 @@ import (
 	"github.com/jeremiergz/nas-cli/internal/util/cmdutil"
 )
 
+var (
+	listDesc = "List configuration entries"
+)
+
 func newListCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "list",
-		Short: "List configuration entries",
+		Short: listDesc,
+		Long:  listDesc + ".",
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			return cmdutil.OnlyValidOutputs()
 		},

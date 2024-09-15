@@ -7,10 +7,15 @@ import (
 	"github.com/jeremiergz/nas-cli/internal/config"
 )
 
+var (
+	setDesc = "Set configuration entry"
+)
+
 func newSetCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:       "set <key> <value>",
-		Short:     "Set configuration entry",
+		Short:     setDesc,
+		Long:      setDesc + ".",
 		ValidArgs: config.OrderedKeys,
 		Args: func(cmd *cobra.Command, args []string) error {
 			err := cobra.ExactArgs(2)(cmd, args)

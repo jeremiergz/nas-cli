@@ -14,10 +14,15 @@ import (
 	"github.com/jeremiergz/nas-cli/internal/util/cmdutil"
 )
 
+var (
+	infoDesc = "Print details about the application"
+)
+
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "info",
-		Short: "Print details about the agent",
+		Short: infoDesc,
+		Long:  infoDesc + ".",
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			return cmdutil.OnlyValidOutputs()
 		},

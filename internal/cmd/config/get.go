@@ -9,10 +9,15 @@ import (
 	"github.com/jeremiergz/nas-cli/internal/config"
 )
 
+var (
+	getDesc = "Get configuration entry value"
+)
+
 func newGetCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:       "get <key>",
-		Short:     "Get configuration entry value",
+		Short:     getDesc,
+		Long:      getDesc + ".",
 		ValidArgs: config.OrderedKeys,
 		Args:      cobra.MatchAll(cobra.ExactArgs(1), cobra.OnlyValidArgs),
 		RunE: func(cmd *cobra.Command, args []string) error {

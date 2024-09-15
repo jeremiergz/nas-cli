@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"slices"
+	"strings"
 	"time"
 
 	"github.com/jedib0t/go-pretty/v6/list"
@@ -39,7 +40,7 @@ type Command[T ~string] interface {
 
 // Adds --output to given command.
 func AddOutputFlag(cmd *cobra.Command) {
-	cmd.Flags().StringVarP(&OutputFormat, "output", "o", "text", "Select output format")
+	cmd.Flags().StringVarP(&OutputFormat, "output", "o", "text", "select output format")
 	cmd.RegisterFlagCompletionFunc("output", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 		return OutputFormats, cobra.ShellCompDirectiveDefault
 	})
@@ -97,7 +98,11 @@ func NewProgressWriter(out io.Writer, expectedLength int) progress.Writer {
 // Checks that value passed to --output is valid.
 func OnlyValidOutputs() error {
 	if !slices.Contains(OutputFormats, OutputFormat) {
-		return fmt.Errorf("invalid value %s for --output", OutputFormat)
+		return fmt.Errorf(
+			"invalid value %s for --output. Allowed values are %s",
+			OutputFormat,
+			strings.Join(OutputFormats, ", "),
+		)
 	}
 
 	return nil

@@ -23,11 +23,16 @@ import (
 	"github.com/jeremiergz/nas-cli/internal/util/ctxutil"
 )
 
+var (
+	showDesc = "Clean shows tracks"
+)
+
 func newShowCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "shows <directory>",
 		Aliases: []string{"show", "s"},
-		Short:   "Clean Shows tracks",
+		Short:   showDesc,
+		Long:    showDesc + ".",
 		Args:    cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()

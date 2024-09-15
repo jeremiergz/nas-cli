@@ -14,12 +14,17 @@ type tvShowCommand struct {
 	c *cobra.Command
 }
 
+var (
+	tvShowDesc = "List TV shows"
+)
+
 func newTVShowCmd() *tvShowCommand {
 	cmd := &tvShowCommand{}
 	cmd.c = &cobra.Command{
 		Use:     "tvshows [name]",
 		Aliases: []string{"tv", "t"},
-		Short:   "TV Shows listing",
+		Short:   tvShowDesc,
+		Long:    tvShowDesc + ".",
 		Args:    cobra.MaximumNArgs(1),
 		RunE: func(_ *cobra.Command, args []string) error {
 			tvShowsFolders := viper.GetStringSlice(config.KeySCPDestTVShowsPaths)

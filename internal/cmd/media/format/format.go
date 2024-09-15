@@ -9,6 +9,7 @@ import (
 )
 
 var (
+	formatDesc = "Batch media formatting depending on their type"
 	dryRun     bool
 	extensions []string
 )
@@ -17,7 +18,8 @@ func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "format",
 		Aliases: []string{"fmt"},
-		Short:   "Batch media formatting depending on their type",
+		Short:   formatDesc,
+		Long:    formatDesc + ".",
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 			mediaSvc := ctxutil.Singleton[*mediasvc.Service](ctx)

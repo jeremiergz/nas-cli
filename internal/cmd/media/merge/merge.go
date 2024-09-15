@@ -17,6 +17,7 @@ type backup struct {
 }
 
 var (
+	mergeDesc         = "Merge tracks using MKVMerge tool"
 	delete            bool
 	dryRun            bool
 	subtitleExtension string
@@ -29,7 +30,8 @@ func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "merge",
 		Aliases: []string{"mrg"},
-		Short:   "Merge tracks using MKVMerge tool",
+		Short:   mergeDesc,
+		Long:    mergeDesc + ".",
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 			mediaSvc := ctxutil.Singleton[*mediasvc.Service](ctx)

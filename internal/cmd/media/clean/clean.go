@@ -12,6 +12,7 @@ import (
 )
 
 var (
+	cleanDesc         = "Clean tracks using MKVPropEdit tool"
 	dryRun            bool
 	subtitleExtension string
 	subtitleLanguages []string
@@ -23,7 +24,8 @@ func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "clean",
 		Aliases: []string{"cln"},
-		Short:   "Clean tracks using MKVPropEdit tool",
+		Short:   cleanDesc,
+		Long:    cleanDesc + ".",
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 			mediaSvc := ctxutil.Singleton[*mediasvc.Service](ctx)

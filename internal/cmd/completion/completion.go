@@ -8,13 +8,15 @@ import (
 )
 
 var (
-	validShells = []string{"bash", "zsh"}
+	completionDesc = "Generate completion scripts"
+	validShells    = []string{"bash", "zsh"}
 )
 
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:       fmt.Sprintf("completion <%s>", strings.Join(validShells, "|")),
-		Short:     "Generate completion scripts",
+		Short:     completionDesc,
+		Long:      completionDesc + ".",
 		ValidArgs: validShells,
 		Args:      cobra.MatchAll(cobra.ExactArgs(1), cobra.OnlyValidArgs),
 		RunE: func(cmd *cobra.Command, args []string) error {

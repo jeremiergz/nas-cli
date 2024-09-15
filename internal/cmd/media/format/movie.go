@@ -21,11 +21,16 @@ import (
 	"github.com/jeremiergz/nas-cli/internal/util/ctxutil"
 )
 
+var (
+	movieDesc = "Batch format movies"
+)
+
 func newMovieCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "movies <directory>",
 		Aliases: []string{"movie", "m"},
-		Short:   "Movies batch formatting",
+		Short:   movieDesc,
+		Long:    movieDesc + ".",
 		Args:    cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()

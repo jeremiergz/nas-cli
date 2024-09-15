@@ -15,14 +15,16 @@ import (
 )
 
 var (
-	verbose bool
+	backupDesc = "Backup specific applications"
+	verbose    bool
 )
 
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "backup",
 		Aliases: []string{"bak"},
-		Short:   "Backup specific applications",
+		Short:   backupDesc,
+		Long:    backupDesc + ".",
 		Args:    cobra.MinimumNArgs(1),
 	}
 

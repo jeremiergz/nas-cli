@@ -7,10 +7,15 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var (
+	configDesc = "Configure application"
+)
+
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "config",
-		Short: "Configure application",
+		Short: configDesc,
+		Long:  configDesc + ".",
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			var err error
 			_, err = os.UserHomeDir()

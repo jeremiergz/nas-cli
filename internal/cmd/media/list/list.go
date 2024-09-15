@@ -38,6 +38,7 @@ func (mk mediumKind) String() string {
 }
 
 var (
+	listDesc  = "List media files"
 	recursive bool
 )
 
@@ -45,7 +46,8 @@ func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "list",
 		Aliases: []string{"ls"},
-		Short:   "List media files",
+		Short:   listDesc,
+		Long:    listDesc + ".",
 		Args:    cobra.MinimumNArgs(1),
 	}
 

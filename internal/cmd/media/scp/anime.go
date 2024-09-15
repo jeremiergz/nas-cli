@@ -4,11 +4,16 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var (
+	animeDesc = "Upload animes"
+)
+
 func newAnimeCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "animes <assets> <subpath>",
 		Aliases: []string{"ani", "a"},
-		Short:   "Animes uploading",
+		Short:   animeDesc,
+		Long:    animeDesc + ".",
 		Args:    cobra.MinimumNArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// animesDest := viper.GetString(config.KeySCPDestAnimesPath)

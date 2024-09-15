@@ -24,6 +24,7 @@ import (
 )
 
 var (
+	subsyncDesc        = "Synchronize subtitle using SubSync tool"
 	dryRun             bool
 	maxParallel        int
 	streamLang         string
@@ -39,7 +40,8 @@ func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "subsync <directory>",
 		Aliases: []string{"sub"},
-		Short:   "Synchronize subtitle using SubSync tool",
+		Short:   subsyncDesc,
+		Long:    subsyncDesc + ".",
 		Args:    cobra.MinimumNArgs(1),
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()

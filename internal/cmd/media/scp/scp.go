@@ -1,39 +1,33 @@
 package scp
 
 import (
-	"context"
 	"fmt"
-	"io"
 	"os"
 	"os/exec"
-	"path"
 	"path/filepath"
 
-	"github.com/jedib0t/go-pretty/v6/progress"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"golang.org/x/sync/errgroup"
 
-	"github.com/jeremiergz/nas-cli/internal/cmd/media/scp/internal"
 	"github.com/jeremiergz/nas-cli/internal/config"
-	sftpsvc "github.com/jeremiergz/nas-cli/internal/service/sftp"
 	"github.com/jeremiergz/nas-cli/internal/util/cmdutil"
-	"github.com/jeremiergz/nas-cli/internal/util/ctxutil"
 )
 
 var (
+	scpDesc     = "Upload files/folders using scp command"
 	assets      []string
 	delete      bool
 	maxParallel int
 	recursive   bool
-	subpath     string
+	// subpath     string
 )
 
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "scp",
 		Aliases: []string{"sc"},
-		Short:   "Upload files/folders using scp command",
+		Short:   scpDesc,
+		Long:    scpDesc + ".",
 		Args:    cobra.MinimumNArgs(1),
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			err := cmdutil.CallParentPersistentPreRunE(cmd.Parent(), args)
@@ -52,7 +46,7 @@ func New() *cobra.Command {
 
 			// Remove last part as it is the subpath to append to scp command's destination
 			assets = append(args[:len(args)-1], args[len(args):]...)
-			subpath = args[len(args)-1]
+			// subpath = args[len(args)-1]
 
 			delete, _ = cmd.Flags().GetBool("delete")
 			recursive, _ = cmd.Flags().GetBool("recursive")
@@ -82,64 +76,64 @@ func New() *cobra.Command {
 }
 
 // Uploads files & folders to configured destination using SFTP
-func process(ctx context.Context, out io.Writer, files []string, destination string, subdestination string) error {
-	sftpSvc := ctxutil.Singleton[*sftpsvc.Service](ctx)
+// func process(ctx context.Context, out io.Writer, files []string, destination string, subdestination string) error {
+// 	sftpSvc := ctxutil.Singleton[*sftpsvc.Service](ctx)
 
-	err := sftpSvc.Connect()
-	if err != nil {
-		return err
-	}
-	defer sftpSvc.Disconnect()
+// 	err := sftpSvc.Connect()
+// 	if err != nil {
+// 		return err
+// 	}
+// 	defer sftpSvc.Disconnect()
 
-	pw := cmdutil.NewProgressWriter(out, len(files))
-	go pw.Render()
+// 	pw := cmdutil.NewProgressWriter(out, len(files))
+// 	go pw.Render()
 
-	eg, _ := errgroup.WithContext(ctx)
-	eg.SetLimit(cmdutil.MaxConcurrentGoroutines)
-	if maxParallel > 0 {
-		eg.SetLimit(maxParallel)
-	}
+// 	eg, _ := errgroup.WithContext(ctx)
+// 	eg.SetLimit(cmdutil.MaxConcurrentGoroutines)
+// 	if maxParallel > 0 {
+// 		eg.SetLimit(maxParallel)
+// 	}
 
-	destinationDir := path.Join(destination, subdestination)
+// 	destinationDir := path.Join(destination, subdestination)
 
-	for _, srcFile := range files {
-		tracker := &progress.Tracker{
-			DeferStart: true,
-			Message:    srcFile,
-			Total:      100,
-		}
-		pw.AppendTracker(tracker)
-		eg.Go(func() error {
-			destinationFile := path.Join(destinationDir, filepath.Base(srcFile))
-			err := internal.Upload(
-				ctx,
-				sftpSvc.Client,
-				tracker,
-				srcFile,
-				destinationFile,
-			)
-			if err != nil {
-				tracker.MarkAsErrored()
-				return err
-			}
-			tracker.MarkAsDone()
-			return nil
-		})
-	}
-	if err := eg.Wait(); err != nil {
-		return err
-	}
+// 	for _, srcFile := range files {
+// 		tracker := &progress.Tracker{
+// 			DeferStart: true,
+// 			Message:    srcFile,
+// 			Total:      100,
+// 		}
+// 		pw.AppendTracker(tracker)
+// 		eg.Go(func() error {
+// 			destinationFile := path.Join(destinationDir, filepath.Base(srcFile))
+// 			err := internal.Upload(
+// 				ctx,
+// 				sftpSvc.Client,
+// 				tracker,
+// 				srcFile,
+// 				destinationFile,
+// 			)
+// 			if err != nil {
+// 				tracker.MarkAsErrored()
+// 				return err
+// 			}
+// 			tracker.MarkAsDone()
+// 			return nil
+// 		})
+// 	}
+// 	if err := eg.Wait(); err != nil {
+// 		return err
+// 	}
 
-	if delete {
-		for _, asset := range assets {
-			eg.Go(func() error {
-				return os.RemoveAll(asset)
-			})
-		}
-	}
-	if err := eg.Wait(); err != nil {
-		return err
-	}
+// 	if delete {
+// 		for _, asset := range assets {
+// 			eg.Go(func() error {
+// 				return os.RemoveAll(asset)
+// 			})
+// 		}
+// 	}
+// 	if err := eg.Wait(); err != nil {
+// 		return err
+// 	}
 
-	return nil
-}
+// 	return nil
+// }

@@ -30,6 +30,7 @@ import (
 )
 
 var (
+	showDesc  = "Merge shows tracks"
 	showNames []string
 )
 
@@ -37,7 +38,8 @@ func newShowCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "shows <directory>",
 		Aliases: []string{"show", "s"},
-		Short:   "Merge Shows tracks",
+		Short:   showDesc,
+		Long:    showDesc + ".",
 		Args:    cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()

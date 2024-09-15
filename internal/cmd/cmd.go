@@ -17,10 +17,15 @@ var (
 	startTime = time.Now()
 )
 
+var (
+	desc = "CLI application for managing my NAS"
+)
+
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   config.AppName,
-		Short: "CLI application for managing my NAS",
+		Short: desc,
+		Long:  desc + ".",
 		PersistentPostRun: func(cmd *cobra.Command, args []string) {
 			if debug {
 				fmt.Fprintln(cmd.OutOrStdout())

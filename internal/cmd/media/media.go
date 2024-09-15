@@ -13,13 +13,15 @@ import (
 )
 
 var (
+	mediaDesc = "Set of utilities for media management"
 	ownership string
 )
 
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "media",
-		Short: "Set of utilities for media management",
+		Short: mediaDesc,
+		Long:  mediaDesc + ".",
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			err := util.InitOwnership(ownership)
 
