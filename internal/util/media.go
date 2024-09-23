@@ -102,21 +102,21 @@ func ToLanguageDisplayName(lang string, forced bool) string {
 
 var (
 	langFlagsMapping = map[string]string{
-		"eng":    "🇺🇸", // English (All)
-		"eng-ca": "🇨🇦", // English (Canada)
-		"eng-uk": "🇬🇧", // English (UK)
-		"eng-us": "🇺🇸", // English (US)
-		"fre":    "🇫🇷", // French (All)
-		"fre-ca": "🇨🇦", // French (Canada)
-		"fre-fr": "🇫🇷", // French (France)
-		"ger":    "🇩🇪", // German (All)
-		"ger-at": "🇦🇹", // German (Austria)
-		"ger-de": "🇩🇪", // German (Germany)
-		"ita":    "🇮🇹", // Italian
-		"jpn":    "🇯🇵", // Japanese
-		"spa":    "🇪🇸", // Spanish (All)
-		"spa-es": "🇪🇸", // Spanish (Mexico)
-		"spa-mx": "🇲🇽", // Spanish (Mexico)
+		"eng":    "🇺🇸", // English (All).
+		"eng-ca": "🇨🇦", // English (Canada).
+		"eng-uk": "🇬🇧", // English (UK).
+		"eng-us": "🇺🇸", // English (US).
+		"fre":    "🇫🇷", // French (All).
+		"fre-ca": "🇨🇦", // French (Canada).
+		"fre-fr": "🇫🇷", // French (France).
+		"ger":    "🇩🇪", // German (All).
+		"ger-at": "🇦🇹", // German (Austria).
+		"ger-de": "🇩🇪", // German (Germany).
+		"ita":    "🇮🇹", // Italian.
+		"jpn":    "🇯🇵", // Japanese.
+		"spa":    "🇪🇸", // Spanish (All).
+		"spa-es": "🇪🇸", // Spanish (Mexico).
+		"spa-mx": "🇲🇽", // Spanish (Mexico).
 	}
 )
 
@@ -136,25 +136,25 @@ func ToLanguageFlag(lang string) string {
 var (
 	langRegionalsMapping = map[string]map[string]string{
 		"eng": {
-			"":   "eng-us", // English (Default)
-			"ca": "eng-ca", // English (Canada)
-			"uk": "eng-uk", // English (UK)
-			"us": "eng-us", // English (US)
+			"":   "eng-us", // English (Default).
+			"ca": "eng-ca", // English (Canada).
+			"uk": "eng-uk", // English (UK).
+			"us": "eng-us", // English (US).
 		},
 		"fre": {
-			"":   "fre-fr", // French (Default)
-			"ca": "fre-ca", // French (Canada)
-			"fr": "fre-fr", // French (France)
+			"":   "fre-fr", // French (Default).
+			"ca": "fre-ca", // French (Canada).
+			"fr": "fre-fr", // French (France).
 		},
 		"ger": {
-			"":   "ger-de", // German (Default)
-			"at": "ger-at", // German (Austria)
-			"de": "ger-de", // German (Germany)
+			"":   "ger-de", // German (Default).
+			"at": "ger-at", // German (Austria).
+			"de": "ger-de", // German (Germany).
 		},
 		"spa": {
-			"":   "spa-es", // Spanish (Default)
-			"es": "spa-es", // Spanish (Spain)
-			"mx": "spa-mx", // Spanish (Mexico)
+			"":   "spa-es", // Spanish (Default).
+			"es": "spa-es", // Spanish (Spain).
+			"mx": "spa-mx", // Spanish (Mexico).
 		},
 	}
 )

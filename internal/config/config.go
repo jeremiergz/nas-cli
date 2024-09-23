@@ -32,18 +32,18 @@ var (
 	// System OS and architecture the binary is built for.
 	Platform = fmt.Sprintf("%s/%s", runtime.GOOS, runtime.GOARCH)
 
-	// Version is the Calendar Versioning string, overridden as ldflag
+	// Version is the Calendar Versioning string, overridden as ldflag.
 	Version = "latest"
 )
 
 const (
-	// DirectoryMode is the default mode to apply to directories
+	// DirectoryMode is the default mode to apply to directories.
 	DirectoryMode os.FileMode = 0755
 
-	// ExecutableMode is the default mode for executable files
+	// ExecutableMode is the default mode for executable files.
 	ExecutableMode os.FileMode = 0755
 
-	// FileMode is the default mode to apply to files
+	// FileMode is the default mode to apply to files.
 	FileMode os.FileMode = 0644
 
 	KeyBackupPlexDest      string = "backup.plex.dest"
@@ -65,16 +65,16 @@ const (
 )
 
 var (
-	// GID is the processed files group to set
+	// GID is the processed files group to set.
 	GID int
 
-	// Configuration directory
+	// Configuration directory.
 	Dir string
 
-	// Configuration file name
+	// Configuration file name.
 	Filename string = ".nascliconfig"
 
-	// Configuration keys in INI file order
+	// Configuration keys in INI file order.
 	OrderedKeys = []string{
 		KeyNASFQDN,
 		KeyBackupPlexSrc,
@@ -94,10 +94,10 @@ var (
 		KeySubsyncOptions,
 	}
 
-	// UID is the processed files owner to set
+	// UID is the processed files owner to set.
 	UID int
 
-	// WD is the working directory's absolute path
+	// WD is the working directory's absolute path.
 	WD string
 )
 
@@ -202,7 +202,6 @@ type (
 		SSH     SSH     `yaml:"ssh"`
 		Subsync Subsync `yaml:"subsync"`
 	}
-
 	NAS struct {
 		FQDN string `yaml:"fqdn"`
 	}

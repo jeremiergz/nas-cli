@@ -30,7 +30,7 @@ var (
 	diacriticsTransformer = transform.Chain(norm.NFD, runes.Remove(runes.In(unicode.Mn)), norm.NFC)
 )
 
-// Removes all diacritics from given string
+// Removes all diacritics from given string.
 func RemoveDiacritics(s string) (string, error) {
 	output, _, err := transform.String(diacriticsTransformer, s)
 	if err != nil {
