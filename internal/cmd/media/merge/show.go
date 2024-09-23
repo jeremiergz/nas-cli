@@ -22,11 +22,10 @@ import (
 	"github.com/jeremiergz/nas-cli/internal/config"
 	"github.com/jeremiergz/nas-cli/internal/model"
 	consolesvc "github.com/jeremiergz/nas-cli/internal/service/console"
-	mediasvc "github.com/jeremiergz/nas-cli/internal/service/media"
-	mkvsvc "github.com/jeremiergz/nas-cli/internal/service/mkv"
 	"github.com/jeremiergz/nas-cli/internal/util"
 	"github.com/jeremiergz/nas-cli/internal/util/cmdutil"
 	"github.com/jeremiergz/nas-cli/internal/util/ctxutil"
+	"github.com/jeremiergz/nas-cli/internal/util/fsutil"
 )
 
 var (
@@ -44,9 +43,8 @@ func newShowCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 			consoleSvc := ctxutil.Singleton[*consolesvc.Service](ctx)
-			mediaSvc := ctxutil.Singleton[*mediasvc.Service](ctx)
 
-			shows, err := mediaSvc.LoadShows(config.WD, videoExtensions, &subtitleExtension, subtitleLanguages, true)
+			shows, err := model.Shows(config.WD, videoExtensions, subtitleExtension, subtitleLanguages, true)
 
 			w := cmd.OutOrStdout()
 
@@ -55,7 +53,7 @@ func newShowCmd() *cobra.Command {
 					return fmt.Errorf("names must be provided for all shows")
 				}
 				for index, showName := range showNames {
-					shows[index].Name = showName
+					shows[index].SetName(showName)
 				}
 			}
 
@@ -123,8 +121,8 @@ func newShowCmd() *cobra.Command {
 
 // Checks whether given season has episodes with subtitles or not.
 func hasSubtitlesInSeason(season *model.Season) bool {
-	for _, episode := range season.Episodes {
-		if len(episode.Subtitles) > 0 {
+	for _, episode := range season.Episodes() {
+		if len(episode.Subtitles()) > 0 {
 			return true
 		}
 	}
@@ -134,7 +132,7 @@ func hasSubtitlesInSeason(season *model.Season) bool {
 
 // Checks whether given Show has a season with episodes with subtitles or not.
 func hasSubtitlesInShow(show *model.Show) bool {
-	for _, season := range show.Seasons {
+	for _, season := range show.Seasons() {
 		if hasSubtitlesInSeason(season) {
 			return true
 		}
@@ -147,19 +145,19 @@ func hasSubtitlesInShow(show *model.Show) bool {
 func printShows(w io.Writer, wd string, shows []*model.Show) {
 	rootTree := gotree.New(wd)
 	for _, show := range shows {
-		showTree := rootTree.Add(show.Name)
-		for _, season := range show.Seasons {
-			filesCount := len(season.Episodes)
+		showTree := rootTree.Add(show.Name())
+		for _, season := range show.Seasons() {
+			filesCount := len(season.Episodes())
 			fileString := "files"
 			if filesCount == 1 {
 				fileString = "file"
 			}
-			seasonsTree := showTree.Add(fmt.Sprintf("%s (%d %s)", season.Name, filesCount, fileString))
-			for _, episode := range season.Episodes {
+			seasonsTree := showTree.Add(fmt.Sprintf("%s (%d %s)", season.Name(), filesCount, fileString))
+			for _, episode := range season.Episodes() {
 				episodeTree := seasonsTree.Add(episode.Name())
-				episodeTree.Add(fmt.Sprintf("📼  %s", episode.Basename))
+				episodeTree.Add(fmt.Sprintf("📼  %s", episode.Basename()))
 
-				for lang, subtitle := range episode.Subtitles {
+				for lang, subtitle := range episode.Subtitles() {
 					flag := util.ToLanguageFlag(lang)
 					if flag != "" {
 						episodeTree.Add(fmt.Sprintf("%s   %s", flag, subtitle))
@@ -176,10 +174,8 @@ func printShows(w io.Writer, wd string, shows []*model.Show) {
 	fmt.Fprintln(w, toPrint)
 }
 
-// Merges show language tracks into one video file..
-func processShows(ctx context.Context, w io.Writer, wd string, shows []*model.Show, keepOriginalFiles bool, owner, group int) (bool, []util.Result) {
-	mediaSvc := ctxutil.Singleton[*mediasvc.Service](ctx)
-
+// Merges show language tracks into one video file.
+func processShows(_ context.Context, w io.Writer, wd string, shows []*model.Show, keepOriginalFiles bool, owner, group int) (bool, []util.Result) {
 	ok := true
 	results := []util.Result{}
 
@@ -187,23 +183,23 @@ func processShows(ctx context.Context, w io.Writer, wd string, shows []*model.Sh
 		shouldContinue := hasSubtitlesInShow(show)
 
 		if shouldContinue {
-			showPath := path.Join(wd, show.Name)
-			mediaSvc.PrepareDirectory(showPath, owner, group)
+			showPath := path.Join(wd, show.Name())
+			fsutil.PrepareDir(showPath, owner, group)
 
-			for _, season := range show.Seasons {
+			for _, season := range show.Seasons() {
 				shouldContinue = hasSubtitlesInSeason(season)
 
 				if shouldContinue {
-					seasonPath := path.Join(showPath, season.Name)
-					mediaSvc.PrepareDirectory(seasonPath, owner, group)
+					seasonPath := path.Join(showPath, season.Name())
+					fsutil.PrepareDir(seasonPath, owner, group)
 
-					lop.ForEach(season.Episodes, func(episode *model.Episode, _ int) {
+					lop.ForEach(season.Episodes(), func(episode *model.Episode, _ int) {
 						// Nothing to do if there are no subtitles.
-						if len(episode.Subtitles) > 0 {
+						if len(episode.Subtitles()) > 0 {
 							start := time.Now()
 
-							videoPath := path.Join(config.WD, episode.Basename)
-							videoBackupPath := path.Join(config.WD, fmt.Sprintf("%s%s%s", "_", episode.Basename, ".bak"))
+							videoPath := path.Join(config.WD, episode.Basename())
+							videoBackupPath := path.Join(config.WD, fmt.Sprintf("%s%s%s", "_", episode.Basename(), ".bak"))
 							outFilePath := path.Join(seasonPath, episode.Name())
 
 							os.Rename(videoPath, videoBackupPath)
@@ -216,7 +212,7 @@ func processShows(ctx context.Context, w io.Writer, wd string, shows []*model.Sh
 								"--output",
 								outFilePath,
 							}
-							for lang, subtitleFile := range episode.Subtitles {
+							for lang, subtitleFile := range episode.Subtitles() {
 								subtitleFilePath := path.Join(config.WD, subtitleFile)
 								subtitleFileBackupPath := path.Join(config.WD, fmt.Sprintf("%s%s%s", "_", subtitleFile, ".bak"))
 								os.Rename(subtitleFilePath, subtitleFileBackupPath)
@@ -271,13 +267,11 @@ func processShows(ctx context.Context, w io.Writer, wd string, shows []*model.Sh
 									Message:      episode.Name(),
 								})
 
-								episode.FilePath = outFilePath
+								episode.SetFilePath(outFilePath)
 							}
 
-							mkvSvc := ctxutil.Singleton[*mkvsvc.Service](ctx)
-							mkvSvc.CleanEpisodeTracks(wd, episode)
+							episode.Clean()
 						}
-
 					})
 				}
 			}

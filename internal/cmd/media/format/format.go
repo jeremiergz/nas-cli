@@ -3,9 +3,9 @@ package format
 import (
 	"github.com/spf13/cobra"
 
-	mediasvc "github.com/jeremiergz/nas-cli/internal/service/media"
+	"github.com/jeremiergz/nas-cli/internal/util"
 	"github.com/jeremiergz/nas-cli/internal/util/cmdutil"
-	"github.com/jeremiergz/nas-cli/internal/util/ctxutil"
+	"github.com/jeremiergz/nas-cli/internal/util/fsutil"
 )
 
 var (
@@ -21,20 +21,17 @@ func New() *cobra.Command {
 		Short:   formatDesc,
 		Long:    formatDesc + ".",
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-			ctx := cmd.Context()
-			mediaSvc := ctxutil.Singleton[*mediasvc.Service](ctx)
-
 			err := cmdutil.CallParentPersistentPreRunE(cmd.Parent(), args)
 			if err != nil {
 				return err
 			}
 
-			return mediaSvc.InitializeWD(args[0])
+			return fsutil.InitializeWorkingDir(args[0])
 		},
 	}
 
 	cmd.PersistentFlags().BoolVar(&dryRun, "dry-run", false, "print result without processing it")
-	cmd.PersistentFlags().StringArrayVarP(&extensions, "ext", "e", []string{"avi", "mkv", "mp4"}, "filter files by extension")
+	cmd.PersistentFlags().StringArrayVarP(&extensions, "ext", "e", util.AcceptedVideoExtensions, "filter files by extension")
 	cmd.AddCommand(newMovieCmd())
 	cmd.AddCommand(newShowCmd())
 

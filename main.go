@@ -12,8 +12,6 @@ import (
 	"github.com/jeremiergz/nas-cli/internal/cmd/media"
 	"github.com/jeremiergz/nas-cli/internal/cmd/version"
 	consolesvc "github.com/jeremiergz/nas-cli/internal/service/console"
-	mediasvc "github.com/jeremiergz/nas-cli/internal/service/media"
-	mkvsvc "github.com/jeremiergz/nas-cli/internal/service/mkv"
 	sftpsvc "github.com/jeremiergz/nas-cli/internal/service/sftp"
 	sshsvc "github.com/jeremiergz/nas-cli/internal/service/ssh"
 	"github.com/jeremiergz/nas-cli/internal/util/ctxutil"
@@ -33,8 +31,6 @@ func main() {
 	w := rootCmd.OutOrStdout()
 
 	ctx = ctxutil.WithSingleton(ctx, consolesvc.New(w))
-	ctx = ctxutil.WithSingleton(ctx, mediasvc.New())
-	ctx = ctxutil.WithSingleton(ctx, mkvsvc.New())
 	ctx = ctxutil.WithSingleton(ctx, sftpsvc.New())
 	ctx = ctxutil.WithSingleton(ctx, sshsvc.New())
 

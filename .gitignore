@@ -33,6 +33,7 @@ Thumbs.db
 # Project folders/files
 build/
 coverage/
+tmp/
 *.dll
 *.dylib
 *.exe

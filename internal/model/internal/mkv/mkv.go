@@ -9,81 +9,22 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jeremiergz/nas-cli/internal/model"
 	"github.com/jeremiergz/nas-cli/internal/util"
 	"github.com/jeremiergz/nas-cli/internal/util/cmdutil"
 )
 
-type Service struct{}
-
-func New() *Service {
-	return &Service{}
-}
-
-type MKVCharacteristics struct {
-	Attachments []any         `json:"attachments"`
-	Chapters    []any         `json:"chapters"`
-	Container   *MKVContainer `json:"container"`
-}
-
-type MKVContainer struct {
-	Properties *MKVContainerProperties `json:"properties"`
-	Recognized bool                    `json:"recognized"`
-	Supported  bool                    `json:"supported"`
-	Type       string                  `json:"type"`
-}
-
-type MKVContainerProperties struct {
-	ContainerType         int       `json:"container_type"`
-	DateLocal             time.Time `json:"date_local"`
-	DateUTC               time.Time `json:"date_utc"`
-	Duration              int       `json:"duration"`
-	IsProvidingTimestamps bool      `json:"is_providing_timestamps"`
-	MuxingApplication     string    `json:"muxing_application"`
-	SegmentUID            string    `json:"segment_uid"`
-	WritingApplication    string    `json:"writing_application"`
-}
-
-// Retrieves the characteristics of given MKV file.
-func (s *Service) GetCharacteristics(filePath string) (*MkvmergeIdentificationOutput, error) {
-	options := []string{
-		"--identification-format",
-		"json",
-		"--identify",
-		filePath,
-	}
-
-	buf := new(bytes.Buffer)
-
-	merge := exec.Command(cmdutil.CommandMKVMerge, options...)
-	merge.Stdout = buf
-	merge.Stderr = os.Stderr
-	err := merge.Run()
-	if err != nil {
-		return nil, fmt.Errorf("unable to retrieve characteristics: %w", err)
-	}
-
-	var characteristics *MkvmergeIdentificationOutput
-	err = json.Unmarshal(buf.Bytes(), &characteristics)
-	if err != nil {
-		return nil, fmt.Errorf("unable to parse characteristics: %w", err)
-	}
-
-	return characteristics, nil
-}
-
-// Cleans given show episode tracks.
-func (s *Service) CleanEpisodeTracks(wd string, ep *model.Episode) util.Result {
+// Cleans given file tracks.
+func CleanTracks(filePath, basename string) util.Result {
 	start := time.Now()
 
-	characteristics, err := s.GetCharacteristics(ep.FilePath)
+	characteristics, err := getCharacteristics(filePath)
 	if err != nil {
 		return util.Result{
 			Characteristics: map[string]string{
 				"duration": time.Since(start).Round(time.Millisecond).String(),
 			},
 			IsSuccessful: false,
-			Message:      ep.Basename,
+			Message:      basename,
 		}
 	}
 
@@ -158,7 +99,7 @@ func (s *Service) CleanEpisodeTracks(wd string, ep *model.Episode) util.Result {
 		}
 	}
 
-	options = append(options, ep.FilePath)
+	options = append(options, filePath)
 
 	propedit := exec.Command(cmdutil.CommandMKVPropEdit, options...)
 
@@ -169,7 +110,7 @@ func (s *Service) CleanEpisodeTracks(wd string, ep *model.Episode) util.Result {
 				"duration": time.Since(start).Round(time.Millisecond).String(),
 			},
 			IsSuccessful: false,
-			Message:      ep.Basename,
+			Message:      basename,
 		}
 	}
 
@@ -178,6 +119,34 @@ func (s *Service) CleanEpisodeTracks(wd string, ep *model.Episode) util.Result {
 			"duration": time.Since(start).Round(time.Second).String(),
 		},
 		IsSuccessful: true,
-		Message:      ep.Basename,
+		Message:      basename,
 	}
+}
+
+// Retrieves the characteristics of given MKV file.
+func getCharacteristics(filePath string) (*MkvmergeIdentificationOutput, error) {
+	options := []string{
+		"--identification-format",
+		"json",
+		"--identify",
+		filePath,
+	}
+
+	buf := new(bytes.Buffer)
+
+	merge := exec.Command(cmdutil.CommandMKVMerge, options...)
+	merge.Stdout = buf
+	merge.Stderr = os.Stderr
+	err := merge.Run()
+	if err != nil {
+		return nil, fmt.Errorf("unable to retrieve characteristics: %w", err)
+	}
+
+	var characteristics *MkvmergeIdentificationOutput
+	err = json.Unmarshal(buf.Bytes(), &characteristics)
+	if err != nil {
+		return nil, fmt.Errorf("unable to parse characteristics: %w", err)
+	}
+
+	return characteristics, nil
 }

@@ -6,9 +6,9 @@ import (
 
 	"github.com/spf13/cobra"
 
-	mediasvc "github.com/jeremiergz/nas-cli/internal/service/media"
+	"github.com/jeremiergz/nas-cli/internal/util"
 	"github.com/jeremiergz/nas-cli/internal/util/cmdutil"
-	"github.com/jeremiergz/nas-cli/internal/util/ctxutil"
+	"github.com/jeremiergz/nas-cli/internal/util/fsutil"
 )
 
 type backup struct {
@@ -33,9 +33,6 @@ func New() *cobra.Command {
 		Short:   mergeDesc,
 		Long:    mergeDesc + ".",
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-			ctx := cmd.Context()
-			mediaSvc := ctxutil.Singleton[*mediasvc.Service](ctx)
-
 			err := cmdutil.CallParentPersistentPreRunE(cmd.Parent(), args)
 			if err != nil {
 				return err
@@ -46,15 +43,15 @@ func New() *cobra.Command {
 				return fmt.Errorf("command not found: %s", cmdutil.CommandMKVMerge)
 			}
 
-			return mediaSvc.InitializeWD(args[0])
+			return fsutil.InitializeWorkingDir(args[0])
 		},
 	}
 
 	cmd.PersistentFlags().BoolVarP(&delete, "delete", "d", false, "delete original files")
 	cmd.PersistentFlags().BoolVar(&dryRun, "dry-run", false, "print result without processing it")
 	cmd.PersistentFlags().StringArrayVarP(&subtitleLanguages, "language", "l", []string{"eng", "fre"}, "language tracks to merge")
-	cmd.PersistentFlags().StringVar(&subtitleExtension, "sub-ext", "srt", "subtitles extension")
-	cmd.PersistentFlags().StringArrayVarP(&videoExtensions, "video-ext", "e", []string{"avi", "mkv", "mp4"}, "filter video files by extension")
+	cmd.PersistentFlags().StringVar(&subtitleExtension, "sub-ext", util.AcceptedSubtitleExtension, "filter subtitles by extension")
+	cmd.PersistentFlags().StringArrayVarP(&videoExtensions, "video-ext", "e", util.AcceptedVideoExtensions, "filter video files by extension")
 	cmd.PersistentFlags().BoolVarP(&yes, "yes", "y", false, "automatic yes to prompts")
 	cmd.AddCommand(newShowCmd())
 

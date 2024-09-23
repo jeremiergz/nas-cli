@@ -17,23 +17,23 @@ import (
 	"github.com/jeremiergz/nas-cli/internal/cmd/media/subsync/internal"
 	"github.com/jeremiergz/nas-cli/internal/config"
 	consolesvc "github.com/jeremiergz/nas-cli/internal/service/console"
-	mediasvc "github.com/jeremiergz/nas-cli/internal/service/media"
 	"github.com/jeremiergz/nas-cli/internal/util"
 	"github.com/jeremiergz/nas-cli/internal/util/cmdutil"
 	"github.com/jeremiergz/nas-cli/internal/util/ctxutil"
+	"github.com/jeremiergz/nas-cli/internal/util/fsutil"
 )
 
 var (
-	subsyncDesc        = "Synchronize subtitle using SubSync tool"
-	dryRun             bool
-	maxParallel        int
-	streamLang         string
-	streamType         string
-	subtitleExtensions []string
-	subtitleLang       string
-	videoExtensions    []string
-	videoLang          string
-	yes                bool
+	subsyncDesc       = "Synchronize subtitle using SubSync tool"
+	dryRun            bool
+	maxParallel       int
+	streamLang        string
+	streamType        string
+	subtitleExtension string
+	subtitleLang      string
+	videoExtensions   []string
+	videoLang         string
+	yes               bool
 )
 
 func New() *cobra.Command {
@@ -44,30 +44,26 @@ func New() *cobra.Command {
 		Long:    subsyncDesc + ".",
 		Args:    cobra.MinimumNArgs(1),
 		PreRunE: func(cmd *cobra.Command, args []string) error {
-			ctx := cmd.Context()
-			mediaSvc := ctxutil.Singleton[*mediasvc.Service](ctx)
-
 			_, err := exec.LookPath(cmdutil.CommandSubsync)
 			if err != nil {
 				return fmt.Errorf("command not found: %s", cmdutil.CommandSubsync)
 			}
 
-			return mediaSvc.InitializeWD(args[0])
+			return fsutil.InitializeWorkingDir(args[0])
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 			out := cmd.OutOrStdout()
 
 			consoleSvc := ctxutil.Singleton[*consolesvc.Service](ctx)
-			mediaSvc := ctxutil.Singleton[*mediasvc.Service](ctx)
 
-			subtitleFiles := mediaSvc.List(config.WD, subtitleExtensions, nil)
+			subtitleFiles := fsutil.List(config.WD, []string{subtitleExtension}, nil)
 			if len(subtitleFiles) == 0 {
 				consoleSvc.Success("No subtitle file to process")
 				return nil
 			}
 
-			videoFiles := mediaSvc.List(config.WD, videoExtensions, nil)
+			videoFiles := fsutil.List(config.WD, videoExtensions, nil)
 			if len(videoFiles) == 0 {
 				consoleSvc.Success("No video file to process")
 				return nil
@@ -112,9 +108,9 @@ func New() *cobra.Command {
 	cmd.PersistentFlags().IntVarP(&maxParallel, "max-parallel", "p", 0, "maximum number of parallel processes. 0 means no limit")
 	cmd.PersistentFlags().StringVar(&streamLang, "stream", "eng", "stream ISO 639-3 language code")
 	cmd.PersistentFlags().StringVar(&streamType, "stream-type", "", "stream type (audio|sub)")
-	cmd.PersistentFlags().StringArrayVar(&subtitleExtensions, "sub-ext", []string{"srt"}, "filter subtitles by extension")
+	cmd.PersistentFlags().StringVar(&subtitleExtension, "sub-ext", util.AcceptedSubtitleExtension, "filter subtitles by extension")
 	cmd.PersistentFlags().StringVar(&subtitleLang, "sub-lang", "eng", "subtitle ISO 639-3 language code")
-	cmd.PersistentFlags().StringArrayVarP(&videoExtensions, "video-ext", "e", []string{"avi", "mkv", "mp4"}, "filter video files by extension")
+	cmd.PersistentFlags().StringArrayVarP(&videoExtensions, "video-ext", "e", util.AcceptedVideoExtensions, "filter video files by extension")
 	cmd.PersistentFlags().StringVar(&videoLang, "video-lang", "eng", "video ISO 639-3 language code")
 	cmd.PersistentFlags().BoolVarP(&yes, "yes", "y", false, "automatic yes to prompts")
 

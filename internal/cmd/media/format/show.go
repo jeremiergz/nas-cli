@@ -13,8 +13,8 @@ import (
 	"github.com/jeremiergz/nas-cli/internal/config"
 	"github.com/jeremiergz/nas-cli/internal/model"
 	consolesvc "github.com/jeremiergz/nas-cli/internal/service/console"
-	mediasvc "github.com/jeremiergz/nas-cli/internal/service/media"
 	"github.com/jeremiergz/nas-cli/internal/util/ctxutil"
+	"github.com/jeremiergz/nas-cli/internal/util/fsutil"
 )
 
 var (
@@ -33,9 +33,8 @@ func newShowCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 			consoleSvc := ctxutil.Singleton[*consolesvc.Service](ctx)
-			mediaSvc := ctxutil.Singleton[*mediasvc.Service](ctx)
 
-			shows, err := mediaSvc.LoadShows(config.WD, extensions, nil, nil, false)
+			shows, err := model.Shows(config.WD, extensions, "", nil, false)
 
 			w := cmd.OutOrStdout()
 
@@ -44,7 +43,7 @@ func newShowCmd() *cobra.Command {
 					return fmt.Errorf("names must be provided for all shows")
 				}
 				for index, showName := range showNames {
-					shows[index].Name = showName
+					shows[index].SetName(showName)
 				}
 			}
 
@@ -54,7 +53,7 @@ func newShowCmd() *cobra.Command {
 			if len(shows) == 0 {
 				consoleSvc.Success("Nothing to process")
 			} else {
-				consoleSvc.PrintShows(shows)
+				consoleSvc.PrintShows(config.WD, shows)
 				if !dryRun {
 					processShows(cmd.Context(), w, config.WD, shows, config.UID, config.GID, !yes)
 				}
@@ -74,7 +73,6 @@ func newShowCmd() *cobra.Command {
 // Processes listed shows by prompting user.
 func processShows(ctx context.Context, w io.Writer, wd string, shows []*model.Show, owner, group int, ask bool) error {
 	consoleSvc := ctxutil.Singleton[*consolesvc.Service](ctx)
-	mediaSvc := ctxutil.Singleton[*mediasvc.Service](ctx)
 
 	for _, show := range shows {
 		fmt.Fprintln(w)
@@ -82,7 +80,7 @@ func processShows(ctx context.Context, w io.Writer, wd string, shows []*model.Sh
 		var err error
 		if ask {
 			prompt := promptui.Prompt{
-				Label:     fmt.Sprintf("Process %s", show.Name),
+				Label:     fmt.Sprintf("Process %s", show.Name()),
 				IsConfirm: true,
 				Default:   "y",
 			}
@@ -95,13 +93,13 @@ func processShows(ctx context.Context, w io.Writer, wd string, shows []*model.Sh
 			continue
 		}
 
-		showPath := path.Join(wd, show.Name)
-		mediaSvc.PrepareDirectory(showPath, owner, group)
+		showPath := path.Join(wd, show.Name())
+		fsutil.PrepareDir(showPath, owner, group)
 
-		for _, season := range show.Seasons {
+		for _, season := range show.Seasons() {
 			if ask {
 				prompt := promptui.Prompt{
-					Label:     season.Name,
+					Label:     season.Name(),
 					IsConfirm: true,
 					Default:   "y",
 				}
@@ -114,11 +112,11 @@ func processShows(ctx context.Context, w io.Writer, wd string, shows []*model.Sh
 				continue
 			}
 
-			seasonPath := path.Join(showPath, season.Name)
-			mediaSvc.PrepareDirectory(seasonPath, owner, group)
+			seasonPath := path.Join(showPath, season.Name())
+			fsutil.PrepareDir(seasonPath, owner, group)
 
-			for _, episode := range season.Episodes {
-				oldPath := path.Join(wd, episode.Basename)
+			for _, episode := range season.Episodes() {
+				oldPath := path.Join(wd, episode.Basename())
 				newPath := path.Join(seasonPath, episode.Name())
 				os.Rename(oldPath, newPath)
 				os.Chown(newPath, owner, group)

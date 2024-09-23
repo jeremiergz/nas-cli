@@ -1,6 +1,5 @@
 package mkv
 
-// AttachmentsItems
 type AttachmentsItems struct {
 	ContentType string      `json:"content_type,omitempty"`
 	Description string      `json:"description,omitempty"`
@@ -11,48 +10,42 @@ type AttachmentsItems struct {
 	Type        string      `json:"type,omitempty"`
 }
 
-// ChaptersItems
 type ChaptersItems struct {
 	NumEntries int `json:"num_entries"`
 }
 
-// Container information about the identified container
 type Container struct {
-
-	// additional properties for the container varying by container format
+	// Additional properties for the container varying by container format.
 	Properties *Properties `json:"properties,omitempty"`
 
-	// States whether or not mkvmerge knows about the format
+	// States whether or not mkvmerge knows about the format.
 	Recognized bool `json:"recognized"`
 
-	// States whether or not mkvmerge can read the format
+	// States whether or not mkvmerge can read the format.
 	Supported bool `json:"supported"`
 
-	// A human-readable description/name for the container format
+	// A human-readable description/name for the container format.
 	Type string `json:"type,omitempty"`
 }
 
-// MkvmergeIdentificationOutput The JSON output produced by mkvmerge's file identification mode
 type MkvmergeIdentificationOutput struct {
-
-	// an array describing the attachments found if any
+	// An array describing the attachments found if any.
 	Attachments []*AttachmentsItems `json:"attachments,omitempty"`
 	Chapters    []*ChaptersItems    `json:"chapters,omitempty"`
 
-	// information about the identified container
+	// Information about the identified container.
 	Container *Container `json:"container,omitempty"`
 
-	// the identified file's name
+	// Identified file's name.
 	Filename   string        `json:"file_name,omitempty"`
 	GlobalTags []interface{} `json:"global_tags,omitempty"`
 
-	// The output format's version
+	// Output format's version.
 	IdentificationFormatVersion int               `json:"identification_format_version,omitempty"`
 	TrackTags                   []*TrackTagsItems `json:"track_tags,omitempty"`
 	Tracks                      []*TracksItems    `json:"tracks,omitempty"`
 }
 
-// Properties
 type Properties struct {
 	AacIsSbr                  string `json:"aac_is_sbr,omitempty"`
 	AudioBitsPerSample        int    `json:"audio_bits_per_sample,omitempty"`
@@ -84,13 +77,11 @@ type Properties struct {
 	TsPid                     int    `json:"ts_pid,omitempty"`
 }
 
-// TrackTagsItems
 type TrackTagsItems struct {
 	NumEntries int `json:"num_entries"`
 	TrackID    int `json:"track_id"`
 }
 
-// TracksItems
 type TracksItems struct {
 	Codec      string      `json:"codec"`
 	ID         int         `json:"id"`
