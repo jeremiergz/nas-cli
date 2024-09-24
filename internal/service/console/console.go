@@ -3,6 +3,7 @@ package console
 import (
 	"fmt"
 	"io"
+	"path/filepath"
 	"regexp"
 
 	"github.com/cheggaaa/pb/v3/termutil"
@@ -67,7 +68,11 @@ func (s *Service) PrintFiles(wd string, files []*model.File) {
 func (s *Service) PrintMovies(wd string, movies []*model.Movie) {
 	moviesTree := gotree.New(wd)
 	for _, m := range movies {
-		moviesTree.Add(fmt.Sprintf("%s.%s  %s", m.FullName(), m.Extension(), m.Basename()))
+		moviesTree.Add(fmt.Sprintf(
+			"%s  %s",
+			filepath.Join(m.FullName(), fmt.Sprintf("%s.%s", m.FullName(), m.Extension())),
+			m.Basename(),
+		))
 	}
 	toPrint := moviesTree.Print()
 	toPrint = lastSpaceRegexp.ReplaceAllString(toPrint, "")

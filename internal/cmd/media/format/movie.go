@@ -106,11 +106,23 @@ func processMovies(ctx context.Context, w io.Writer, wd string, movies []*model.
 		}
 		m.SetName(titleInput)
 		m.SetYear(yearInt)
+
+		newDir := path.Join(wd, m.FullName())
+		err = os.MkdirAll(newDir, config.DirectoryMode)
+		if err != nil {
+			return fmt.Errorf("could not create directory %s: %w", newDir, err)
+		}
+
 		currentFilepath := path.Join(wd, m.Basename())
-		newFilepath := path.Join(wd, fmt.Sprintf("%s.%s", m.FullName(), m.Extension()))
-		os.Rename(currentFilepath, newFilepath)
+		newFilepath := path.Join(newDir, fmt.Sprintf("%s.%s", m.FullName(), m.Extension()))
+		err = os.Rename(currentFilepath, newFilepath)
+		if err != nil {
+			return fmt.Errorf("could not rename %s to %s: %w", currentFilepath, newFilepath, err)
+		}
+
 		os.Chown(newFilepath, owner, group)
 		os.Chmod(newFilepath, config.FileMode)
+
 		consoleSvc.Success(m.FullName())
 	}
 

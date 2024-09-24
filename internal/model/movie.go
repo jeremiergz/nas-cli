@@ -3,7 +3,6 @@ package model
 import (
 	"fmt"
 	"path/filepath"
-	"regexp"
 
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
@@ -16,7 +15,6 @@ var (
 	_ MediaFile = (*Movie)(nil)
 
 	movieNameCaser = cases.Title(language.Und)
-	movieFmtRegexp = regexp.MustCompile(`(^.+)\s\(([0-9]{4})\)\.(.+)$`)
 )
 
 // Holds information about a file parsed as a movie such as its title and year.
@@ -31,7 +29,7 @@ type Movie struct {
 //
 // Result can be filtered by extensions.
 func Movies(wd string, extensions []string) ([]*Movie, error) {
-	toProcess := fsutil.List(wd, extensions, movieFmtRegexp)
+	toProcess := fsutil.List(wd, extensions, nil)
 	movies := []*Movie{}
 	for _, basename := range toProcess {
 		parsed, err := parser.Parse(basename)

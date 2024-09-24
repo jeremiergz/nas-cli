@@ -95,9 +95,9 @@ func Upload(ctx context.Context, client *sftp.Client, tracker *progress.Tracker,
 
 			var mode os.FileMode
 			if index < len(paths)-1 {
-				mode = 0755
+				mode = config.DirectoryMode
 			} else {
-				mode = 0644
+				mode = config.FileMode
 			}
 			if err := client.Chmod(path, mode); err != nil {
 				return fmt.Errorf("could not chmod %s: %w", path, err)
