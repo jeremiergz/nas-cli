@@ -14,10 +14,9 @@ import (
 
 	"github.com/jeremiergz/nas-cli/internal/config"
 	"github.com/jeremiergz/nas-cli/internal/model"
-	consolesvc "github.com/jeremiergz/nas-cli/internal/service/console"
+	svc "github.com/jeremiergz/nas-cli/internal/service"
 	"github.com/jeremiergz/nas-cli/internal/util"
 	"github.com/jeremiergz/nas-cli/internal/util/cmdutil"
-	"github.com/jeremiergz/nas-cli/internal/util/ctxutil"
 	"github.com/jeremiergz/nas-cli/internal/util/fsutil"
 )
 
@@ -52,7 +51,6 @@ func New() *cobra.Command {
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
-			consoleSvc := ctxutil.Singleton[*consolesvc.Service](ctx)
 
 			files, err := model.Files(config.WD, videoExtensions)
 			if err != nil {
@@ -62,9 +60,9 @@ func New() *cobra.Command {
 			w := cmd.OutOrStdout()
 
 			if len(files) == 0 {
-				consoleSvc.Success("No video file to process")
+				svc.Console.Success("No video file to process")
 			} else {
-				consoleSvc.PrintFiles(config.WD, files)
+				svc.Console.PrintFiles(config.WD, files)
 
 				if !dryRun {
 					fmt.Fprintln(w)
@@ -93,12 +91,12 @@ func New() *cobra.Command {
 						fmt.Fprintln(w)
 						for _, result := range results {
 							if result.IsSuccessful {
-								consoleSvc.Success(fmt.Sprintf("%s  duration=%-6s",
+								svc.Console.Success(fmt.Sprintf("%s  duration=%-6s",
 									result.Message,
 									result.Characteristics["duration"],
 								))
 							} else {
-								consoleSvc.Error(result.Message)
+								svc.Console.Error(result.Message)
 							}
 						}
 

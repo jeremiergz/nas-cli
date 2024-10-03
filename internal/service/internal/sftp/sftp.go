@@ -1,10 +1,10 @@
-package service
+package sftp
 
 import (
 	"github.com/pkg/sftp"
 	"golang.org/x/crypto/ssh"
 
-	sshsvc "github.com/jeremiergz/nas-cli/internal/service/ssh"
+	sshsvc "github.com/jeremiergz/nas-cli/internal/service/internal/ssh"
 )
 
 type Service struct {

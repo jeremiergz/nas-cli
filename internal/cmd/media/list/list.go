@@ -16,9 +16,8 @@ import (
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
 
-	sftpsvc "github.com/jeremiergz/nas-cli/internal/service/sftp"
+	svc "github.com/jeremiergz/nas-cli/internal/service"
 	"github.com/jeremiergz/nas-cli/internal/util/cmdutil"
-	"github.com/jeremiergz/nas-cli/internal/util/ctxutil"
 )
 
 type lister interface {
@@ -67,17 +66,15 @@ func New() *cobra.Command {
 }
 
 func process(lst lister, targets []string, nameFilter string) error {
-	sftpSvc := ctxutil.Singleton[*sftpsvc.Service](lst.Command().Context())
-
-	err := sftpSvc.Connect()
+	err := svc.SFTP.Connect()
 	if err != nil {
 		return err
 	}
-	defer sftpSvc.Disconnect()
+	defer svc.SFTP.Disconnect()
 
 	folders := map[string][]fs.FileInfo{}
 	for _, folder := range targets {
-		subFiles, err := sftpSvc.Client.ReadDir(folder)
+		subFiles, err := svc.SFTP.Client.ReadDir(folder)
 		if err != nil {
 			return err
 		}
@@ -101,7 +98,7 @@ func process(lst lister, targets []string, nameFilter string) error {
 				baseTree := gotree.New(file.Name())
 				if file.IsDir() {
 					if recursive {
-						err := handleRecursive(lst.Kind(), sftpSvc.Client, baseTree, destination, file)
+						err := handleRecursive(lst.Kind(), svc.SFTP.Client, baseTree, destination, file)
 						if err != nil {
 							return err
 						}

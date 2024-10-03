@@ -16,10 +16,9 @@ import (
 
 	"github.com/jeremiergz/nas-cli/internal/cmd/media/subsync/internal"
 	"github.com/jeremiergz/nas-cli/internal/config"
-	consolesvc "github.com/jeremiergz/nas-cli/internal/service/console"
+	svc "github.com/jeremiergz/nas-cli/internal/service"
 	"github.com/jeremiergz/nas-cli/internal/util"
 	"github.com/jeremiergz/nas-cli/internal/util/cmdutil"
-	"github.com/jeremiergz/nas-cli/internal/util/ctxutil"
 	"github.com/jeremiergz/nas-cli/internal/util/fsutil"
 )
 
@@ -55,17 +54,15 @@ func New() *cobra.Command {
 			ctx := cmd.Context()
 			out := cmd.OutOrStdout()
 
-			consoleSvc := ctxutil.Singleton[*consolesvc.Service](ctx)
-
 			subtitleFiles := fsutil.List(config.WD, []string{subtitleExtension}, nil)
 			if len(subtitleFiles) == 0 {
-				consoleSvc.Success("No subtitle file to process")
+				svc.Console.Success("No subtitle file to process")
 				return nil
 			}
 
 			videoFiles := fsutil.List(config.WD, videoExtensions, nil)
 			if len(videoFiles) == 0 {
-				consoleSvc.Success("No video file to process")
+				svc.Console.Success("No video file to process")
 				return nil
 			}
 

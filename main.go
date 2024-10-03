@@ -11,10 +11,7 @@ import (
 	"github.com/jeremiergz/nas-cli/internal/cmd/info"
 	"github.com/jeremiergz/nas-cli/internal/cmd/media"
 	"github.com/jeremiergz/nas-cli/internal/cmd/version"
-	consolesvc "github.com/jeremiergz/nas-cli/internal/service/console"
-	sftpsvc "github.com/jeremiergz/nas-cli/internal/service/sftp"
-	sshsvc "github.com/jeremiergz/nas-cli/internal/service/ssh"
-	"github.com/jeremiergz/nas-cli/internal/util/ctxutil"
+	svc "github.com/jeremiergz/nas-cli/internal/service"
 )
 
 func main() {
@@ -30,9 +27,7 @@ func main() {
 
 	w := rootCmd.OutOrStdout()
 
-	ctx = ctxutil.WithSingleton(ctx, consolesvc.New(w))
-	ctx = ctxutil.WithSingleton(ctx, sftpsvc.New())
-	ctx = ctxutil.WithSingleton(ctx, sshsvc.New())
+	svc.Initialize(w)
 
 	if err := rootCmd.ExecuteContext(ctx); err != nil {
 		os.Exit(1)

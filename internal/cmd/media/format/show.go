@@ -12,8 +12,7 @@ import (
 
 	"github.com/jeremiergz/nas-cli/internal/config"
 	"github.com/jeremiergz/nas-cli/internal/model"
-	consolesvc "github.com/jeremiergz/nas-cli/internal/service/console"
-	"github.com/jeremiergz/nas-cli/internal/util/ctxutil"
+	svc "github.com/jeremiergz/nas-cli/internal/service"
 	"github.com/jeremiergz/nas-cli/internal/util/fsutil"
 )
 
@@ -31,9 +30,6 @@ func newShowCmd() *cobra.Command {
 		Long:    showDesc + ".",
 		Args:    cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx := cmd.Context()
-			consoleSvc := ctxutil.Singleton[*consolesvc.Service](ctx)
-
 			shows, err := model.Shows(config.WD, extensions, "", nil, false)
 
 			w := cmd.OutOrStdout()
@@ -51,9 +47,9 @@ func newShowCmd() *cobra.Command {
 				return err
 			}
 			if len(shows) == 0 {
-				consoleSvc.Success("Nothing to process")
+				svc.Console.Success("Nothing to process")
 			} else {
-				consoleSvc.PrintShows(config.WD, shows)
+				svc.Console.PrintShows(config.WD, shows)
 				if !dryRun {
 					processShows(cmd.Context(), w, config.WD, shows, config.UID, config.GID, !yes)
 				}
@@ -71,9 +67,7 @@ func newShowCmd() *cobra.Command {
 }
 
 // Processes listed shows by prompting user.
-func processShows(ctx context.Context, w io.Writer, wd string, shows []*model.Show, owner, group int, ask bool) error {
-	consoleSvc := ctxutil.Singleton[*consolesvc.Service](ctx)
-
+func processShows(_ context.Context, w io.Writer, wd string, shows []*model.Show, owner, group int, ask bool) error {
 	for _, show := range shows {
 		fmt.Fprintln(w)
 
@@ -121,7 +115,7 @@ func processShows(ctx context.Context, w io.Writer, wd string, shows []*model.Sh
 				os.Rename(oldPath, newPath)
 				os.Chown(newPath, owner, group)
 				os.Chmod(newPath, config.FileMode)
-				consoleSvc.Success(episode.Name())
+				svc.Console.Success(episode.Name())
 			}
 		}
 	}

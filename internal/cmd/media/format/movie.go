@@ -13,8 +13,7 @@ import (
 
 	"github.com/jeremiergz/nas-cli/internal/config"
 	"github.com/jeremiergz/nas-cli/internal/model"
-	consolesvc "github.com/jeremiergz/nas-cli/internal/service/console"
-	"github.com/jeremiergz/nas-cli/internal/util/ctxutil"
+	svc "github.com/jeremiergz/nas-cli/internal/service"
 )
 
 var (
@@ -29,9 +28,6 @@ func newMovieCmd() *cobra.Command {
 		Long:    movieDesc + ".",
 		Args:    cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx := cmd.Context()
-			consoleSvc := ctxutil.Singleton[*consolesvc.Service](ctx)
-
 			w := cmd.OutOrStdout()
 
 			movies, err := model.Movies(config.WD, extensions)
@@ -39,9 +35,9 @@ func newMovieCmd() *cobra.Command {
 				return err
 			}
 			if len(movies) == 0 {
-				consoleSvc.Success("Nothing to process")
+				svc.Console.Success("Nothing to process")
 			} else {
-				consoleSvc.PrintMovies(config.WD, movies)
+				svc.Console.PrintMovies(config.WD, movies)
 				if !dryRun {
 					err := processMovies(cmd.Context(), w, config.WD, movies, config.UID, config.GID)
 					if err != nil {
@@ -60,9 +56,7 @@ func newMovieCmd() *cobra.Command {
 }
 
 // Processes listed movies by prompting user.
-func processMovies(ctx context.Context, w io.Writer, wd string, movies []*model.Movie, owner, group int) error {
-	consoleSvc := ctxutil.Singleton[*consolesvc.Service](ctx)
-
+func processMovies(_ context.Context, w io.Writer, wd string, movies []*model.Movie, owner, group int) error {
 	for _, m := range movies {
 		fmt.Fprintln(w)
 		// Ask if current movie must be processed.
@@ -123,7 +117,7 @@ func processMovies(ctx context.Context, w io.Writer, wd string, movies []*model.
 		os.Chown(newFilepath, owner, group)
 		os.Chmod(newFilepath, config.FileMode)
 
-		consoleSvc.Success(m.FullName())
+		svc.Console.Success(m.FullName())
 	}
 
 	return nil

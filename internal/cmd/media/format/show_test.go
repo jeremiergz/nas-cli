@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"io"
 	"os"
 	"path"
 	"strings"
@@ -15,10 +14,6 @@ import (
 
 	"github.com/jeremiergz/nas-cli/internal/cmd"
 	"github.com/jeremiergz/nas-cli/internal/config"
-	consolesvc "github.com/jeremiergz/nas-cli/internal/service/console"
-	sftpsvc "github.com/jeremiergz/nas-cli/internal/service/sftp"
-	sshsvc "github.com/jeremiergz/nas-cli/internal/service/ssh"
-	"github.com/jeremiergz/nas-cli/internal/util/ctxutil"
 )
 
 func Test_Show_With_Dry_Run(t *testing.T) {
@@ -61,7 +56,7 @@ func Test_Show_With_Dry_Run(t *testing.T) {
 	args := []string{"format", "shows", "--dry-run", tempDir}
 
 	output := new(bytes.Buffer)
-	ctx := getTestContext(t, output)
+	ctx := context.Background()
 
 	rootCMD.SetOut(output)
 	rootCMD.SetErr(output)
@@ -118,7 +113,7 @@ func Test_Show_Without_Options(t *testing.T) {
 	args := []string{"format", "shows", "--yes", tempDir}
 
 	output := new(bytes.Buffer)
-	ctx := getTestContext(t, output)
+	ctx := context.Background()
 
 	rootCMD.SetOut(output)
 	rootCMD.SetErr(output)
@@ -175,7 +170,7 @@ func Test_Show_With_Name_Override(t *testing.T) {
 	args := []string{"format", "shows", "--yes", "--name", showName, tempDir}
 
 	output := new(bytes.Buffer)
-	ctx := getTestContext(t, output)
+	ctx := context.Background()
 
 	rootCMD.SetOut(output)
 	rootCMD.SetErr(output)
@@ -220,17 +215,6 @@ func assertSameshowTree(t *testing.T, expected map[string]map[string][]string, d
 			t.Fatalf("\nExpected show to be a directory: %s", showPath)
 		}
 	}
-}
-
-func getTestContext(t *testing.T, w io.Writer) context.Context {
-	t.Helper()
-
-	ctx := context.Background()
-	ctx = ctxutil.WithSingleton(ctx, consolesvc.New(w))
-	ctx = ctxutil.WithSingleton(ctx, sftpsvc.New())
-	ctx = ctxutil.WithSingleton(ctx, sshsvc.New())
-
-	return ctx
 }
 
 func prepareShows(t *testing.T, dir string, files []string) {
