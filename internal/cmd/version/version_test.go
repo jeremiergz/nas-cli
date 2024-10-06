@@ -9,6 +9,7 @@ import (
 
 	"github.com/jeremiergz/nas-cli/internal/cmd"
 	"github.com/jeremiergz/nas-cli/internal/config"
+	svc "github.com/jeremiergz/nas-cli/internal/service"
 )
 
 func Test_Outputs_The_Correct_Version(t *testing.T) {
@@ -26,6 +27,7 @@ func Test_Outputs_The_Correct_Version(t *testing.T) {
 		output := new(bytes.Buffer)
 		rootCMD.SetOut(output)
 		rootCMD.SetErr(output)
+		svc.Console.SetOutput(output)
 		rootCMD.SetArgs([]string{"version"})
 		rootCMD.Execute()
 

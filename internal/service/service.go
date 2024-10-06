@@ -1,8 +1,6 @@
 package service
 
 import (
-	"io"
-
 	"github.com/jeremiergz/nas-cli/internal/service/internal/console"
 	"github.com/jeremiergz/nas-cli/internal/service/internal/sftp"
 	"github.com/jeremiergz/nas-cli/internal/service/internal/ssh"
@@ -14,8 +12,8 @@ var (
 	SSH     *ssh.Service
 )
 
-func Initialize(out io.Writer) {
-	Console = console.New(out)
+func init() {
+	Console = console.New()
 	SFTP = sftp.New()
 	SSH = ssh.New()
 }

@@ -3,6 +3,7 @@ package console
 import (
 	"fmt"
 	"io"
+	"os"
 	"path/filepath"
 	"regexp"
 
@@ -18,8 +19,13 @@ type Service struct {
 	w io.Writer
 }
 
-func New(w io.Writer) *Service {
-	return &Service{w}
+func New() *Service {
+	return &Service{w: os.Stdout}
+}
+
+// Sets the output writer to use when printing on console.
+func (s *Service) SetOutput(w io.Writer) {
+	s.w = w
 }
 
 // Pretty-prints given error message.

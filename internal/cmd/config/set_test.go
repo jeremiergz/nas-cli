@@ -15,6 +15,7 @@ import (
 
 	"github.com/jeremiergz/nas-cli/internal/cmd"
 	"github.com/jeremiergz/nas-cli/internal/config"
+	svc "github.com/jeremiergz/nas-cli/internal/service"
 )
 
 func Test_Config_Set(t *testing.T) {
@@ -43,6 +44,7 @@ func Test_Config_Set(t *testing.T) {
 			output := new(bytes.Buffer)
 			rootCMD.SetOut(output)
 			rootCMD.SetErr(output)
+			svc.Console.SetOutput(output)
 			rootCMD.SetArgs([]string{"config", "set", try.key, try.value})
 
 			err := rootCMD.Execute()

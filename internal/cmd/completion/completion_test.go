@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/jeremiergz/nas-cli/internal/cmd"
+	svc "github.com/jeremiergz/nas-cli/internal/service"
 )
 
 func Test_Completion_For_Bash(t *testing.T) {
@@ -41,6 +42,7 @@ func testCompletionGeneration(t *testing.T, shell string) (string, error) {
 	output := new(bytes.Buffer)
 	rootCMD.SetOut(output)
 	rootCMD.SetErr(output)
+	svc.Console.SetOutput(output)
 	rootCMD.SetArgs(args)
 	err := rootCMD.Execute()
 

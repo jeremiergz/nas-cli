@@ -14,6 +14,7 @@ import (
 
 	"github.com/jeremiergz/nas-cli/internal/cmd"
 	"github.com/jeremiergz/nas-cli/internal/config"
+	svc "github.com/jeremiergz/nas-cli/internal/service"
 )
 
 func Test_Show_With_Dry_Run(t *testing.T) {
@@ -60,6 +61,7 @@ func Test_Show_With_Dry_Run(t *testing.T) {
 
 	rootCMD.SetOut(output)
 	rootCMD.SetErr(output)
+	svc.Console.SetOutput(output)
 	rootCMD.SetArgs(args)
 	err := rootCMD.ExecuteContext(ctx)
 
@@ -117,6 +119,7 @@ func Test_Show_Without_Options(t *testing.T) {
 
 	rootCMD.SetOut(output)
 	rootCMD.SetErr(output)
+	svc.Console.SetOutput(output)
 	rootCMD.SetArgs(args)
 	err := rootCMD.ExecuteContext(ctx)
 
@@ -174,6 +177,7 @@ func Test_Show_With_Name_Override(t *testing.T) {
 
 	rootCMD.SetOut(output)
 	rootCMD.SetErr(output)
+	svc.Console.SetOutput(output)
 	rootCMD.SetArgs(args)
 	err := rootCMD.ExecuteContext(ctx)
 

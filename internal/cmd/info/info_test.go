@@ -9,6 +9,7 @@ import (
 
 	"github.com/jeremiergz/nas-cli/internal/cmd"
 	"github.com/jeremiergz/nas-cli/internal/config"
+	svc "github.com/jeremiergz/nas-cli/internal/service"
 )
 
 func Test_Outputs_Information_As_JSON(t *testing.T) {
@@ -70,6 +71,7 @@ func testInfoOutput(t *testing.T, format string) (string, error) {
 	output := new(bytes.Buffer)
 	rootCMD.SetOut(output)
 	rootCMD.SetErr(output)
+	svc.Console.SetOutput(output)
 
 	config.BuildDate = "1970-01-01T00:00:00.000Z"
 	config.Compiler = "gc/test"
