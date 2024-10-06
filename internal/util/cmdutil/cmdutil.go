@@ -92,6 +92,9 @@ func NewProgressWriter(out io.Writer, expectedLength int) progress.Writer {
 	pw.Style().Options.Separator = ""
 	pw.Style().Chars.BoxLeft = ""
 	pw.Style().Chars.BoxRight = ""
+
+	go pw.Render()
+
 	return pw
 }
 

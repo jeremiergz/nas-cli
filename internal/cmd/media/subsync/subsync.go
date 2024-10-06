@@ -132,7 +132,6 @@ func displayList(out io.Writer, wd string, videos []string, subtitles []string) 
 
 func process(ctx context.Context, out io.Writer, videoFiles, subtitleFiles []string) error {
 	pw := cmdutil.NewProgressWriter(out, len(videoFiles))
-	go pw.Render()
 
 	eg, _ := errgroup.WithContext(ctx)
 	eg.SetLimit(cmdutil.MaxConcurrentGoroutines)
@@ -140,15 +139,20 @@ func process(ctx context.Context, out io.Writer, videoFiles, subtitleFiles []str
 		eg.SetLimit(maxParallel)
 	}
 
-	for i, v := range videoFiles {
-		index, videoFile := i, v
+	trackerIndexedByVideoFile := make(map[string]*progress.Tracker, len(videoFiles))
+	for _, videoFile := range videoFiles {
 		tracker := &progress.Tracker{
 			DeferStart: true,
 			Message:    fmt.Sprintf("%s%11s", videoFile, ""),
 			Total:      100,
 		}
 		pw.AppendTracker(tracker)
+		trackerIndexedByVideoFile[videoFile] = tracker
+	}
+
+	for index, videoFile := range videoFiles {
 		eg.Go(func() error {
+			tracker := trackerIndexedByVideoFile[videoFile]
 			videoFileExtension := path.Ext(videoFile)
 			outFile := strings.Replace(videoFile, videoFileExtension, fmt.Sprintf(".%s.srt", subtitleLang), 1)
 			subtitleFile := subtitleFiles[index]
