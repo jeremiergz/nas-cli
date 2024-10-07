@@ -50,17 +50,10 @@ func New() *cobra.Command {
 		Args:    cobra.MinimumNArgs(1),
 	}
 
-	commands := []lister{
-		newAnimeCmd(),
-		newMovieCmd(),
-		newTVShowCmd(),
-	}
-
-	for _, c := range commands {
-		cmd.AddCommand(c.Command())
-	}
-
 	cmd.PersistentFlags().BoolVarP(&recursive, "recursive", "r", false, "find files and folders recursively")
+	cmd.AddCommand(newAnimeCmd().Command())
+	cmd.AddCommand(newMovieCmd().Command())
+	cmd.AddCommand(newTVShowCmd().Command())
 
 	return cmd
 }

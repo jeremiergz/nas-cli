@@ -34,16 +34,20 @@ func newMovieCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
+
 			if len(movies) == 0 {
 				svc.Console.Success("Nothing to process")
-			} else {
-				svc.Console.PrintMovies(config.WD, movies)
-				if !dryRun {
-					err := processMovies(cmd.Context(), w, config.WD, movies, config.UID, config.GID)
-					if err != nil {
-						return err
-					}
+				return nil
+			}
+
+			svc.Console.PrintMovies(config.WD, movies)
+
+			if !dryRun {
+				err := processMovies(cmd.Context(), w, config.WD, movies, config.UID, config.GID)
+				if err != nil {
+					return err
 				}
+
 			}
 
 			return nil

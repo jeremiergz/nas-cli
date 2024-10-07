@@ -30,9 +30,12 @@ func newShowCmd() *cobra.Command {
 		Long:    showDesc + ".",
 		Args:    cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			shows, err := model.Shows(config.WD, extensions, "", nil, false)
-
 			w := cmd.OutOrStdout()
+
+			shows, err := model.Shows(config.WD, extensions, "", nil, false)
+			if err != nil {
+				return err
+			}
 
 			if len(showNames) > 0 {
 				if len(showNames) != len(shows) {
@@ -43,16 +46,15 @@ func newShowCmd() *cobra.Command {
 				}
 			}
 
-			if err != nil {
-				return err
-			}
 			if len(shows) == 0 {
 				svc.Console.Success("Nothing to process")
-			} else {
-				svc.Console.PrintShows(config.WD, shows)
-				if !dryRun {
-					processShows(cmd.Context(), w, config.WD, shows, config.UID, config.GID, !yes)
-				}
+				return nil
+			}
+
+			svc.Console.PrintShows(config.WD, shows)
+
+			if !dryRun {
+				processShows(cmd.Context(), w, config.WD, shows, config.UID, config.GID, !yes)
 			}
 
 			return nil

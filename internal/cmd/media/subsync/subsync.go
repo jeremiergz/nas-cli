@@ -48,7 +48,12 @@ func New() *cobra.Command {
 				return fmt.Errorf("command not found: %s", cmdutil.CommandSubsync)
 			}
 
-			return fsutil.InitializeWorkingDir(args[0])
+			err = fsutil.InitializeWorkingDir(args[0])
+			if err != nil {
+				return err
+			}
+
+			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()

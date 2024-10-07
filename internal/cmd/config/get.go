@@ -22,7 +22,6 @@ func newGetCmd() *cobra.Command {
 		Args:      cobra.MatchAll(cobra.ExactArgs(1), cobra.OnlyValidArgs),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			key := args[0]
-
 			w := cmd.OutOrStdout()
 
 			value := viper.GetString(key)

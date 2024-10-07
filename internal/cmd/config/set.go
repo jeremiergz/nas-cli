@@ -35,7 +35,12 @@ func newSetCmd() *cobra.Command {
 			value := args[1]
 			viper.Set(key, value)
 
-			return config.Save()
+			err := config.Save()
+			if err != nil {
+				return err
+			}
+
+			return nil
 		},
 	}
 

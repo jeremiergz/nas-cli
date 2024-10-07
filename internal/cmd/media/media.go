@@ -24,8 +24,11 @@ func New() *cobra.Command {
 		Long:  mediaDesc + ".",
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			err := util.InitOwnership(ownership)
+			if err != nil {
+				return err
+			}
 
-			return err
+			return nil
 		},
 	}
 

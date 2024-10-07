@@ -37,7 +37,12 @@ func newMovieCmd() *movieCommand {
 				movieName = args[0]
 			}
 
-			return process(cmd, moviesFolders, movieName)
+			err := process(cmd, moviesFolders, movieName)
+			if err != nil {
+				return err
+			}
+
+			return nil
 		},
 	}
 	return cmd

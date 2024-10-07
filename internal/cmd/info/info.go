@@ -24,9 +24,16 @@ func New() *cobra.Command {
 		Short: infoDesc,
 		Long:  infoDesc + ".",
 		PreRunE: func(cmd *cobra.Command, args []string) error {
-			return cmdutil.OnlyValidOutputs()
+			err := cmdutil.OnlyValidOutputs()
+			if err != nil {
+				return err
+			}
+
+			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
+			w := cmd.OutOrStdout()
+
 			info := map[string]string{
 				"buildDate": config.BuildDate,
 				"compiler":  config.Compiler,
@@ -34,8 +41,6 @@ func New() *cobra.Command {
 				"platform":  config.Platform,
 				"version":   config.Version,
 			}
-
-			w := cmd.OutOrStdout()
 
 			var toPrint string
 			switch cmdutil.OutputFormat {

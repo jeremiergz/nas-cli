@@ -37,7 +37,12 @@ func newTVShowCmd() *tvShowCommand {
 				tvShowName = args[0]
 			}
 
-			return process(cmd, tvShowsFolders, tvShowName)
+			err := process(cmd, tvShowsFolders, tvShowName)
+			if err != nil {
+				return err
+			}
+
+			return nil
 		},
 	}
 	return cmd

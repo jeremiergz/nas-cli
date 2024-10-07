@@ -37,7 +37,12 @@ func newAnimeCmd() *animeCommand {
 				animeName = args[0]
 			}
 
-			return process(cmd, animesFolders, animeName)
+			err := process(cmd, animesFolders, animeName)
+			if err != nil {
+				return err
+			}
+
+			return nil
 		},
 	}
 	return cmd

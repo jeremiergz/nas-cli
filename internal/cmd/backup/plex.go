@@ -36,16 +36,17 @@ func newPlexCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
+
 			if !srcFile.IsDir() {
 				return fmt.Errorf("%s is not a valid directory", backupSrc)
 			}
 
 			destFile, err := os.Stat(backupDest)
-			if err != nil {
-				if !errors.Is(err, os.ErrNotExist) {
-					return err
-				}
-			} else if destFile.IsDir() {
+			if err != nil && !errors.Is(err, os.ErrNotExist) {
+				return err
+			}
+
+			if destFile.IsDir() {
 				return fmt.Errorf("%s must be a file", backupDest)
 			}
 
@@ -83,7 +84,12 @@ func newPlexCmd() *cobra.Command {
 
 			w := cmd.OutOrStdout()
 
-			return process(cmd.Context(), w, backupSrc, destFile, filters)
+			err = process(cmd.Context(), w, backupSrc, destFile, filters)
+			if err != nil {
+				return err
+			}
+
+			return nil
 		},
 	}
 

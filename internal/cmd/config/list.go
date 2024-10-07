@@ -24,42 +24,48 @@ func newListCmd() *cobra.Command {
 		Short: listDesc,
 		Long:  listDesc + ".",
 		PreRunE: func(cmd *cobra.Command, args []string) error {
-			return cmdutil.OnlyValidOutputs()
+			err := cmdutil.OnlyValidOutputs()
+			if err != nil {
+				return err
+			}
+
+			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			w := cmd.OutOrStdout()
 
 			if err := viper.ReadInConfig(); err != nil {
-				if _, ok := err.(viper.ConfigFileNotFoundError); ok {
-					fmt.Fprintln(w, "no configuration entries")
-				} else {
+				if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
 					return err
 				}
-			} else {
-				var toPrint string
-				switch cmdutil.OutputFormat {
-				case "json":
-					out, _ := json.MarshalIndent(viper.AllSettings(), "", "  ")
-					toPrint = strings.TrimSpace(string(out))
 
-				case "text":
-					values := []string{}
-					for _, key := range config.OrderedKeys {
-						format := "%s=%v"
-						values = append(values, fmt.Sprintf(format, key, viper.Get(key)))
-					}
-					toPrint = strings.Join(values, "\n")
-
-				case "yaml":
-					var buf bytes.Buffer
-					encoder := yaml.NewEncoder(&buf)
-					encoder.SetIndent(2)
-					encoder.Encode(viper.AllSettings())
-					toPrint = strings.TrimSpace(buf.String())
-				}
-
-				fmt.Fprintln(w, toPrint)
+				fmt.Fprintln(w, "no configuration entries")
+				return nil
 			}
+
+			var toPrint string
+			switch cmdutil.OutputFormat {
+			case "json":
+				out, _ := json.MarshalIndent(viper.AllSettings(), "", "  ")
+				toPrint = strings.TrimSpace(string(out))
+
+			case "text":
+				values := []string{}
+				for _, key := range config.OrderedKeys {
+					format := "%s=%v"
+					values = append(values, fmt.Sprintf(format, key, viper.Get(key)))
+				}
+				toPrint = strings.Join(values, "\n")
+
+			case "yaml":
+				var buf bytes.Buffer
+				encoder := yaml.NewEncoder(&buf)
+				encoder.SetIndent(2)
+				encoder.Encode(viper.AllSettings())
+				toPrint = strings.TrimSpace(buf.String())
+			}
+
+			fmt.Fprintln(w, toPrint)
 
 			return nil
 		},

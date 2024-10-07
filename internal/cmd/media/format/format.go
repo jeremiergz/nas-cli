@@ -26,7 +26,12 @@ func New() *cobra.Command {
 				return err
 			}
 
-			return fsutil.InitializeWorkingDir(args[0])
+			err = fsutil.InitializeWorkingDir(args[0])
+			if err != nil {
+				return err
+			}
+
+			return nil
 		},
 	}
 

@@ -17,9 +17,7 @@ func New() *cobra.Command {
 		Short: configDesc,
 		Long:  configDesc + ".",
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-			var err error
-			_, err = os.UserHomeDir()
-			if err != nil {
+			if _, err := os.UserHomeDir(); err != nil {
 				return fmt.Errorf("could not find user home directory")
 			}
 

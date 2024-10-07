@@ -47,7 +47,12 @@ func New() *cobra.Command {
 				return fmt.Errorf("command not found: %s", cmdutil.CommandMKVPropEdit)
 			}
 
-			return fsutil.InitializeWorkingDir(args[0])
+			err = fsutil.InitializeWorkingDir(args[0])
+			if err != nil {
+				return err
+			}
+
+			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
@@ -60,53 +65,53 @@ func New() *cobra.Command {
 			w := cmd.OutOrStdout()
 
 			if len(files) == 0 {
-				svc.Console.Success("No video file to process")
-			} else {
-				svc.Console.PrintFiles(config.WD, files)
+				svc.Console.Success("Nothing to process")
+				return nil
+			}
 
-				if !dryRun {
-					fmt.Fprintln(w)
+			svc.Console.PrintFiles(config.WD, files)
 
-					var err error
-					if !yes {
-						prompt := promptui.Prompt{
-							Label:     "Process",
-							IsConfirm: true,
-							Default:   "y",
-						}
-						_, err = prompt.Run()
+			if !dryRun {
+				fmt.Fprintln(w)
+
+				var err error
+				if !yes {
+					prompt := promptui.Prompt{
+						Label:     "Process",
+						IsConfirm: true,
+						Default:   "y",
 					}
+					_, err = prompt.Run()
+				}
 
-					if err != nil {
-						if err.Error() == "^C" {
-							return nil
-						}
+				if err != nil && err.Error() == "^C" {
+					return nil
+				}
+
+				hasError := false
+				ok, results := process(ctx, files)
+				if !ok {
+					hasError = true
+				}
+
+				fmt.Fprintln(w)
+				for _, result := range results {
+					if result.IsSuccessful {
+						svc.Console.Success(fmt.Sprintf("%s  duration=%-6s",
+							result.Message,
+							result.Characteristics["duration"],
+						))
 					} else {
-						hasError := false
-						ok, results := process(ctx, files)
-						if !ok {
-							hasError = true
-						}
-
-						fmt.Fprintln(w)
-						for _, result := range results {
-							if result.IsSuccessful {
-								svc.Console.Success(fmt.Sprintf("%s  duration=%-6s",
-									result.Message,
-									result.Characteristics["duration"],
-								))
-							} else {
-								svc.Console.Error(result.Message)
-							}
-						}
-
-						if hasError {
-							fmt.Fprintln(w)
-							return fmt.Errorf("an error occurred")
-						}
+						svc.Console.Error(result.Message)
 					}
 				}
+
+				if hasError {
+					fmt.Fprintln(w)
+					return fmt.Errorf("an error occurred")
+				}
 			}
+
 			return nil
 		},
 	}
