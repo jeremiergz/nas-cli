@@ -113,11 +113,11 @@ func processShows(_ context.Context, w io.Writer, wd string, shows []*model.Show
 
 			for _, episode := range season.Episodes() {
 				oldPath := path.Join(wd, episode.Basename())
-				newPath := path.Join(seasonPath, episode.Name())
+				newPath := path.Join(seasonPath, episode.FullName())
 				os.Rename(oldPath, newPath)
 				os.Chown(newPath, owner, group)
 				os.Chmod(newPath, config.FileMode)
-				svc.Console.Success(episode.Name())
+				svc.Console.Success(episode.FullName())
 			}
 		}
 	}

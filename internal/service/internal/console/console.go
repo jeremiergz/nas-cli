@@ -109,7 +109,7 @@ func (s *Service) PrintShows(wd string, shows []*model.Show) {
 			}
 			seasonsTree := showTree.Add(fmt.Sprintf("%s (%d %s)", season.Name(), episodesCount, episodeStr))
 			for _, episode := range season.Episodes() {
-				seasonsTree.Add(fmt.Sprintf("%s  %s", episode.Name(), episode.Basename()))
+				seasonsTree.Add(fmt.Sprintf("%s  %s", episode.FullName(), episode.Basename()))
 			}
 		}
 	}

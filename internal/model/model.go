@@ -4,8 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"path"
 	"path/filepath"
+	"slices"
 
 	"github.com/jeremiergz/nas-cli/internal/model/internal/mkv"
 	"github.com/jeremiergz/nas-cli/internal/util"
@@ -21,8 +21,10 @@ type MediaFile interface {
 	Clean() util.Result
 	Extension() string
 	FilePath() string
-	SetFilePath(path string)
+	FullName() string
 	Name() string
+	SetFilePath(path string)
+	Subtitles(languages ...string) map[string]string
 }
 
 type file struct {
@@ -51,6 +53,55 @@ func (f *file) SetFilePath(path string) {
 	f.filePath = path
 }
 
+func (f *file) Name() string {
+	return f.basename[:len(f.basename)-len(filepath.Ext(f.basename))]
+}
+
+func (f *file) FullName() string {
+	return f.basename
+}
+
+func (f *file) Subtitles(languages ...string) map[string]string {
+	subtitles := map[string]string{}
+
+	files, err := os.ReadDir(filepath.Dir(f.FilePath()))
+	if err == nil {
+		videoFileNameLength := len(f.Name())
+		subtitleExtension := fmt.Sprintf(".%s", util.AcceptedSubtitleExtension)
+
+		// We look for files with the same name as the video file, the .srt extension
+		// and a 3-letter language code. E.g.: video.eng.srt, video.spa.srt.
+		expectedSuffixSize := 4 + len(subtitleExtension)
+
+		for _, file := range files {
+			if file.IsDir() {
+				continue
+			}
+
+			filename := file.Name()
+			isValidExtension := filepath.Ext(filename) == subtitleExtension
+
+			if isValidExtension {
+				isSubtitle := (videoFileNameLength + expectedSuffixSize) == len(filename)
+
+				if isSubtitle {
+					languageCode := filename[videoFileNameLength+1 : videoFileNameLength+4]
+					if languages != nil && !slices.Contains(languages, languageCode) {
+						continue
+					}
+					subtitles[languageCode] = filename
+				}
+			}
+		}
+	}
+
+	return subtitles
+}
+
+var (
+	_ MediaFile = (*File)(nil)
+)
+
 type File struct {
 	file
 }
@@ -71,23 +122,4 @@ func Files(wd string, extensions []string) ([]*File, error) {
 		})
 	}
 	return files, nil
-}
-
-// Lists subtitles with given extension and languages for the file passed as parameter.
-func listSubtitles(wd, videoFile string, extension string, languages []string) map[string]string {
-	fileName := videoFile[:len(videoFile)-len(filepath.Ext(videoFile))]
-	subtitles := map[string]string{}
-
-	if extension != "" && languages != nil {
-		for _, lang := range languages {
-			subtitleFilename := fmt.Sprintf("%s.%s.%s", fileName, lang, extension)
-			subtitleFilePath, _ := filepath.Abs(path.Join(wd, subtitleFilename))
-			stats, err := os.Stat(subtitleFilePath)
-			if err == nil && !stats.IsDir() {
-				subtitles[lang] = subtitleFilename
-			}
-		}
-	}
-
-	return subtitles
 }

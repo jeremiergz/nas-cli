@@ -62,50 +62,50 @@ func process(_ context.Context, w io.Writer, source string, destination io.Write
 
 		if hasFilters && isInFilters(filenameInArchive, filters) {
 			return nil
-		} else {
-			fi, err := d.Info()
-			if err != nil {
-				return err
-			}
-
-			link := d.Name()
-			if fi.Mode()&os.ModeSymlink == os.ModeSymlink {
-				if link, err = os.Readlink(filename); err != nil {
-					return err
-				}
-			}
-
-			header, err := tar.FileInfoHeader(fi, link)
-			if err != nil {
-				return err
-			}
-			header.Name = filenameInArchive
-
-			err = tw.WriteHeader(header)
-			if err != nil {
-				return err
-			}
-
-			if !fi.IsDir() {
-				file, err := os.Open(filename)
-				if err != nil {
-					return err
-				}
-				defer file.Close()
-
-				_, err = io.Copy(tw, file)
-				if err != nil {
-					return err
-				}
-
-			}
-
-			if verbose {
-				fmt.Fprintln(w, filenameInArchive)
-			}
-
-			return nil
 		}
+
+		fi, err := d.Info()
+		if err != nil {
+			return err
+		}
+
+		link := d.Name()
+		if fi.Mode()&os.ModeSymlink == os.ModeSymlink {
+			if link, err = os.Readlink(filename); err != nil {
+				return err
+			}
+		}
+
+		header, err := tar.FileInfoHeader(fi, link)
+		if err != nil {
+			return err
+		}
+		header.Name = filenameInArchive
+
+		err = tw.WriteHeader(header)
+		if err != nil {
+			return err
+		}
+
+		if !fi.IsDir() {
+			file, err := os.Open(filename)
+			if err != nil {
+				return err
+			}
+			defer file.Close()
+
+			_, err = io.Copy(tw, file)
+			if err != nil {
+				return err
+			}
+
+		}
+
+		if verbose {
+			fmt.Fprintln(w, filenameInArchive)
+		}
+
+		return nil
 	})
 	if err != nil {
 		return err

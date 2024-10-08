@@ -8,7 +8,6 @@ import (
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 
-	"github.com/jeremiergz/nas-cli/internal/config"
 	"github.com/jeremiergz/nas-cli/internal/model/internal/parser"
 	"github.com/jeremiergz/nas-cli/internal/util/fsutil"
 )
@@ -61,7 +60,7 @@ func Shows(wd string, extensions []string, subtitleExtension string, subtitleLan
 				},
 				index: e.Episode,
 			}
-			episode.subtitles = listSubtitles(config.WD, basename, subtitleExtension, subtitleLangs)
+
 			var season *Season
 			if seasonIndex == -1 {
 				season = &Season{
@@ -144,9 +143,8 @@ func (s *Season) Episodes() []*Episode {
 type Episode struct {
 	file
 
-	index     int
-	season    *Season
-	subtitles map[string]string
+	index  int
+	season *Season
 }
 
 func (e *Episode) Index() int {
@@ -154,20 +152,22 @@ func (e *Episode) Index() int {
 }
 
 func (e *Episode) Name() string {
-	return fmt.Sprintf("%s - S%02dE%02d.%s",
+	return fmt.Sprintf("%s - S%02dE%02d",
 		e.Season().Show().Name(),
 		e.Season().Index(),
 		e.Index(),
+	)
+}
+
+func (e *Episode) FullName() string {
+	return fmt.Sprintf("%s.%s",
+		e.Name(),
 		e.Extension(),
 	)
 }
 
 func (e *Episode) Season() *Season {
 	return e.season
-}
-
-func (e *Episode) Subtitles() map[string]string {
-	return e.subtitles
 }
 
 // Finds season index in seasons array.
