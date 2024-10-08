@@ -28,11 +28,12 @@ func New() *cobra.Command {
 		Long:  desc + ".",
 		PersistentPostRun: func(cmd *cobra.Command, args []string) {
 			if debug {
-				fmt.Fprintln(cmd.OutOrStdout())
+				out := cmd.OutOrStdout()
+				fmt.Fprintln(out)
 
 				called := strings.Join(strings.Split(cmd.CommandPath(), " ")[1:], " ")
-				fmt.Fprintln(cmd.OutOrStdout(), "Command called:", called)
-				fmt.Fprintln(cmd.OutOrStdout(), "Execution time:", time.Since(startTime))
+				fmt.Fprintln(out, "Command called:", called)
+				fmt.Fprintln(out, "Execution time:", time.Since(startTime))
 			}
 		},
 	}

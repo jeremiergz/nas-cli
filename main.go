@@ -25,9 +25,7 @@ func main() {
 
 	ctx := context.Background()
 
-	w := rootCmd.OutOrStdout()
-
-	svc.Console.SetOutput(w)
+	svc.Console.SetOutput(rootCmd.OutOrStdout())
 
 	if err := rootCmd.ExecuteContext(ctx); err != nil {
 		os.Exit(1)

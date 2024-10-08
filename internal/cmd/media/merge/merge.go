@@ -66,7 +66,6 @@ func New() *cobra.Command {
 			return fsutil.InitializeWorkingDir(args[0])
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx := cmd.Context()
 			out := cmd.OutOrStdout()
 
 			files, err := model.Files(config.WD, videoExtensions)
@@ -102,7 +101,7 @@ func New() *cobra.Command {
 
 			fmt.Fprintln(out)
 
-			err = process(ctx, out, files, !delete)
+			err = process(cmd.Context(), out, files, !delete)
 			if err != nil {
 				return err
 			}

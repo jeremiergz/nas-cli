@@ -82,9 +82,7 @@ func newPlexCmd() *cobra.Command {
 			}
 			defer destFile.Close()
 
-			w := cmd.OutOrStdout()
-
-			err = process(cmd.Context(), w, backupSrc, destFile, filters)
+			err = process(cmd.Context(), cmd.OutOrStdout(), backupSrc, destFile, filters)
 			if err != nil {
 				return err
 			}

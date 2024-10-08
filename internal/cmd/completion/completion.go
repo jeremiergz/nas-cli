@@ -21,14 +21,14 @@ func New() *cobra.Command {
 		Args:      cobra.MatchAll(cobra.ExactArgs(1), cobra.OnlyValidArgs),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			rootCmd := cmd.Parent()
-			w := cmd.OutOrStdout()
+			out := cmd.OutOrStdout()
 
 			switch args[0] {
 			case "bash":
-				rootCmd.GenBashCompletion(w)
+				rootCmd.GenBashCompletion(out)
 
 			case "zsh":
-				rootCmd.GenZshCompletion(w)
+				rootCmd.GenZshCompletion(out)
 			}
 
 			return nil

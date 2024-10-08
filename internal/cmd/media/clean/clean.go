@@ -55,14 +55,12 @@ func New() *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx := cmd.Context()
+			out := cmd.OutOrStdout()
 
 			files, err := model.Files(config.WD, videoExtensions)
 			if err != nil {
 				return err
 			}
-
-			w := cmd.OutOrStdout()
 
 			if len(files) == 0 {
 				svc.Console.Success("Nothing to process")
@@ -72,7 +70,7 @@ func New() *cobra.Command {
 			svc.Console.PrintFiles(config.WD, files)
 
 			if !dryRun {
-				fmt.Fprintln(w)
+				fmt.Fprintln(out)
 
 				var err error
 				if !yes {
@@ -89,12 +87,12 @@ func New() *cobra.Command {
 				}
 
 				hasError := false
-				ok, results := process(ctx, files)
+				ok, results := process(cmd.Context(), files)
 				if !ok {
 					hasError = true
 				}
 
-				fmt.Fprintln(w)
+				fmt.Fprintln(out)
 				for _, result := range results {
 					if result.IsSuccessful {
 						svc.Console.Success(fmt.Sprintf("%s  duration=%-6s",
@@ -107,7 +105,7 @@ func New() *cobra.Command {
 				}
 
 				if hasError {
-					fmt.Fprintln(w)
+					fmt.Fprintln(out)
 					return fmt.Errorf("an error occurred")
 				}
 			}

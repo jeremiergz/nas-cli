@@ -30,8 +30,6 @@ func newShowCmd() *cobra.Command {
 		Long:    showDesc + ".",
 		Args:    cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			w := cmd.OutOrStdout()
-
 			shows, err := model.Shows(config.WD, extensions, "", nil, false)
 			if err != nil {
 				return err
@@ -54,7 +52,7 @@ func newShowCmd() *cobra.Command {
 			svc.Console.PrintShows(config.WD, shows)
 
 			if !dryRun {
-				processShows(cmd.Context(), w, config.WD, shows, config.UID, config.GID, !yes)
+				processShows(cmd.Context(), cmd.OutOrStdout(), config.WD, shows, config.UID, config.GID, !yes)
 			}
 
 			return nil

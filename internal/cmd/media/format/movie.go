@@ -28,8 +28,6 @@ func newMovieCmd() *cobra.Command {
 		Long:    movieDesc + ".",
 		Args:    cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			w := cmd.OutOrStdout()
-
 			movies, err := model.Movies(config.WD, extensions)
 			if err != nil {
 				return err
@@ -43,7 +41,7 @@ func newMovieCmd() *cobra.Command {
 			svc.Console.PrintMovies(config.WD, movies)
 
 			if !dryRun {
-				err := processMovies(cmd.Context(), w, config.WD, movies, config.UID, config.GID)
+				err := processMovies(cmd.Context(), cmd.OutOrStdout(), config.WD, movies, config.UID, config.GID)
 				if err != nil {
 					return err
 				}

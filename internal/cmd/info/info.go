@@ -32,7 +32,7 @@ func New() *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			w := cmd.OutOrStdout()
+			out := cmd.OutOrStdout()
 
 			info := map[string]string{
 				"buildDate": config.BuildDate,
@@ -64,7 +64,7 @@ func New() *cobra.Command {
 				toPrint = strings.TrimSpace(buf.String())
 			}
 
-			fmt.Fprintln(w, toPrint)
+			fmt.Fprintln(out, toPrint)
 
 			return nil
 		},

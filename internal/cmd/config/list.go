@@ -32,14 +32,14 @@ func newListCmd() *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			w := cmd.OutOrStdout()
+			out := cmd.OutOrStdout()
 
 			if err := viper.ReadInConfig(); err != nil {
 				if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
 					return err
 				}
 
-				fmt.Fprintln(w, "no configuration entries")
+				fmt.Fprintln(out, "no configuration entries")
 				return nil
 			}
 
@@ -65,7 +65,7 @@ func newListCmd() *cobra.Command {
 				toPrint = strings.TrimSpace(buf.String())
 			}
 
-			fmt.Fprintln(w, toPrint)
+			fmt.Fprintln(out, toPrint)
 
 			return nil
 		},

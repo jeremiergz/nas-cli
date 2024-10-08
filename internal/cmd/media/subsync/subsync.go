@@ -56,7 +56,6 @@ func New() *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx := cmd.Context()
 			out := cmd.OutOrStdout()
 
 			subtitleFiles := fsutil.List(config.WD, []string{subtitleExtension}, nil)
@@ -97,7 +96,7 @@ func New() *cobra.Command {
 
 			fmt.Fprintln(out)
 
-			err := process(ctx, out, videoFiles, subtitleFiles)
+			err := process(cmd.Context(), out, videoFiles, subtitleFiles)
 			if err != nil {
 				return err
 			}
