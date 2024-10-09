@@ -1,26 +1,23 @@
 package merge
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"io"
-	"os"
 	"os/exec"
-	"path"
 	"regexp"
-	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/disiqueira/gotree/v3"
+	"github.com/google/uuid"
 	"github.com/jedib0t/go-pretty/v6/progress"
 	"github.com/manifoldco/promptui"
 	"github.com/samber/lo"
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
 
+	"github.com/jeremiergz/nas-cli/internal/cmd/media/merge/internal/mkvmerge"
 	"github.com/jeremiergz/nas-cli/internal/config"
 	"github.com/jeremiergz/nas-cli/internal/model"
 	svc "github.com/jeremiergz/nas-cli/internal/service"
@@ -28,11 +25,6 @@ import (
 	"github.com/jeremiergz/nas-cli/internal/util/cmdutil"
 	"github.com/jeremiergz/nas-cli/internal/util/fsutil"
 )
-
-type backup struct {
-	currentPath  string
-	originalPath string
-}
 
 var (
 	mergeDesc         = "Merge tracks using MKVMerge tool"
@@ -156,39 +148,26 @@ func process(ctx context.Context, w io.Writer, files []*model.File, keepOriginal
 		return len(a.Basename()) > len(b.Basename())
 	}).Basename())
 
-	trackerIndexedByFile := make(map[string]*progress.Tracker, len(files))
+	trackerIndexedByFile := make(map[uuid.UUID]*progress.Tracker, len(files))
 	for _, file := range files {
-		paddingLength := maxFilenameLength - len(file.Basename())
-		if paddingLength > 0 {
-			paddingLength += 1
-		}
+		paddingLength := maxFilenameLength - len(file.Basename()) + 1 // Add margin.
 		tracker := &progress.Tracker{
 			DeferStart: true,
 			Message:    fmt.Sprintf("%s%*s", file.Basename(), paddingLength, " "),
 			Total:      100,
 		}
 		pw.AppendTracker(tracker)
-		trackerIndexedByFile[file.Basename()] = tracker
+		trackerIndexedByFile[file.ID()] = tracker
 	}
 
 	for _, file := range files {
+		merger := mkvmerge.New(trackerIndexedByFile[file.ID()], w)
 		eg.Go(func() error {
-			tracker := trackerIndexedByFile[file.Basename()]
-			subtitles := file.Subtitles()
-
-			// Nothing to do if there are no subtitles.
-			if len(subtitles) == 0 {
-				tracker.MarkAsDone()
-				return nil
-			}
-
-			err := merge(tracker, w, file, keepOriginal)
+			err := merger.Run(file, keepOriginal)
 			if err != nil {
-				tracker.MarkAsErrored()
 				return err
 			}
 
-			tracker.MarkAsDone()
 			return nil
 		})
 	}
@@ -204,108 +183,4 @@ func process(ctx context.Context, w io.Writer, files []*model.File, keepOriginal
 	}
 
 	return nil
-}
-
-func merge(tracker *progress.Tracker, w io.Writer, file *model.File, keepOriginal bool) error {
-	videoFileBackupPath := path.Join(config.WD, fmt.Sprintf("%s%s%s", "_", file.Basename(), ".bak"))
-
-	err := os.Rename(file.FilePath(), videoFileBackupPath)
-	if err != nil {
-		return fmt.Errorf("failed to rename video file: %w", err)
-	}
-
-	backups := []backup{
-		{currentPath: videoFileBackupPath, originalPath: file.FilePath()},
-	}
-
-	options := []string{
-		"--gui-mode",
-		"--output",
-		file.FilePath(),
-	}
-	for lang, subtitleFile := range file.Subtitles() {
-		subtitleFilePath := path.Join(config.WD, subtitleFile)
-		subtitleFileBackupPath := path.Join(config.WD, fmt.Sprintf("%s%s%s", "_", subtitleFile, ".bak"))
-		os.Rename(subtitleFilePath, subtitleFileBackupPath)
-		backups = append(backups, backup{currentPath: subtitleFileBackupPath, originalPath: subtitleFilePath})
-		options = append(options, "--language", fmt.Sprintf("0:%s", lang), subtitleFileBackupPath)
-	}
-	options = append(options, videoFileBackupPath)
-
-	var buf bytes.Buffer
-
-	merge := exec.Command(cmdutil.CommandMKVMerge, options...)
-	merge.Stdout = &buf
-	merge.Stderr = w
-
-	if err = merge.Start(); err != nil {
-		return err
-	}
-
-	go func() {
-		for !tracker.IsDone() {
-			progress, err := getProgress(buf.String())
-			if err == nil {
-				tracker.SetValue(int64(progress))
-			}
-			buf.Reset()
-			time.Sleep(100 * time.Millisecond)
-		}
-	}()
-
-	if err = merge.Wait(); err != nil {
-		wg := sync.WaitGroup{}
-		for _, backupFile := range backups {
-			wg.Add(1)
-			go func(b backup) {
-				defer wg.Done()
-				os.Rename(b.currentPath, b.originalPath)
-			}(backupFile)
-		}
-		wg.Wait()
-		return err
-	}
-
-	os.Chown(file.FilePath(), config.UID, config.GID)
-	os.Chmod(file.FilePath(), config.FileMode)
-
-	if !keepOriginal {
-		wg := sync.WaitGroup{}
-		for _, backupFile := range backups {
-			wg.Add(1)
-			go func(b backup) {
-				defer wg.Done()
-				os.Remove(b.currentPath)
-			}(backupFile)
-		}
-		wg.Wait()
-	}
-
-	return nil
-}
-
-var progressRegexp = regexp.MustCompile(`(?m)(?:progress\s+)(?P<Percentage>\d+)(?:%)`)
-
-func getProgress(str string) (percentage int, err error) {
-	allProgressMatches := progressRegexp.FindAllStringSubmatch(str, -1)
-	if len(allProgressMatches) == 0 {
-		return 0, fmt.Errorf("could not find progress percentage")
-	}
-
-	progressMatches := allProgressMatches[len(allProgressMatches)-1]
-
-	if len(progressMatches) != 2 {
-		return 0, fmt.Errorf("could not find progress percentage")
-	}
-
-	percentageIndex := progressRegexp.SubexpIndex("Percentage")
-	if percentageIndex == -1 {
-		return 0, fmt.Errorf("could not determine progress percentage")
-	}
-	percentage, err = strconv.Atoi(progressMatches[percentageIndex])
-	if err != nil {
-		return 0, fmt.Errorf("could not parse progress percentage: %w", err)
-	}
-
-	return percentage, nil
 }

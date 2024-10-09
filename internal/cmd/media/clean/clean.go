@@ -1,16 +1,18 @@
 package clean
 
 import (
-	"cmp"
 	"context"
 	"fmt"
+	"io"
 	"os/exec"
-	"slices"
-	"sync"
+	"time"
 
+	"github.com/google/uuid"
+	"github.com/jedib0t/go-pretty/v6/progress"
 	"github.com/manifoldco/promptui"
-	lop "github.com/samber/lo/parallel"
+	"github.com/samber/lo"
 	"github.com/spf13/cobra"
+	"golang.org/x/sync/errgroup"
 
 	"github.com/jeremiergz/nas-cli/internal/config"
 	"github.com/jeremiergz/nas-cli/internal/model"
@@ -68,46 +70,31 @@ func New() *cobra.Command {
 			}
 
 			svc.Console.PrintFiles(config.WD, files)
+			if dryRun {
+				return nil
+			}
 
-			if !dryRun {
+			if !yes {
 				fmt.Fprintln(out)
-
-				var err error
-				if !yes {
-					prompt := promptui.Prompt{
-						Label:     "Process",
-						IsConfirm: true,
-						Default:   "y",
+				prompt := promptui.Prompt{
+					Label:     "Process",
+					IsConfirm: true,
+					Default:   "y",
+				}
+				input, err := prompt.Run()
+				if err != nil {
+					if err.Error() == "^C" || input != "" {
+						return nil
 					}
-					_, err = prompt.Run()
+					return err
 				}
+			}
 
-				if err != nil && err.Error() == "^C" {
-					return nil
-				}
+			fmt.Fprintln(out)
 
-				hasError := false
-				ok, results := process(cmd.Context(), files)
-				if !ok {
-					hasError = true
-				}
-
-				fmt.Fprintln(out)
-				for _, result := range results {
-					if result.IsSuccessful {
-						svc.Console.Success(fmt.Sprintf("%s  duration=%-6s",
-							result.Message,
-							result.Characteristics["duration"],
-						))
-					} else {
-						svc.Console.Error(result.Message)
-					}
-				}
-
-				if hasError {
-					fmt.Fprintln(out)
-					return fmt.Errorf("an error occurred")
-				}
+			err = process(cmd.Context(), out, files)
+			if err != nil {
+				return err
 			}
 
 			return nil
@@ -124,21 +111,53 @@ func New() *cobra.Command {
 }
 
 // Merges show language tracks into one video file.
-func process(_ context.Context, files []*model.File) (bool, []util.Result) {
-	ok := true
-	results := []util.Result{}
-	mu := sync.Mutex{}
+func process(ctx context.Context, w io.Writer, files []*model.File) error {
+	pw := cmdutil.NewProgressWriter(w, len(files))
 
-	lop.ForEach(files, func(file *model.File, _ int) {
-		result := file.Clean()
-		mu.Lock()
-		results = append(results, result)
-		mu.Unlock()
-	})
+	eg, _ := errgroup.WithContext(ctx)
 
-	slices.SortFunc(results, func(a, b util.Result) int {
-		return cmp.Compare(a.Message, b.Message)
-	})
+	maxFilenameLength := len(lo.MaxBy(files, func(a, b *model.File) bool {
+		return len(a.Basename()) > len(b.Basename())
+	}).Basename())
 
-	return ok, results
+	pw.Style().Visibility.Tracker = false
+	pw.Style().Options.PercentIndeterminate = "   "
+
+	trackerIndexedByFile := make(map[uuid.UUID]*progress.Tracker, len(files))
+	for _, file := range files {
+		paddingLength := maxFilenameLength - len(file.Basename()) + 1 // Add margin.
+		tracker := &progress.Tracker{
+			DeferStart: true,
+			Message:    fmt.Sprintf("%s%*s", file.Basename(), paddingLength, " "),
+		}
+		pw.AppendTracker(tracker)
+		trackerIndexedByFile[file.ID()] = tracker
+	}
+
+	for _, file := range files {
+		tracker := trackerIndexedByFile[file.ID()]
+		eg.Go(func() error {
+			tracker.Start()
+
+			err := file.Clean()
+			if err != nil {
+				tracker.MarkAsErrored()
+			}
+
+			tracker.MarkAsDone()
+			return nil
+		})
+	}
+	if err := eg.Wait(); err != nil {
+		return err
+	}
+
+	for pw.IsRenderInProgress() {
+		if pw.LengthActive() == 0 {
+			pw.Stop()
+		}
+		time.Sleep(100 * time.Millisecond)
+	}
+
+	return nil
 }

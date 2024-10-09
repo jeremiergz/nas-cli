@@ -52,12 +52,14 @@ func Shows(wd string, extensions []string, subtitleExtension string, subtitleLan
 			}
 			seasonName := fmt.Sprintf("Season %d", e.Season)
 			seasonIndex := findShowSeasonIndex(seasonName, show.Seasons())
+
+			f, err := newFile(basename, e.Container, path.Join(wd, basename))
+			if err != nil {
+				return nil, err
+			}
+
 			episode := Episode{
-				file: file{
-					basename:  basename,
-					extension: e.Container,
-					filePath:  path.Join(wd, basename),
-				},
+				file:  f,
 				index: e.Episode,
 			}
 
@@ -141,7 +143,7 @@ func (s *Season) Episodes() []*Episode {
 
 // Holds information about an episode such as its index and subtitles.
 type Episode struct {
-	file
+	*file
 
 	index  int
 	season *Season

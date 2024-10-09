@@ -19,7 +19,7 @@ var (
 
 // Holds information about a file parsed as a movie such as its title and year.
 type Movie struct {
-	file
+	*file
 
 	title string
 	year  int
@@ -34,12 +34,13 @@ func Movies(wd string, extensions []string) ([]*Movie, error) {
 	for _, basename := range toProcess {
 		parsed, err := parser.Parse(basename)
 		if err == nil {
+			f, err := newFile(basename, parsed.Container, filepath.Join(wd, basename))
+			if err != nil {
+				return nil, err
+			}
+
 			movies = append(movies, &Movie{
-				file: file{
-					basename:  basename,
-					extension: parsed.Container,
-					filePath:  filepath.Join(wd, basename),
-				},
+				file:  f,
 				title: movieNameCaser.String(parsed.Title),
 				year:  parsed.Year,
 			})

@@ -10,12 +10,6 @@ import (
 	"github.com/jeremiergz/nas-cli/internal/config"
 )
 
-type Result struct {
-	Characteristics map[string]string
-	IsSuccessful    bool
-	Message         string
-}
-
 var (
 	// List of accepted video extensions.
 	AcceptedVideoExtensions = []string{"avi", "mkv", "mp4"}

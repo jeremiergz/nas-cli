@@ -5,6 +5,7 @@ go 1.23
 require (
 	github.com/cheggaaa/pb/v3 v3.1.5
 	github.com/disiqueira/gotree/v3 v3.0.2
+	github.com/google/uuid v1.6.0
 	github.com/jedib0t/go-pretty/v6 v6.6.0
 	github.com/manifoldco/promptui v0.9.0
 	github.com/pkg/sftp v1.13.6

@@ -1,8 +1,9 @@
-package internal
+package subsync
 
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path"
@@ -18,8 +19,22 @@ import (
 	"github.com/jeremiergz/nas-cli/internal/util/cmdutil"
 )
 
+type Process struct {
+	tracker *progress.Tracker
+	w       io.Writer
+}
+
+func New(tracker *progress.Tracker, out io.Writer) *Process {
+	return &Process{
+		tracker: tracker,
+		w:       out,
+	}
+}
+
 // Attempts to synchronize given subtitle with given video file.
-func Synchronize(tracker *progress.Tracker, video, videoLang, subtitle, subtitleLang, streamLang, streamType, outFile string) error {
+func (p *Process) Run(video, videoLang, subtitle, subtitleLang, streamLang, streamType, outFile string) error {
+	p.tracker.Start()
+
 	videoPath := path.Join(config.WD, video)
 	subtitlePath := path.Join(config.WD, subtitle)
 	outFilePath := path.Join(config.WD, outFile)
@@ -54,15 +69,17 @@ func Synchronize(tracker *progress.Tracker, video, videoLang, subtitle, subtitle
 	subsync.Stdout = &buf
 
 	if err := subsync.Start(); err != nil {
+		p.tracker.MarkAsErrored()
 		return err
 	}
 
 	go func() {
-		for !tracker.IsDone() {
+		originalMessage := p.tracker.Message[:(len(p.tracker.Message) - 12)] // Remove margin from the message.
+		for !p.tracker.IsDone() {
 			progress, points, err := getProgress(buf.String())
 			if err == nil {
-				tracker.SetValue(int64(progress))
-				tracker.UpdateMessage(fmt.Sprintf("%s %s points", video, formatPoints(points)))
+				p.tracker.SetValue(int64(progress))
+				p.tracker.UpdateMessage(fmt.Sprintf("%s %s points ", originalMessage, formatPoints(points)))
 			}
 			buf.Reset()
 			time.Sleep(100 * time.Millisecond)
@@ -70,12 +87,14 @@ func Synchronize(tracker *progress.Tracker, video, videoLang, subtitle, subtitle
 	}()
 
 	if err := subsync.Wait(); err != nil {
+		p.tracker.MarkAsErrored()
 		return err
 	}
 
 	os.Chown(outFilePath, config.UID, config.GID)
 	os.Chmod(outFilePath, config.FileMode)
 
+	p.tracker.MarkAsDone()
 	return nil
 }
 

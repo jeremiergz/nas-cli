@@ -7,25 +7,16 @@ import (
 	"os"
 	"os/exec"
 	"strings"
-	"time"
 
 	"github.com/jeremiergz/nas-cli/internal/util"
 	"github.com/jeremiergz/nas-cli/internal/util/cmdutil"
 )
 
 // Cleans given file tracks.
-func CleanTracks(filePath, basename string) util.Result {
-	start := time.Now()
-
+func CleanTracks(filePath, basename string) error {
 	characteristics, err := getCharacteristics(filePath)
 	if err != nil {
-		return util.Result{
-			Characteristics: map[string]string{
-				"duration": time.Since(start).Round(time.Millisecond).String(),
-			},
-			IsSuccessful: false,
-			Message:      basename,
-		}
+		return err
 	}
 
 	options := []string{
@@ -105,22 +96,10 @@ func CleanTracks(filePath, basename string) util.Result {
 
 	err = propedit.Run()
 	if err != nil {
-		return util.Result{
-			Characteristics: map[string]string{
-				"duration": time.Since(start).Round(time.Millisecond).String(),
-			},
-			IsSuccessful: false,
-			Message:      basename,
-		}
+		return err
 	}
 
-	return util.Result{
-		Characteristics: map[string]string{
-			"duration": time.Since(start).Round(time.Second).String(),
-		},
-		IsSuccessful: true,
-		Message:      basename,
-	}
+	return nil
 }
 
 // Retrieves the characteristics of given MKV file.

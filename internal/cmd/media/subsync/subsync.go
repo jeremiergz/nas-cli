@@ -8,13 +8,15 @@ import (
 	"path"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/jedib0t/go-pretty/v6/progress"
 	"github.com/manifoldco/promptui"
+	"github.com/samber/lo"
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/jeremiergz/nas-cli/internal/cmd/media/subsync/internal"
+	"github.com/jeremiergz/nas-cli/internal/cmd/media/subsync/internal/subsync"
 	"github.com/jeremiergz/nas-cli/internal/config"
 	svc "github.com/jeremiergz/nas-cli/internal/service"
 	"github.com/jeremiergz/nas-cli/internal/util"
@@ -143,11 +145,16 @@ func process(ctx context.Context, out io.Writer, videoFiles, subtitleFiles []str
 		eg.SetLimit(maxParallel)
 	}
 
+	maxFilenameLength := len(lo.MaxBy(videoFiles, func(a, b string) bool {
+		return len(a) > len(b)
+	}))
+
 	trackerIndexedByVideoFile := make(map[string]*progress.Tracker, len(videoFiles))
 	for _, videoFile := range videoFiles {
+		paddingLength := maxFilenameLength - len(videoFile) + 12 // Add margin for points display.
 		tracker := &progress.Tracker{
 			DeferStart: true,
-			Message:    fmt.Sprintf("%s%11s", videoFile, ""),
+			Message:    fmt.Sprintf("%s%*s", videoFile, paddingLength, " "),
 			Total:      100,
 		}
 		pw.AppendTracker(tracker)
@@ -155,13 +162,14 @@ func process(ctx context.Context, out io.Writer, videoFiles, subtitleFiles []str
 	}
 
 	for index, videoFile := range videoFiles {
+		synchronizer := subsync.New(trackerIndexedByVideoFile[videoFile], out)
+
 		eg.Go(func() error {
-			tracker := trackerIndexedByVideoFile[videoFile]
 			videoFileExtension := path.Ext(videoFile)
 			outFile := strings.Replace(videoFile, videoFileExtension, fmt.Sprintf(".%s.srt", subtitleLang), 1)
 			subtitleFile := subtitleFiles[index]
-			err := internal.Synchronize(
-				tracker,
+
+			err := synchronizer.Run(
 				videoFile,
 				videoLang,
 				subtitleFile,
@@ -171,15 +179,21 @@ func process(ctx context.Context, out io.Writer, videoFiles, subtitleFiles []str
 				outFile,
 			)
 			if err != nil {
-				tracker.MarkAsErrored()
 				return err
 			}
-			tracker.MarkAsDone()
+
 			return nil
 		})
 	}
 	if err := eg.Wait(); err != nil {
 		return err
+	}
+
+	for pw.IsRenderInProgress() {
+		if pw.LengthActive() == 0 {
+			pw.Stop()
+		}
+		time.Sleep(100 * time.Millisecond)
 	}
 
 	return nil
