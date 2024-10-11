@@ -46,7 +46,11 @@ func New() *cobra.Command {
 		Long:    mergeDesc + ".",
 		Args:    cobra.MinimumNArgs(1),
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-			err := cmdutil.CallParentPersistentPreRunE(cmd.Parent(), args)
+			if cmdutil.DebugMode {
+				fmt.Fprintf(cmd.OutOrStdout(), "%s PersistentPreRunE\n", cmd.CommandPath())
+			}
+
+			err := cmdutil.CallParentPersistentPreRunE(cmd, args)
 			if err != nil {
 				return err
 			}

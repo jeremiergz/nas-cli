@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/jeremiergz/nas-cli/internal/util/cmdutil"
 	"github.com/spf13/cobra"
 )
 
@@ -17,6 +18,15 @@ func New() *cobra.Command {
 		Short: configDesc,
 		Long:  configDesc + ".",
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+			if cmdutil.DebugMode {
+				fmt.Fprintf(cmd.OutOrStdout(), "%s PersistentPreRunE\n", cmd.CommandPath())
+			}
+
+			err := cmdutil.CallParentPersistentPreRunE(cmd, args)
+			if err != nil {
+				return err
+			}
+
 			if _, err := os.UserHomeDir(); err != nil {
 				return fmt.Errorf("could not find user home directory")
 			}

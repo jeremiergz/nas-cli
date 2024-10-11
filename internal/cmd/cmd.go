@@ -12,8 +12,6 @@ import (
 )
 
 var (
-	debug bool
-
 	startTime = time.Now()
 )
 
@@ -27,7 +25,7 @@ func New() *cobra.Command {
 		Short: desc,
 		Long:  desc + ".",
 		PersistentPostRun: func(cmd *cobra.Command, args []string) {
-			if debug {
+			if cmdutil.DebugMode {
 				out := cmd.OutOrStdout()
 				fmt.Fprintln(out)
 
@@ -38,7 +36,7 @@ func New() *cobra.Command {
 		},
 	}
 
-	cmd.PersistentFlags().BoolVar(&debug, "debug", false, "enable debug mode")
+	cmd.PersistentFlags().BoolVar(&cmdutil.DebugMode, "debug", false, "enable debug mode")
 	cmd.PersistentFlags().IntVar(&cmdutil.MaxConcurrentGoroutines, "max-concurrent-threads", 1000, "maximum number of concurrent threads")
 
 	return cmd

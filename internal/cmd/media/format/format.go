@@ -1,6 +1,8 @@
 package format
 
 import (
+	"fmt"
+
 	"github.com/spf13/cobra"
 
 	"github.com/jeremiergz/nas-cli/internal/util"
@@ -21,6 +23,10 @@ func New() *cobra.Command {
 		Short:   formatDesc,
 		Long:    formatDesc + ".",
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+			if cmdutil.DebugMode {
+				fmt.Fprintf(cmd.OutOrStdout(), "%s PersistentPreRunE\n", cmd.CommandPath())
+			}
+
 			err := cmdutil.CallParentPersistentPreRunE(cmd.Parent(), args)
 			if err != nil {
 				return err

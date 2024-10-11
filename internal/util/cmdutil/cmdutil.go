@@ -22,6 +22,9 @@ const (
 )
 
 var (
+	// Whether debug mode is enabled or not.
+	DebugMode bool
+
 	// Maximum number of concurrent goroutines.
 	MaxConcurrentGoroutines int
 
