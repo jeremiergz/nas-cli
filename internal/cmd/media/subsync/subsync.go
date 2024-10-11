@@ -12,13 +12,13 @@ import (
 
 	"github.com/jedib0t/go-pretty/v6/progress"
 	"github.com/manifoldco/promptui"
-	"github.com/samber/lo"
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/jeremiergz/nas-cli/internal/cmd/media/subsync/internal/subsync"
 	"github.com/jeremiergz/nas-cli/internal/config"
 	svc "github.com/jeremiergz/nas-cli/internal/service"
+	"github.com/jeremiergz/nas-cli/internal/service/str"
 	"github.com/jeremiergz/nas-cli/internal/util"
 	"github.com/jeremiergz/nas-cli/internal/util/cmdutil"
 	"github.com/jeremiergz/nas-cli/internal/util/fsutil"
@@ -145,13 +145,11 @@ func process(ctx context.Context, out io.Writer, videoFiles, subtitleFiles []str
 		eg.SetLimit(maxParallel)
 	}
 
-	maxFilenameLength := len(lo.MaxBy(videoFiles, func(a, b string) bool {
-		return len(a) > len(b)
-	}))
+	padder := str.NewPadder(videoFiles)
 
 	trackerIndexedByVideoFile := make(map[string]*progress.Tracker, len(videoFiles))
 	for _, videoFile := range videoFiles {
-		paddingLength := maxFilenameLength - len(videoFile) + 12 // Add margin for points display.
+		paddingLength := padder.PaddingLength(videoFile, 10)
 		tracker := &progress.Tracker{
 			DeferStart: true,
 			Message:    fmt.Sprintf("%s%*s", videoFile, paddingLength, " "),

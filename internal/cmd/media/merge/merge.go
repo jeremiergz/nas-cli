@@ -21,6 +21,7 @@ import (
 	"github.com/jeremiergz/nas-cli/internal/config"
 	"github.com/jeremiergz/nas-cli/internal/model"
 	svc "github.com/jeremiergz/nas-cli/internal/service"
+	"github.com/jeremiergz/nas-cli/internal/service/str"
 	"github.com/jeremiergz/nas-cli/internal/util"
 	"github.com/jeremiergz/nas-cli/internal/util/cmdutil"
 	"github.com/jeremiergz/nas-cli/internal/util/fsutil"
@@ -144,13 +145,11 @@ func process(ctx context.Context, w io.Writer, files []*model.File, keepOriginal
 		eg.SetLimit(maxParallel)
 	}
 
-	maxFilenameLength := len(lo.MaxBy(files, func(a, b *model.File) bool {
-		return len(a.Basename()) > len(b.Basename())
-	}).Basename())
+	padder := str.NewPadder(lo.Map(files, func(file *model.File, _ int) string { return file.Basename() }))
 
 	trackerIndexedByFile := make(map[uuid.UUID]*progress.Tracker, len(files))
 	for _, file := range files {
-		paddingLength := maxFilenameLength - len(file.Basename()) + 1 // Add margin.
+		paddingLength := padder.PaddingLength(file.Basename(), 1)
 		tracker := &progress.Tracker{
 			DeferStart: true,
 			Message:    fmt.Sprintf("%s%*s", file.Basename(), paddingLength, " "),

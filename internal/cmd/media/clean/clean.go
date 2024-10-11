@@ -17,6 +17,7 @@ import (
 	"github.com/jeremiergz/nas-cli/internal/config"
 	"github.com/jeremiergz/nas-cli/internal/model"
 	svc "github.com/jeremiergz/nas-cli/internal/service"
+	"github.com/jeremiergz/nas-cli/internal/service/str"
 	"github.com/jeremiergz/nas-cli/internal/util"
 	"github.com/jeremiergz/nas-cli/internal/util/cmdutil"
 	"github.com/jeremiergz/nas-cli/internal/util/fsutil"
@@ -113,19 +114,16 @@ func New() *cobra.Command {
 // Merges show language tracks into one video file.
 func process(ctx context.Context, w io.Writer, files []*model.File) error {
 	pw := cmdutil.NewProgressWriter(w, len(files))
-
-	eg, _ := errgroup.WithContext(ctx)
-
-	maxFilenameLength := len(lo.MaxBy(files, func(a, b *model.File) bool {
-		return len(a.Basename()) > len(b.Basename())
-	}).Basename())
-
 	pw.Style().Visibility.Tracker = false
 	pw.Style().Options.PercentIndeterminate = "   "
 
+	eg, _ := errgroup.WithContext(ctx)
+
+	padder := str.NewPadder(lo.Map(files, func(file *model.File, _ int) string { return file.Basename() }))
+
 	trackerIndexedByFile := make(map[uuid.UUID]*progress.Tracker, len(files))
 	for _, file := range files {
-		paddingLength := maxFilenameLength - len(file.Basename()) + 1 // Add margin.
+		paddingLength := padder.PaddingLength(file.Basename(), 1)
 		tracker := &progress.Tracker{
 			DeferStart: true,
 			Message:    fmt.Sprintf("%s%*s", file.Basename(), paddingLength, " "),
