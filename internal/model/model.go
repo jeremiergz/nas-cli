@@ -36,6 +36,7 @@ type file struct {
 	extension string
 	filePath  string
 	id        uuid.UUID
+	subtitles map[string]string
 }
 
 func newFile(basename, extension, filePath string) (*file, error) {
@@ -83,43 +84,46 @@ func (f *file) SetFilePath(path string) {
 }
 
 func (f *file) Subtitles(languages ...string) map[string]string {
-	subtitles := map[string]string{}
+	if f.subtitles == nil {
+		subtitles := map[string]string{}
 
-	files, err := os.ReadDir(filepath.Dir(f.FilePath()))
-	if err == nil {
-		videoFilenameLength := len(f.Name())
-		subtitleExtension := fmt.Sprintf(".%s", util.AcceptedSubtitleExtension)
+		files, err := os.ReadDir(filepath.Dir(f.FilePath()))
+		if err == nil {
+			videoFilenameLength := len(f.Name())
+			subtitleExtension := fmt.Sprintf(".%s", util.AcceptedSubtitleExtension)
 
-		// We look for files with the same name as the video file, the .srt extension
-		// and a 3-letter language code. E.g.: video.eng.srt, video.spa.srt.
-		expectedSuffixSize := 4 + len(subtitleExtension)
+			// We look for files with the same name as the video file, the .srt extension
+			// and a 3-letter language code. E.g.: video.eng.srt, video.spa.srt.
+			expectedSuffixSize := 4 + len(subtitleExtension)
 
-		for _, file := range files {
-			if file.IsDir() {
-				continue
-			}
+			for _, file := range files {
+				if file.IsDir() {
+					continue
+				}
 
-			filename := file.Name()
-			isValidExtension := filepath.Ext(filename) == subtitleExtension
+				filename := file.Name()
+				isValidExtension := filepath.Ext(filename) == subtitleExtension
 
-			if isValidExtension {
-				isSubtitle := (videoFilenameLength + expectedSuffixSize) == len(filename)
+				if isValidExtension {
+					isSubtitle := (videoFilenameLength + expectedSuffixSize) == len(filename)
 
-				if isSubtitle {
-					languageCode := filename[videoFilenameLength+1 : videoFilenameLength+4]
-					subtitleName := filename[:len(filename)-expectedSuffixSize]
-					if languages != nil && !slices.Contains(languages, languageCode) {
-						continue
-					}
-					if subtitleName == f.Name() {
-						subtitles[languageCode] = filename
+					if isSubtitle {
+						languageCode := filename[videoFilenameLength+1 : videoFilenameLength+4]
+						subtitleName := filename[:len(filename)-expectedSuffixSize]
+						if languages != nil && !slices.Contains(languages, languageCode) {
+							continue
+						}
+						if subtitleName == f.Name() {
+							subtitles[languageCode] = filename
+						}
 					}
 				}
 			}
 		}
+		f.subtitles = subtitles
 	}
 
-	return subtitles
+	return f.subtitles
 }
 
 var (
