@@ -87,7 +87,7 @@ func (f *file) Subtitles(languages ...string) map[string]string {
 
 	files, err := os.ReadDir(filepath.Dir(f.FilePath()))
 	if err == nil {
-		videoFileNameLength := len(f.Name())
+		videoFilenameLength := len(f.Name())
 		subtitleExtension := fmt.Sprintf(".%s", util.AcceptedSubtitleExtension)
 
 		// We look for files with the same name as the video file, the .srt extension
@@ -103,14 +103,17 @@ func (f *file) Subtitles(languages ...string) map[string]string {
 			isValidExtension := filepath.Ext(filename) == subtitleExtension
 
 			if isValidExtension {
-				isSubtitle := (videoFileNameLength + expectedSuffixSize) == len(filename)
+				isSubtitle := (videoFilenameLength + expectedSuffixSize) == len(filename)
 
 				if isSubtitle {
-					languageCode := filename[videoFileNameLength+1 : videoFileNameLength+4]
+					languageCode := filename[videoFilenameLength+1 : videoFilenameLength+4]
+					subtitleName := filename[:len(filename)-expectedSuffixSize]
 					if languages != nil && !slices.Contains(languages, languageCode) {
 						continue
 					}
-					subtitles[languageCode] = filename
+					if subtitleName == f.Name() {
+						subtitles[languageCode] = filename
+					}
 				}
 			}
 		}
