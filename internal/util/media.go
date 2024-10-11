@@ -153,6 +153,20 @@ var (
 	}
 )
 
+// Sets default regionalized language code.
+func SetDefaultLanguageRegion(lang, region string) {
+	lang = strings.ToLower(lang)
+	region = strings.ToLower(region)
+
+	langIndex, ok := langRegionalsMapping[lang]
+	if !ok {
+		langIndex = map[string]string{}
+		langRegionalsMapping[lang] = langIndex
+	}
+
+	langIndex[""] = region
+}
+
 // Returns regionalized language code. If not found, it returns the original language code.
 func ToLanguageRegionalized(lang string) string {
 	countryCode := countryCodeRegexp.FindString(lang)
