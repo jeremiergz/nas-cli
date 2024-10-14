@@ -16,18 +16,26 @@ import (
 
 	"github.com/jeremiergz/nas-cli/internal/config"
 	"github.com/jeremiergz/nas-cli/internal/model"
+	svc "github.com/jeremiergz/nas-cli/internal/service"
 	"github.com/jeremiergz/nas-cli/internal/util/cmdutil"
 )
 
-type Process struct {
-	tracker *progress.Tracker
-	w       io.Writer
+var (
+	_ svc.Runnable = (*process)(nil)
+)
+
+type process struct {
+	file         *model.File
+	keepOriginal bool
+	tracker      *progress.Tracker
+	w            io.Writer
 }
 
-func New(tracker *progress.Tracker, out io.Writer) *Process {
-	return &Process{
-		tracker: tracker,
-		w:       out,
+func New(file *model.File, keepOriginal bool) svc.Runnable {
+	return &process{
+		file:         file,
+		keepOriginal: keepOriginal,
+		w:            os.Stdout,
 	}
 }
 
@@ -36,31 +44,35 @@ type backup struct {
 	originalPath string
 }
 
-func (p *Process) Run(file *model.File, keepOriginal bool) error {
+func (p *process) Run() error {
+	if p.tracker == nil {
+		return fmt.Errorf("required tracker is not set")
+	}
+
 	p.tracker.Start()
 
-	subtitles := file.Subtitles()
+	subtitles := p.file.Subtitles()
 	if len(subtitles) == 0 {
 		p.tracker.MarkAsDone()
 		return nil
 	}
 
-	videoFileBackupPath := path.Join(config.WD, fmt.Sprintf("%s%s%s", "_", file.Basename(), ".bak"))
+	videoFileBackupPath := path.Join(config.WD, fmt.Sprintf("%s%s%s", "_", p.file.Basename(), ".bak"))
 
-	err := os.Rename(file.FilePath(), videoFileBackupPath)
+	err := os.Rename(p.file.FilePath(), videoFileBackupPath)
 	if err != nil {
 		p.tracker.MarkAsErrored()
 		return fmt.Errorf("failed to rename video file: %w", err)
 	}
 
 	backups := []backup{
-		{currentPath: videoFileBackupPath, originalPath: file.FilePath()},
+		{currentPath: videoFileBackupPath, originalPath: p.file.FilePath()},
 	}
 
 	options := []string{
 		"--gui-mode",
 		"--output",
-		file.FilePath(),
+		p.file.FilePath(),
 	}
 	for lang, subtitle := range subtitles {
 		subtitleFilePath := path.Join(config.WD, subtitle)
@@ -108,10 +120,10 @@ func (p *Process) Run(file *model.File, keepOriginal bool) error {
 		return err
 	}
 
-	os.Chown(file.FilePath(), config.UID, config.GID)
-	os.Chmod(file.FilePath(), config.FileMode)
+	os.Chown(p.file.FilePath(), config.UID, config.GID)
+	os.Chmod(p.file.FilePath(), config.FileMode)
 
-	if !keepOriginal {
+	if !p.keepOriginal {
 		wg := sync.WaitGroup{}
 		for _, backupFile := range backups {
 			wg.Add(1)
@@ -125,6 +137,16 @@ func (p *Process) Run(file *model.File, keepOriginal bool) error {
 
 	p.tracker.MarkAsDone()
 	return nil
+}
+
+func (p *process) SetTracker(tracker *progress.Tracker) svc.Runnable {
+	p.tracker = tracker
+	return p
+}
+
+func (p *process) SetOutput(out io.Writer) svc.Runnable {
+	p.w = out
+	return p
 }
 
 var progressRegexp = regexp.MustCompile(`(?m)(?:progress\s+)(?P<Percentage>\d+)(?:%)`)

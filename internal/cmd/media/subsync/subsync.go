@@ -8,6 +8,7 @@ import (
 	"path"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/jedib0t/go-pretty/v6/progress"
@@ -147,8 +148,9 @@ func process(ctx context.Context, out io.Writer, videoFiles, subtitleFiles []str
 
 	padder := str.NewPadder(videoFiles)
 
-	trackerIndexedByVideoFile := make(map[string]*progress.Tracker, len(videoFiles))
-	for _, videoFile := range videoFiles {
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	for index, videoFile := range videoFiles {
 		paddingLength := padder.PaddingLength(videoFile, 10)
 		tracker := &progress.Tracker{
 			DeferStart: true,
@@ -156,33 +158,29 @@ func process(ctx context.Context, out io.Writer, videoFiles, subtitleFiles []str
 			Total:      100,
 		}
 		pw.AppendTracker(tracker)
-		trackerIndexedByVideoFile[videoFile] = tracker
-	}
-
-	for index, videoFile := range videoFiles {
-		synchronizer := subsync.New(trackerIndexedByVideoFile[videoFile], out)
-
-		eg.Go(func() error {
-			videoFileExtension := path.Ext(videoFile)
-			outFile := strings.Replace(videoFile, videoFileExtension, fmt.Sprintf(".%s.srt", subtitleLang), 1)
-			subtitleFile := subtitleFiles[index]
-
-			err := synchronizer.Run(
+		syncer := subsync.
+			New(
 				videoFile,
 				videoLang,
-				subtitleFile,
+				subtitleFiles[index],
 				subtitleLang,
 				streamLang,
 				streamType,
-				outFile,
-			)
+				strings.Replace(videoFile, path.Ext(videoFile), fmt.Sprintf(".%s.srt", subtitleLang), 1),
+			).
+			SetOutput(out).
+			SetTracker(tracker)
+
+		eg.Go(func() error {
+			wg.Wait()
+			err := syncer.Run()
 			if err != nil {
 				return err
 			}
-
 			return nil
 		})
 	}
+	wg.Done()
 	if err := eg.Wait(); err != nil {
 		return err
 	}

@@ -7,10 +7,10 @@ import (
 	"os/exec"
 	"regexp"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/disiqueira/gotree/v3"
-	"github.com/google/uuid"
 	"github.com/jedib0t/go-pretty/v6/progress"
 	"github.com/manifoldco/promptui"
 	"github.com/samber/lo"
@@ -151,7 +151,8 @@ func process(ctx context.Context, w io.Writer, files []*model.File, keepOriginal
 
 	padder := str.NewPadder(lo.Map(files, func(file *model.File, _ int) string { return file.Basename() }))
 
-	trackerIndexedByFile := make(map[uuid.UUID]*progress.Tracker, len(files))
+	wg := sync.WaitGroup{}
+	wg.Add(1)
 	for _, file := range files {
 		paddingLength := padder.PaddingLength(file.Basename(), 1)
 		tracker := &progress.Tracker{
@@ -160,20 +161,21 @@ func process(ctx context.Context, w io.Writer, files []*model.File, keepOriginal
 			Total:      100,
 		}
 		pw.AppendTracker(tracker)
-		trackerIndexedByFile[file.ID()] = tracker
-	}
+		merger := mkvmerge.
+			New(file, keepOriginal).
+			SetOutput(w).
+			SetTracker(tracker)
 
-	for _, file := range files {
-		merger := mkvmerge.New(trackerIndexedByFile[file.ID()], w)
 		eg.Go(func() error {
-			err := merger.Run(file, keepOriginal)
+			wg.Wait()
+			err := merger.Run()
 			if err != nil {
 				return err
 			}
-
 			return nil
 		})
 	}
+	wg.Done()
 	if err := eg.Wait(); err != nil {
 		return err
 	}

@@ -15,39 +15,61 @@ import (
 	"github.com/spf13/viper"
 
 	"github.com/jeremiergz/nas-cli/internal/config"
+	svc "github.com/jeremiergz/nas-cli/internal/service"
 	"github.com/jeremiergz/nas-cli/internal/util"
 	"github.com/jeremiergz/nas-cli/internal/util/cmdutil"
 )
 
-type Process struct {
-	tracker *progress.Tracker
-	w       io.Writer
+var (
+	_ svc.Runnable = (*process)(nil)
+)
+
+type process struct {
+	outFile      string
+	streamLang   string
+	streamType   string
+	subtitle     string
+	subtitleLang string
+	tracker      *progress.Tracker
+	video        string
+	videoLang    string
+	w            io.Writer
 }
 
-func New(tracker *progress.Tracker, out io.Writer) *Process {
-	return &Process{
-		tracker: tracker,
-		w:       out,
+func New(video, videoLang, subtitle, subtitleLang, streamLang, streamType, outFile string) svc.Runnable {
+	return &process{
+		outFile:      outFile,
+		streamLang:   streamLang,
+		streamType:   streamType,
+		subtitle:     subtitle,
+		subtitleLang: subtitleLang,
+		video:        video,
+		videoLang:    videoLang,
+		w:            os.Stdout,
 	}
 }
 
 // Attempts to synchronize given subtitle with given video file.
-func (p *Process) Run(video, videoLang, subtitle, subtitleLang, streamLang, streamType, outFile string) error {
+func (p *process) Run() error {
+	if p.tracker == nil {
+		return fmt.Errorf("required tracker is not set")
+	}
+
 	p.tracker.Start()
 
-	videoPath := path.Join(config.WD, video)
-	subtitlePath := path.Join(config.WD, subtitle)
-	outFilePath := path.Join(config.WD, outFile)
+	videoPath := path.Join(config.WD, p.video)
+	subtitlePath := path.Join(config.WD, p.subtitle)
+	outFilePath := path.Join(config.WD, p.outFile)
 	options := []string{
 		"sync",
 		"--ref",
 		videoPath,
 		"--ref-lang",
-		videoLang,
+		p.videoLang,
 		"--sub",
 		subtitlePath,
 		"--sub-lang",
-		subtitleLang,
+		p.subtitleLang,
 		"--out",
 		outFilePath,
 	}
@@ -56,12 +78,12 @@ func (p *Process) Run(video, videoLang, subtitle, subtitleLang, streamLang, stre
 		options = append(options, configOptions...)
 	}
 
-	if streamLang != "" {
-		options = append(options, "--ref-stream-by-lang", streamLang)
+	if p.streamLang != "" {
+		options = append(options, "--ref-stream-by-lang", p.streamLang)
 	}
 
-	if streamType != "" {
-		options = append(options, "--ref-stream-by-type", streamType)
+	if p.streamType != "" {
+		options = append(options, "--ref-stream-by-type", p.streamType)
 	}
 
 	var buf bytes.Buffer
@@ -96,6 +118,16 @@ func (p *Process) Run(video, videoLang, subtitle, subtitleLang, streamLang, stre
 
 	p.tracker.MarkAsDone()
 	return nil
+}
+
+func (p *process) SetOutput(w io.Writer) svc.Runnable {
+	p.w = w
+	return p
+}
+
+func (p *process) SetTracker(tracker *progress.Tracker) svc.Runnable {
+	p.tracker = tracker
+	return p
 }
 
 func formatPoints(points int) string {
