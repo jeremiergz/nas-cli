@@ -10,9 +10,15 @@ import (
 	"github.com/jeremiergz/nas-cli/internal/config"
 )
 
+const (
+	ExtensionAVI string = "avi"
+	ExtensionMKV string = "mkv"
+	ExtensionMP4 string = "mp4"
+)
+
 var (
 	// List of accepted video extensions.
-	AcceptedVideoExtensions = []string{"avi", "mkv", "mp4"}
+	AcceptedVideoExtensions = []string{ExtensionAVI, ExtensionMKV, ExtensionMP4}
 
 	// Accepted subtitle extension.
 	AcceptedSubtitleExtension = "srt"

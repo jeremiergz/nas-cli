@@ -95,7 +95,7 @@ func (p *process) Run() error {
 
 	go func() {
 		for !p.tracker.IsDone() {
-			progress, err := getProgress(buf.String())
+			progress, err := cmdutil.GetMKVMergeProgress(buf.String())
 			if err == nil {
 				p.tracker.SetValue(int64(progress))
 			}
@@ -146,30 +146,4 @@ func (p *process) SetTracker(tracker *progress.Tracker) svc.Runnable {
 func (p *process) SetOutput(out io.Writer) svc.Runnable {
 	p.w = out
 	return p
-}
-
-var progressRegexp = regexp.MustCompile(`(?m)(?:progress\s+)(?P<Percentage>\d+)(?:%)`)
-
-func getProgress(str string) (percentage int, err error) {
-	allProgressMatches := progressRegexp.FindAllStringSubmatch(str, -1)
-	if len(allProgressMatches) == 0 {
-		return 0, fmt.Errorf("could not find progress percentage")
-	}
-
-	progressMatches := allProgressMatches[len(allProgressMatches)-1]
-
-	if len(progressMatches) != 2 {
-		return 0, fmt.Errorf("could not find progress percentage")
-	}
-
-	percentageIndex := progressRegexp.SubexpIndex("Percentage")
-	if percentageIndex == -1 {
-		return 0, fmt.Errorf("could not determine progress percentage")
-	}
-	percentage, err = strconv.Atoi(progressMatches[percentageIndex])
-	if err != nil {
-		return 0, fmt.Errorf("could not parse progress percentage: %w", err)
-	}
-
-	return percentage, nil
 }

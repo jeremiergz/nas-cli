@@ -3,7 +3,9 @@ package cmdutil
 import (
 	"fmt"
 	"io"
+	"regexp"
 	"slices"
+	"strconv"
 	"strings"
 	"time"
 
@@ -112,4 +114,91 @@ func OnlyValidOutputs() error {
 	}
 
 	return nil
+}
+
+var mkvMergeProgressRegexp = regexp.MustCompile(`(?m)(?:progress\s+)(?P<Percentage>\d+)(?:%)`)
+
+func GetMKVMergeProgress(str string) (percentage int, err error) {
+	allProgressMatches := mkvMergeProgressRegexp.FindAllStringSubmatch(str, -1)
+	if len(allProgressMatches) == 0 {
+		return 0, fmt.Errorf("could not find progress percentage")
+	}
+
+	progressMatches := allProgressMatches[len(allProgressMatches)-1]
+
+	if len(progressMatches) != 2 {
+		return 0, fmt.Errorf("could not find progress percentage")
+	}
+
+	percentageIndex := mkvMergeProgressRegexp.SubexpIndex("Percentage")
+	if percentageIndex == -1 {
+		return 0, fmt.Errorf("could not determine progress percentage")
+	}
+	percentage, err = strconv.Atoi(progressMatches[percentageIndex])
+	if err != nil {
+		return 0, fmt.Errorf("could not parse progress percentage: %w", err)
+	}
+
+	return percentage, nil
+}
+
+var scpProgressRegexp = regexp.MustCompile(`(?m)(?:\s+)(?P<Percentage>\d+)(?:%)(?:\s+)`)
+
+func GetSCPProgress(str string) (percentage int, err error) {
+	allProgressMatches := scpProgressRegexp.FindAllStringSubmatch(str, -1)
+	if len(allProgressMatches) == 0 {
+		return 0, fmt.Errorf("could not find progress percentage")
+	}
+
+	progressMatches := allProgressMatches[len(allProgressMatches)-1]
+
+	if len(progressMatches) != 2 {
+		return 0, fmt.Errorf("could not find progress percentage")
+	}
+
+	percentageIndex := scpProgressRegexp.SubexpIndex("Percentage")
+	if percentageIndex == -1 {
+		return 0, fmt.Errorf("could not determine progress percentage")
+	}
+	percentage, err = strconv.Atoi(progressMatches[percentageIndex])
+	if err != nil {
+		return 0, fmt.Errorf("could not parse progress percentage: %w", err)
+	}
+
+	return percentage, nil
+}
+
+var subsyncProgressRegexp = regexp.MustCompile(`(?m)(?:progress\s+)(?P<Percentage>\d+)(?:%)(?:,\s+)(?P<Points>\d+)(?:\s+points)`)
+
+func GetSubsyncProgress(str string) (percentage int, points int, err error) {
+	allProgressMatches := subsyncProgressRegexp.FindAllStringSubmatch(str, -1)
+	if len(allProgressMatches) == 0 {
+		return 0, 0, fmt.Errorf("could not find progress percentage and points")
+	}
+
+	progressMatches := allProgressMatches[len(allProgressMatches)-1]
+
+	if len(progressMatches) != 3 {
+		return 0, 0, fmt.Errorf("could not find progress percentage and points")
+	}
+
+	percentageIndex := subsyncProgressRegexp.SubexpIndex("Percentage")
+	if percentageIndex == -1 {
+		return 0, 0, fmt.Errorf("could not determine progress percentage")
+	}
+	percentage, err = strconv.Atoi(progressMatches[percentageIndex])
+	if err != nil {
+		return 0, 0, fmt.Errorf("could not parse progress percentage: %w", err)
+	}
+
+	pointsIndex := subsyncProgressRegexp.SubexpIndex("Points")
+	if pointsIndex == -1 {
+		return 0, 0, fmt.Errorf("could not determine progress points")
+	}
+	points, err = strconv.Atoi(progressMatches[pointsIndex])
+	if err != nil {
+		return 0, 0, fmt.Errorf("could not parse progress points: %w", err)
+	}
+
+	return percentage, points, nil
 }
