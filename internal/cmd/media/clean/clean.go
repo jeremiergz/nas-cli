@@ -5,15 +5,16 @@ import (
 	"fmt"
 	"io"
 	"os/exec"
+	"sync"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/jedib0t/go-pretty/v6/progress"
 	"github.com/manifoldco/promptui"
 	"github.com/samber/lo"
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
 
+	"github.com/jeremiergz/nas-cli/internal/cmd/media/clean/internal/clean"
 	"github.com/jeremiergz/nas-cli/internal/config"
 	"github.com/jeremiergz/nas-cli/internal/model"
 	svc "github.com/jeremiergz/nas-cli/internal/service"
@@ -25,6 +26,7 @@ import (
 
 var (
 	cleanDesc         = "Clean tracks using MKVPropEdit tool"
+	delete            bool
 	dryRun            bool
 	subtitleExtension string
 	subtitleLanguages []string
@@ -106,6 +108,7 @@ func New() *cobra.Command {
 		},
 	}
 
+	cmd.Flags().BoolVarP(&delete, "delete", "d", false, "delete original converted files")
 	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "print result without processing it")
 	cmd.Flags().StringArrayVarP(&subtitleLanguages, "language", "l", []string{"eng", "fre"}, "language tracks to merge")
 	cmd.Flags().StringVar(&subtitleExtension, "sub-ext", util.AcceptedSubtitleExtension, "filter subtitles by extension")
@@ -123,31 +126,31 @@ func process(ctx context.Context, w io.Writer, files []*model.File) error {
 
 	padder := str.NewPadder(lo.Map(files, func(file *model.File, _ int) string { return file.Basename() }))
 
-	trackerIndexedByFile := make(map[uuid.UUID]*progress.Tracker, len(files))
+	wg := sync.WaitGroup{}
+	wg.Add(1)
 	for _, file := range files {
 		paddingLength := padder.PaddingLength(file.Basename(), 1)
 		tracker := &progress.Tracker{
 			DeferStart: true,
 			Message:    fmt.Sprintf("%s%*s", file.Basename(), paddingLength, " "),
+			Total:      100,
 		}
 		pw.AppendTracker(tracker)
-		trackerIndexedByFile[file.ID()] = tracker
-	}
+		cleaner := clean.
+			New(file, !delete).
+			SetOutput(w).
+			SetTracker(tracker)
 
-	for _, file := range files {
-		tracker := trackerIndexedByFile[file.ID()]
 		eg.Go(func() error {
-			tracker.Start()
-
-			err := file.Clean()
+			wg.Wait()
+			err := cleaner.Run()
 			if err != nil {
-				tracker.MarkAsErrored()
+				return err
 			}
-
-			tracker.MarkAsDone()
 			return nil
 		})
 	}
+	wg.Done()
 	if err := eg.Wait(); err != nil {
 		return err
 	}

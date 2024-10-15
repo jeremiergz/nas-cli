@@ -10,7 +10,6 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/jeremiergz/nas-cli/internal/model/internal/mkv"
 	"github.com/jeremiergz/nas-cli/internal/util"
 	"github.com/jeremiergz/nas-cli/internal/util/fsutil"
 )
@@ -21,7 +20,6 @@ var (
 
 type MediaFile interface {
 	Basename() string
-	Clean() error
 	Extension() string
 	FilePath() string
 	FullName() string
@@ -55,10 +53,6 @@ func (f *file) Basename() string {
 	return f.basename
 }
 
-func (f *file) Clean() error {
-	return mkv.CleanTracks(f.filePath, f.basename)
-}
-
 func (f *file) Extension() string {
 	return f.extension
 }
@@ -80,6 +74,11 @@ func (f *file) Name() string {
 }
 
 func (f *file) SetFilePath(path string) {
+	if path == "" {
+		panic(ErrEmptyFilePath)
+	}
+	f.basename = filepath.Base(path)
+	f.extension = strings.TrimPrefix(filepath.Ext(path), ".")
 	f.filePath = path
 }
 
