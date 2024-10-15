@@ -118,8 +118,6 @@ func New() *cobra.Command {
 // Merges show language tracks into one video file.
 func process(ctx context.Context, w io.Writer, files []*model.File) error {
 	pw := cmdutil.NewProgressWriter(w, len(files))
-	pw.Style().Visibility.Tracker = false
-	pw.Style().Options.PercentIndeterminate = "   "
 
 	eg, _ := errgroup.WithContext(ctx)
 

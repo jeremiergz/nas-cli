@@ -79,10 +79,8 @@ func NewListWriter() list.Writer {
 func NewProgressWriter(out io.Writer, expectedLength int) progress.Writer {
 	pw := progress.NewWriter()
 	pw.SetOutputWriter(out)
-	pw.SetTrackerLength(25)
 	pw.SetNumTrackersExpected(expectedLength)
 	pw.SetSortBy(progress.SortByNone)
-	pw.SetStyle(progress.StyleCircle)
 	pw.SetTrackerPosition(progress.PositionRight)
 	pw.SetUpdateFrequency(time.Millisecond * 100)
 	pw.Style().Colors = progress.StyleColorsDefault
@@ -90,8 +88,10 @@ func NewProgressWriter(out io.Writer, expectedLength int) progress.Writer {
 	pw.Style().Options.TimeDonePrecision = time.Second
 	pw.Style().Options.TimeInProgressPrecision = time.Second
 	pw.Style().Options.TimeOverallPrecision = time.Second
+	pw.Style().Visibility.Tracker = false
 	pw.Style().Visibility.Value = false
 	pw.Style().Options.DoneString = fmt.Sprintf("  %s", util.StyleSuccess("✔"))
+	pw.Style().Options.PercentIndeterminate = "   "
 	pw.Style().Options.Separator = ""
 	pw.Style().Chars.BoxLeft = ""
 	pw.Style().Chars.BoxRight = ""

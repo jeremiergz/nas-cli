@@ -151,7 +151,7 @@ func process(ctx context.Context, out io.Writer, videoFiles, subtitleFiles []str
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 	for index, videoFile := range videoFiles {
-		paddingLength := padder.PaddingLength(videoFile, 10)
+		paddingLength := padder.PaddingLength(videoFile, 12)
 		tracker := &progress.Tracker{
 			DeferStart: true,
 			Message:    fmt.Sprintf("%s%*s", videoFile, paddingLength, " "),
