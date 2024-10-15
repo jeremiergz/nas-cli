@@ -7,8 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
-	"regexp"
-	"strconv"
+	"path/filepath"
 	"sync"
 	"time"
 
@@ -57,7 +56,7 @@ func (p *process) Run() error {
 		return nil
 	}
 
-	videoFileBackupPath := path.Join(config.WD, fmt.Sprintf("%s%s%s", "_", p.file.Basename(), ".bak"))
+	videoFileBackupPath := filepath.Join(config.WD, fmt.Sprintf("_%s.bak", p.file.Basename()))
 
 	err := os.Rename(p.file.FilePath(), videoFileBackupPath)
 	if err != nil {

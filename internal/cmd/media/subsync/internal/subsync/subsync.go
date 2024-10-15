@@ -6,9 +6,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
-	"path"
-	"regexp"
-	"strconv"
+	"path/filepath"
 	"time"
 
 	"github.com/jedib0t/go-pretty/v6/progress"
@@ -57,9 +55,9 @@ func (p *process) Run() error {
 
 	p.tracker.Start()
 
-	videoPath := path.Join(config.WD, p.video)
-	subtitlePath := path.Join(config.WD, p.subtitle)
-	outFilePath := path.Join(config.WD, p.outFile)
+	videoPath := filepath.Join(config.WD, p.video)
+	subtitlePath := filepath.Join(config.WD, p.subtitle)
+	outFilePath := filepath.Join(config.WD, p.outFile)
 	options := []string{
 		"sync",
 		"--ref",

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"path"
+	"path/filepath"
 
 	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
@@ -87,7 +87,7 @@ func processShows(_ context.Context, w io.Writer, wd string, shows []*model.Show
 			continue
 		}
 
-		showPath := path.Join(wd, show.Name())
+		showPath := filepath.Join(wd, show.Name())
 		fsutil.PrepareDir(showPath, owner, group)
 
 		for _, season := range show.Seasons() {
@@ -106,12 +106,12 @@ func processShows(_ context.Context, w io.Writer, wd string, shows []*model.Show
 				continue
 			}
 
-			seasonPath := path.Join(showPath, season.Name())
+			seasonPath := filepath.Join(showPath, season.Name())
 			fsutil.PrepareDir(seasonPath, owner, group)
 
 			for _, episode := range season.Episodes() {
-				oldPath := path.Join(wd, episode.Basename())
-				newPath := path.Join(seasonPath, episode.FullName())
+				oldPath := filepath.Join(wd, episode.Basename())
+				newPath := filepath.Join(seasonPath, episode.FullName())
 				os.Rename(oldPath, newPath)
 				os.Chown(newPath, owner, group)
 				os.Chmod(newPath, config.FileMode)

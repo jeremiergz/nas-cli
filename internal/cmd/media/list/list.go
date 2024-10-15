@@ -4,7 +4,7 @@ import (
 	"cmp"
 	"fmt"
 	"io/fs"
-	"path"
+	"path/filepath"
 	"slices"
 	"strconv"
 	"strings"
@@ -113,7 +113,7 @@ func process(lst lister, targets []string, nameFilter string) error {
 		filesCount := len(folders[folder])
 		rootTreeHeaderParts = append(rootTreeHeaderParts,
 			fmt.Sprintf("%s (%d result%s)",
-				path.Clean(folder),
+				filepath.Clean(folder),
 				filesCount,
 				lo.Ternary(filesCount > 1, "s", ""),
 			),
@@ -155,7 +155,7 @@ func sortSeasons(seasons []fs.FileInfo) {
 func handleRecursive(mediaKind mediumKind, client *sftp.Client, tree gotree.Tree, destination string, file fs.FileInfo) error {
 	// Handle Movies.
 	if mediaKind == mediumKindMovie {
-		movieFiles, err := client.ReadDir(path.Join(destination, file.Name()))
+		movieFiles, err := client.ReadDir(filepath.Join(destination, file.Name()))
 		if err != nil {
 			return err
 		}
@@ -169,7 +169,7 @@ func handleRecursive(mediaKind mediumKind, client *sftp.Client, tree gotree.Tree
 	}
 
 	// Handle Animes & TVShows the same way.
-	seasons, err := client.ReadDir(path.Join(destination, file.Name()))
+	seasons, err := client.ReadDir(filepath.Join(destination, file.Name()))
 	if err != nil {
 		return err
 	}
@@ -177,7 +177,7 @@ func handleRecursive(mediaKind mediumKind, client *sftp.Client, tree gotree.Tree
 
 	for _, season := range seasons {
 		episodesTree := tree.Add(season.Name())
-		episodes, err := client.ReadDir(path.Join(destination, file.Name(), season.Name()))
+		episodes, err := client.ReadDir(filepath.Join(destination, file.Name(), season.Name()))
 		if err != nil {
 			return err
 		}

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"os/user"
-	"path"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -160,7 +159,7 @@ func init() {
 			sshKnownHosts = strings.Replace(sshKnownHosts, tildeStr, homedir+sep, 1)
 			viper.Set(KeySSHClientKnownHosts, sshKnownHosts)
 		} else {
-			defaultKnownHosts := path.Join(homedir, ".ssh", "known_hosts")
+			defaultKnownHosts := filepath.Join(homedir, ".ssh", "known_hosts")
 			viper.SetDefault(KeySSHClientKnownHosts, defaultKnownHosts)
 		}
 
@@ -169,7 +168,7 @@ func init() {
 			sshPrivateKey = strings.Replace(sshPrivateKey, tildeStr, homedir+sep, 1)
 			viper.Set(KeySSHClientPrivateKey, sshPrivateKey)
 		} else {
-			defaultPrivateKey := path.Join(homedir, ".ssh", "id_rsa")
+			defaultPrivateKey := filepath.Join(homedir, ".ssh", "id_rsa")
 			viper.SetDefault(KeySSHClientPrivateKey, defaultPrivateKey)
 		}
 
@@ -280,7 +279,7 @@ func Save() error {
 		},
 	}
 
-	file, err := os.Create(path.Join(Dir, Filename))
+	file, err := os.Create(filepath.Join(Dir, Filename))
 	if err != nil {
 		return fmt.Errorf("could not open file for write: %v", err)
 	}

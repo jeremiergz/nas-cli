@@ -5,7 +5,7 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"path"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -188,21 +188,21 @@ func Test_Show_With_Name_Override(t *testing.T) {
 func assertSameshowTree(t *testing.T, expected map[string]map[string][]string, dir string) {
 	t.Helper()
 	for show, seasons := range expected {
-		showPath := path.Join(dir, show)
+		showPath := filepath.Join(dir, show)
 		dirInfo, err := os.Stat(showPath)
 
 		if err != nil {
 			t.Errorf("Unexpected error: %v", err)
 		} else if dirInfo.IsDir() {
 			for season, files := range seasons {
-				seasonPath := path.Join(showPath, season)
+				seasonPath := filepath.Join(showPath, season)
 				dirInfo, err = os.Stat(seasonPath)
 
 				if err != nil {
 					t.Errorf("Unexpected error: %v", err)
 				} else if dirInfo.IsDir() {
 					for _, file := range files {
-						filePath := path.Join(seasonPath, file)
+						filePath := filepath.Join(seasonPath, file)
 						fileInfo, err := os.Stat(filePath)
 
 						if err != nil {
@@ -224,6 +224,6 @@ func assertSameshowTree(t *testing.T, expected map[string]map[string][]string, d
 func prepareShows(t *testing.T, dir string, files []string) {
 	t.Helper()
 	for _, file := range files {
-		os.Create(path.Join(dir, file))
+		os.Create(filepath.Join(dir, file))
 	}
 }

@@ -2,7 +2,7 @@ package model
 
 import (
 	"fmt"
-	"path"
+	"path/filepath"
 	"regexp"
 
 	"golang.org/x/text/cases"
@@ -53,7 +53,7 @@ func Shows(wd string, extensions []string, subtitleExtension string, subtitleLan
 			seasonName := fmt.Sprintf("Season %d", e.Season)
 			seasonIndex := findShowSeasonIndex(seasonName, show.Seasons())
 
-			f, err := newFile(basename, e.Container, path.Join(wd, basename))
+			f, err := newFile(basename, e.Container, filepath.Join(wd, basename))
 			if err != nil {
 				return nil, err
 			}

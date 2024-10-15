@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"path"
+	"path/filepath"
 	"strconv"
 
 	"github.com/manifoldco/promptui"
@@ -103,14 +103,14 @@ func processMovies(_ context.Context, w io.Writer, wd string, movies []*model.Mo
 		m.SetName(titleInput)
 		m.SetYear(yearInt)
 
-		newDir := path.Join(wd, m.FullName())
+		newDir := filepath.Join(wd, m.FullName())
 		err = os.MkdirAll(newDir, config.DirectoryMode)
 		if err != nil {
 			return fmt.Errorf("could not create directory %s: %w", newDir, err)
 		}
 
-		currentFilepath := path.Join(wd, m.Basename())
-		newFilepath := path.Join(newDir, fmt.Sprintf("%s.%s", m.FullName(), m.Extension()))
+		currentFilepath := filepath.Join(wd, m.Basename())
+		newFilepath := filepath.Join(newDir, fmt.Sprintf("%s.%s", m.FullName(), m.Extension()))
 		err = os.Rename(currentFilepath, newFilepath)
 		if err != nil {
 			return fmt.Errorf("could not rename %s to %s: %w", currentFilepath, newFilepath, err)
