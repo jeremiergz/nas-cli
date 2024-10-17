@@ -46,6 +46,10 @@ func New() *cobra.Command {
 		Long:    subsyncDesc + ".",
 		Args:    cobra.MinimumNArgs(1),
 		PreRunE: func(cmd *cobra.Command, args []string) error {
+			if cmdutil.DebugMode {
+				fmt.Fprintf(cmd.OutOrStdout(), "%s PreRunE\n", cmd.CommandPath())
+			}
+
 			_, err := exec.LookPath(cmdutil.CommandSubsync)
 			if err != nil {
 				return fmt.Errorf("command not found: %s", cmdutil.CommandSubsync)

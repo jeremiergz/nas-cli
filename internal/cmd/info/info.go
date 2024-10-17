@@ -24,6 +24,10 @@ func New() *cobra.Command {
 		Short: infoDesc,
 		Long:  infoDesc + ".",
 		PreRunE: func(cmd *cobra.Command, args []string) error {
+			if cmdutil.DebugMode {
+				fmt.Fprintf(cmd.OutOrStdout(), "%s PreRunE\n", cmd.CommandPath())
+			}
+
 			err := cmdutil.OnlyValidOutputs()
 			if err != nil {
 				return err
