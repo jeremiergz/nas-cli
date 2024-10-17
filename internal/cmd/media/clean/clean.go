@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"io"
 	"os/exec"
+	"regexp"
+	"strings"
 	"sync"
 	"time"
 
@@ -28,10 +30,13 @@ var (
 	cleanDesc         = "Clean tracks using MKVPropEdit tool"
 	delete            bool
 	dryRun            bool
+	languageRegions   []string
 	subtitleExtension string
 	subtitleLanguages []string
 	videoExtensions   []string
 	yes               bool
+
+	langRegionRegexp = regexp.MustCompile(`^[a-z]{3}=[a-z]{2}-[a-z]{2}$`)
 )
 
 func New() *cobra.Command {
@@ -59,6 +64,26 @@ func New() *cobra.Command {
 			err = fsutil.InitializeWorkingDir(args[0])
 			if err != nil {
 				return err
+			}
+
+			if len(languageRegions) > 0 {
+				flag := cmd.Flag("lang-region")
+				for _, region := range languageRegions {
+					isValid := langRegionRegexp.MatchString(region)
+					if !isValid {
+						flagNames := []string{}
+						if flag.Shorthand != "" {
+							flagNames = append(flagNames, fmt.Sprintf("-%s", flag.Shorthand))
+						}
+						flagNames = append(flagNames, fmt.Sprintf("--%s", flag.Name))
+						flagStr := strings.Join(flagNames, ", ")
+						return fmt.Errorf(`invalid argument %q for %q flag: expected format is "lang=region"`, region, flagStr)
+					}
+					parts := strings.Split(region, "=")
+					lang := parts[0]
+					region := parts[1]
+					util.SetDefaultLanguageRegion(lang, region)
+				}
 			}
 
 			return nil
@@ -110,6 +135,7 @@ func New() *cobra.Command {
 
 	cmd.Flags().BoolVarP(&delete, "delete", "d", false, "delete original converted files")
 	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "print result without processing it")
+	cmd.Flags().StringArrayVar(&languageRegions, "lang-region", nil, "override default language regions")
 	cmd.Flags().StringArrayVarP(&subtitleLanguages, "language", "l", []string{"eng", "fre"}, "language tracks to merge")
 	cmd.Flags().StringVar(&subtitleExtension, "sub-ext", util.AcceptedSubtitleExtension, "filter subtitles by extension")
 	cmd.Flags().StringArrayVarP(&videoExtensions, "video-ext", "e", util.AcceptedVideoExtensions, "filter video files by extension")
