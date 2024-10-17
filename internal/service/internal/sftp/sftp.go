@@ -2,14 +2,13 @@ package sftp
 
 import (
 	"github.com/pkg/sftp"
-	"golang.org/x/crypto/ssh"
 
 	sshsvc "github.com/jeremiergz/nas-cli/internal/service/internal/ssh"
 )
 
 type Service struct {
 	Client *sftp.Client
-	ssh    *ssh.Client
+	ssh    *sshsvc.Service
 }
 
 func New() *Service {
@@ -33,20 +32,22 @@ func (s *Service) Connect() error {
 	)
 
 	if err != nil {
-		s.ssh.Conn.Close()
+		s.ssh.Client.Conn.Close()
 		sftpClient.Close()
-
 		return err
 	}
 
 	s.Client = sftpClient
-	s.ssh = sshSvc.Client
+	s.ssh = sshSvc
 
 	return nil
 }
 
 func (s *Service) Disconnect() error {
-	s.ssh.Conn.Close()
-
+	_ = s.ssh.Client.Conn.Close()
 	return s.Client.Close()
+}
+
+func (s *Service) SendCommands(cmds ...string) ([]byte, error) {
+	return s.ssh.SendCommands(cmds...)
 }
