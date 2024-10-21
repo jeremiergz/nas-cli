@@ -28,13 +28,14 @@ type Movie struct {
 // Lists movies in given folder.
 //
 // Result can be filtered by extensions.
-func Movies(wd string, extensions []string) ([]*Movie, error) {
-	toProcess := fsutil.List(wd, extensions, nil)
+func Movies(wd string, extensions []string, recursive bool) ([]*Movie, error) {
+	toProcess := fsutil.List(wd, extensions, nil, recursive)
 	movies := []*Movie{}
-	for _, basename := range toProcess {
+	for _, path := range toProcess {
+		basename := filepath.Base(path)
 		parsed, err := parser.Parse(basename)
 		if err == nil {
-			f, err := newFile(basename, parsed.Container, filepath.Join(wd, basename))
+			f, err := newFile(basename, parsed.Container, filepath.Join(wd, path))
 			if err != nil {
 				return nil, err
 			}

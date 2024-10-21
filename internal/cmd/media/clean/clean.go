@@ -91,7 +91,7 @@ func New() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			out := cmd.OutOrStdout()
 
-			files, err := model.Files(config.WD, videoExtensions)
+			files, err := model.Files(config.WD, videoExtensions, false)
 			if err != nil {
 				return err
 			}

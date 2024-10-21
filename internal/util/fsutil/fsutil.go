@@ -3,7 +3,6 @@ package fsutil
 import (
 	"fmt"
 	"os"
-	"path"
 	"path/filepath"
 	"regexp"
 	"slices"
@@ -24,21 +23,34 @@ func InitializeWorkingDir(path string) error {
 }
 
 // Lists files in directory with filter on extensions and regular expression.
-func List(wd string, extensions []string, regExp *regexp.Regexp) []string {
-	files, _ := os.ReadDir(wd)
+func List(wd string, extensions []string, regExp *regexp.Regexp, recursive bool) []string {
+	fileList := []string{}
+	filepath.WalkDir(wd, func(path string, entry os.DirEntry, err error) error {
+		if err != nil || path == wd {
+			return nil
+		}
 
-	filesList := []string{}
-	for _, f := range files {
-		ext := strings.Replace(path.Ext(f.Name()), ".", "", 1)
+		relPath, _ := filepath.Rel(wd, path)
+		if !recursive && strings.Contains(relPath, string(filepath.Separator)) {
+			return filepath.SkipDir
+		}
+
+		ext := strings.Replace(filepath.Ext(path), ".", "", 1)
 		isValidExt := slices.Contains(extensions, ext)
-		shouldProcess := !f.IsDir() && isValidExt
-		if shouldProcess {
-			if regExp == nil || !regExp.Match([]byte(f.Name())) {
-				filesList = append(filesList, f.Name())
+		if !isValidExt {
+			return nil
+		}
+
+		if !entry.IsDir() {
+			if regExp == nil || !regExp.Match([]byte(entry.Name())) {
+				fileList = append(fileList, relPath)
 			}
 		}
-	}
-	return filesList
+
+		return nil
+	})
+
+	return fileList
 }
 
 // Creates target directory, setting its mode to 755 and setting ownership.

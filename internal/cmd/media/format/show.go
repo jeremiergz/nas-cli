@@ -30,7 +30,7 @@ func newShowCmd() *cobra.Command {
 		Long:    showDesc + ".",
 		Args:    cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			shows, err := model.Shows(config.WD, extensions, "", nil, false)
+			shows, err := model.Shows(config.WD, extensions, false, "", nil, false)
 			if err != nil {
 				return err
 			}

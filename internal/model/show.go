@@ -27,15 +27,16 @@ type Show struct {
 	episodesCount int
 }
 
-func Shows(wd string, extensions []string, subtitleExtension string, subtitleLangs []string, anyFiles bool) ([]*Show, error) {
+func Shows(wd string, extensions []string, recursive bool, subtitleExtension string, subtitleLangs []string, anyFiles bool) ([]*Show, error) {
 	var selectedRegexp *regexp.Regexp
 	if !anyFiles {
 		selectedRegexp = showFmtRegexp
 	}
 
-	toProcess := fsutil.List(wd, extensions, selectedRegexp)
+	toProcess := fsutil.List(wd, extensions, selectedRegexp, recursive)
 	shows := []*Show{}
-	for _, basename := range toProcess {
+	for _, path := range toProcess {
+		basename := filepath.Base(path)
 		e, err := parser.Parse(basename)
 
 		e.Title = episodeNameCaser.String(e.Title)
@@ -53,7 +54,7 @@ func Shows(wd string, extensions []string, subtitleExtension string, subtitleLan
 			seasonName := fmt.Sprintf("Season %d", e.Season)
 			seasonIndex := findShowSeasonIndex(seasonName, show.Seasons())
 
-			f, err := newFile(basename, e.Container, filepath.Join(wd, basename))
+			f, err := newFile(basename, e.Container, filepath.Join(wd, path))
 			if err != nil {
 				return nil, err
 			}

@@ -42,10 +42,10 @@ func newFile(basename, extension, filePath string) (*file, error) {
 		return nil, ErrEmptyFilePath
 	}
 	return &file{
+		id:        uuid.New(),
 		basename:  basename,
 		extension: extension,
 		filePath:  filePath,
-		id:        uuid.New(),
 	}, nil
 }
 
@@ -136,13 +136,14 @@ type File struct {
 // Lists files in given folder.
 //
 // Result can be filtered by extensions.
-func Files(wd string, extensions []string) ([]*File, error) {
-	toProcess := fsutil.List(wd, extensions, nil)
+func Files(wd string, extensions []string, recursive bool) ([]*File, error) {
+	toProcess := fsutil.List(wd, extensions, nil, recursive)
 	files := []*File{}
-	for _, basename := range toProcess {
+	for _, path := range toProcess {
+		basename := filepath.Base(path)
 		extension := strings.TrimPrefix(filepath.Ext(basename), ".")
 
-		f, err := newFile(basename, extension, filepath.Join(wd, basename))
+		f, err := newFile(basename, extension, filepath.Join(wd, path))
 		if err != nil {
 			return nil, err
 		}

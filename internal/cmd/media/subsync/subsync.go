@@ -65,13 +65,13 @@ func New() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			out := cmd.OutOrStdout()
 
-			subtitleFiles := fsutil.List(config.WD, []string{subtitleExtension}, nil)
+			subtitleFiles := fsutil.List(config.WD, []string{subtitleExtension}, nil, false)
 			if len(subtitleFiles) == 0 {
 				svc.Console.Success("No subtitle file to process")
 				return nil
 			}
 
-			videoFiles := fsutil.List(config.WD, videoExtensions, nil)
+			videoFiles := fsutil.List(config.WD, videoExtensions, nil, false)
 			if len(videoFiles) == 0 {
 				svc.Console.Success("No video file to process")
 				return nil
