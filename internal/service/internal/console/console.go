@@ -1,11 +1,13 @@
 package console
 
 import (
+	"bufio"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 	"regexp"
+	"strings"
 
 	"github.com/disiqueira/gotree/v3"
 	"github.com/manifoldco/promptui"
@@ -105,4 +107,72 @@ func (s *Service) PrintShows(wd string, shows []*model.Show) {
 	toPrint = lastSpaceRegexp.ReplaceAllString(toPrint, "")
 
 	fmt.Fprintln(s.w, toPrint)
+}
+
+func (s *Service) AskConfirmation(label string, yesByDefault bool) bool {
+	choices := "Y/n"
+	if !yesByDefault {
+		choices = "y/N"
+	}
+
+	fmt.Fprintf(s.w, "%s %s [%s] ", s.Blue("?"), label, choices)
+
+	var result bool
+	for {
+		r := bufio.NewReader(os.Stdin)
+		str, err := r.ReadString('\n')
+		if err != nil {
+			fmt.Fprintln(s.w)
+			result = false
+			break
+		}
+
+		str = strings.TrimSpace(str)
+		if str == "" {
+			result = yesByDefault
+			break
+		}
+		str = strings.ToLower(str)
+		if str == "y" || str == "yes" {
+			result = true
+			break
+		}
+		if str == "n" || str == "no" {
+			result = false
+			break
+		}
+	}
+
+	// fmt.Fprintf(s.w, "\x1b[2K")
+	fmt.Printf("\033[2K\r%s %s  %s  \n",
+		lo.Ternary(result, s.Green("✔"), s.Red("✖")),
+		label,
+		strings.Repeat(" ", len(choices)),
+	)
+
+	return result
+}
+
+var (
+	reset = "\033[0m"
+	blue  = "\033[34m"
+	gray  = "\033[37m"
+	green = "\033[32m"
+	red   = "\033[31m"
+)
+
+func (s *Service) Blue(label string) string {
+	return fmt.Sprintf("%s%s%s", blue, label, reset)
+}
+
+func (s *Service) Gray(label string) string {
+	return fmt.Sprintf("%s%s%s", gray, label, reset)
+}
+
+func (s *Service) Green(label string) string {
+	return fmt.Sprintf("%s%s%s", green, label, reset)
+}
+
+func (s *Service) Red(label string) string {
+	return fmt.Sprintf("%s%s%s", red, label, reset)
 }
