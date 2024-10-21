@@ -61,6 +61,7 @@ type properties struct {
 	EnabledTrack              bool   `json:"enabled_track,omitempty"`
 	ForcedTrack               bool   `json:"forced_track,omitempty"`
 	Language                  string `json:"language,omitempty"`
+	LanguageIETF              string `json:"language_ietf,omitempty"`
 	Number                    int    `json:"number,omitempty"`
 	Packetizer                string `json:"packetizer,omitempty"`
 	PixelDimensions           string `json:"pixel_dimensions,omitempty"`

@@ -163,7 +163,7 @@ func (p *process) cleanTracks() error {
 				"--edit",
 				fmt.Sprintf("track:a%d", audioTrackNumber),
 				"--set",
-				fmt.Sprintf("language=%s", util.ToLanguageRegionalized(track.Properties.Language)),
+				fmt.Sprintf("language=%s", util.ToLanguageRegionalized(track.Properties.LanguageIETF)),
 				"--set",
 				"name=",
 			)
@@ -180,7 +180,7 @@ func (p *process) cleanTracks() error {
 				"--edit",
 				fmt.Sprintf("track:s%d", subtitleTrackNumber),
 				"--set",
-				fmt.Sprintf("language=%s", util.ToLanguageRegionalized(track.Properties.Language)),
+				fmt.Sprintf("language=%s", util.ToLanguageRegionalized(track.Properties.LanguageIETF)),
 				"--set",
 				fmt.Sprintf("name=%s", util.ToLanguageDisplayName(track.Properties.Language, isForced)),
 			)

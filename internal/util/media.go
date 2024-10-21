@@ -135,23 +135,23 @@ func ToLanguageFlag(lang string) string {
 
 var (
 	langRegionalsMapping = map[string]map[string]string{
-		"eng": {
+		"en": {
 			"":   "eng-us", // English (Default).
 			"ca": "eng-ca", // English (Canada).
 			"uk": "eng-uk", // English (UK).
 			"us": "eng-us", // English (US).
 		},
-		"fre": {
+		"fr": {
 			"":   "fre-fr", // French (Default).
 			"ca": "fre-ca", // French (Canada).
 			"fr": "fre-fr", // French (France).
 		},
-		"ger": {
+		"de": {
 			"":   "ger-de", // German (Default).
 			"at": "ger-at", // German (Austria).
 			"de": "ger-de", // German (Germany).
 		},
-		"spa": {
+		"es": {
 			"":   "spa-es", // Spanish (Default).
 			"es": "spa-es", // Spanish (Spain).
 			"mx": "spa-mx", // Spanish (Mexico).
