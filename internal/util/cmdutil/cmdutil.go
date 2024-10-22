@@ -19,7 +19,7 @@ import (
 const (
 	CommandMKVMerge    string = "mkvmerge"
 	CommandMKVPropEdit string = "mkvpropedit"
-	CommandSCP         string = "scp"
+	CommandRsync       string = "rsync"
 	CommandSubsync     string = "subsync"
 )
 
@@ -142,10 +142,10 @@ func GetMKVMergeProgress(str string) (percentage int, err error) {
 	return percentage, nil
 }
 
-var scpProgressRegexp = regexp.MustCompile(`(?m)(?:\s+)(?P<Percentage>\d+)(?:%)(?:\s+)`)
+var rsyncProgressRegexp = regexp.MustCompile(`(?m)(?:\s+)(?P<Percentage>\d+)(?:%)(?:\s+)`)
 
-func GetSCPProgress(str string) (percentage int, err error) {
-	allProgressMatches := scpProgressRegexp.FindAllStringSubmatch(str, -1)
+func GetRsyncProgress(str string) (percentage int, err error) {
+	allProgressMatches := rsyncProgressRegexp.FindAllStringSubmatch(str, -1)
 	if len(allProgressMatches) == 0 {
 		return 0, fmt.Errorf("could not find progress percentage")
 	}
@@ -156,7 +156,7 @@ func GetSCPProgress(str string) (percentage int, err error) {
 		return 0, fmt.Errorf("could not find progress percentage")
 	}
 
-	percentageIndex := scpProgressRegexp.SubexpIndex("Percentage")
+	percentageIndex := rsyncProgressRegexp.SubexpIndex("Percentage")
 	if percentageIndex == -1 {
 		return 0, fmt.Errorf("could not determine progress percentage")
 	}

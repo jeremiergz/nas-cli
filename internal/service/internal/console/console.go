@@ -115,7 +115,7 @@ func (s *Service) AskConfirmation(label string, yesByDefault bool) bool {
 		choices = "y/N"
 	}
 
-	fmt.Fprintf(s.w, "%s %s [%s] ", s.Blue("?"), label, choices)
+	fmt.Fprintf(s.w, "%s %s? [%s] ", s.Blue("?"), label, s.Gray(choices))
 
 	var result bool
 	for {
@@ -143,11 +143,10 @@ func (s *Service) AskConfirmation(label string, yesByDefault bool) bool {
 		}
 	}
 
-	// fmt.Fprintf(s.w, "\x1b[2K")
-	fmt.Printf("\033[2K\r%s %s  %s  \n",
+	fmt.Printf("\033[1A\033[K%s %s  %s\n",
 		lo.Ternary(result, s.Green("✔"), s.Red("✖")),
 		label,
-		strings.Repeat(" ", len(choices)),
+		s.Gray(lo.Ternary(result, "yes", "no")),
 	)
 
 	return result
@@ -156,7 +155,7 @@ func (s *Service) AskConfirmation(label string, yesByDefault bool) bool {
 var (
 	reset = "\033[0m"
 	blue  = "\033[34m"
-	gray  = "\033[37m"
+	gray  = "\033[90m"
 	green = "\033[32m"
 	red   = "\033[31m"
 )

@@ -18,7 +18,7 @@ import (
 	"github.com/spf13/viper"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/jeremiergz/nas-cli/internal/cmd/media/scp/internal/scp"
+	"github.com/jeremiergz/nas-cli/internal/cmd/media/scp/internal/rsync"
 	"github.com/jeremiergz/nas-cli/internal/config"
 	"github.com/jeremiergz/nas-cli/internal/model"
 	svc "github.com/jeremiergz/nas-cli/internal/service"
@@ -55,9 +55,9 @@ func New() *cobra.Command {
 				return err
 			}
 
-			_, err = exec.LookPath(cmdutil.CommandSCP)
+			_, err = exec.LookPath(cmdutil.CommandRsync)
 			if err != nil {
-				return fmt.Errorf("command not found: %s", cmdutil.CommandSCP)
+				return fmt.Errorf("command not found: %s", cmdutil.CommandRsync)
 			}
 
 			err = fsutil.InitializeWorkingDir(args[0])
@@ -269,7 +269,7 @@ func process(ctx context.Context, out io.Writer, uploads []*upload) error {
 			Total:      100,
 		}
 		pw.AppendTracker(tracker)
-		uploader := scp.
+		uploader := rsync.
 			New(upload.File, upload.Destination, !delete).
 			SetOutput(out).
 			SetTracker(tracker)

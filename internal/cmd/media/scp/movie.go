@@ -11,7 +11,7 @@ import (
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/jeremiergz/nas-cli/internal/cmd/media/scp/internal/scp"
+	"github.com/jeremiergz/nas-cli/internal/cmd/media/scp/internal/rsync"
 	"github.com/jeremiergz/nas-cli/internal/config"
 	"github.com/jeremiergz/nas-cli/internal/model"
 	svc "github.com/jeremiergz/nas-cli/internal/service"
@@ -44,8 +44,8 @@ func newMovieCmd() *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			out := cmd.OutOrStdout()
 			ctx := cmd.Context()
+			out := cmd.OutOrStdout()
 
 			movies, err := model.Movies(config.WD, []string{util.ExtensionMKV}, recursive)
 			if err != nil {
@@ -61,7 +61,7 @@ func newMovieCmd() *cobra.Command {
 			moviesToProcess := []*model.Movie{}
 			for _, movie := range movies {
 				if !yes {
-					process := svc.Console.AskConfirmation(fmt.Sprintf("Process %q?", movie.Name()), true)
+					process := svc.Console.AskConfirmation(fmt.Sprintf("Process %q", movie.FullName()), true)
 					if !process {
 						continue
 					}
@@ -69,13 +69,11 @@ func newMovieCmd() *cobra.Command {
 				moviesToProcess = append(moviesToProcess, movie)
 			}
 
-			fmt.Println("moviesToProcess", moviesToProcess)
-
-			return nil
-
 			if len(moviesToProcess) == 0 {
 				return nil
 			}
+
+			fmt.Fprintln(out)
 
 			wg := sync.WaitGroup{}
 			wg.Add(1)
@@ -87,8 +85,10 @@ func newMovieCmd() *cobra.Command {
 					Total:      100,
 				}
 				pw.AppendTracker(tracker)
-				uploader := scp.
-					New(movie, filepath.Join(remoteDirWithLowestUsage, movie.FullName(), movie.Basename()), !delete).
+				destPath := filepath.Join(remoteDirWithLowestUsage, movie.FullName(), movie.Basename())
+
+				uploader := rsync.
+					New(movie, destPath, !delete).
 					SetOutput(out).
 					SetTracker(tracker)
 
