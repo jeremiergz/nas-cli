@@ -103,15 +103,15 @@ func New() *cobra.Command {
 		},
 	}
 
-	cmd.PersistentFlags().BoolVar(&dryRun, "dry-run", false, "print result without processing it")
-	cmd.PersistentFlags().IntVarP(&maxParallel, "max-parallel", "p", 0, "maximum number of parallel processes. 0 means no limit")
-	cmd.PersistentFlags().StringVar(&streamLang, "stream", "eng", "stream ISO 639-3 language code")
-	cmd.PersistentFlags().StringVar(&streamType, "stream-type", "", "stream type (audio|sub)")
-	cmd.PersistentFlags().StringVar(&subtitleExtension, "sub-ext", util.AcceptedSubtitleExtension, "filter subtitles by extension")
-	cmd.PersistentFlags().StringVar(&subtitleLang, "sub-lang", "eng", "subtitle ISO 639-3 language code")
-	cmd.PersistentFlags().StringArrayVarP(&videoExtensions, "video-ext", "e", util.AcceptedVideoExtensions, "filter video files by extension")
-	cmd.PersistentFlags().StringVar(&videoLang, "video-lang", "eng", "video ISO 639-3 language code")
-	cmd.PersistentFlags().BoolVarP(&yes, "yes", "y", false, "automatic yes to prompts")
+	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "print result without processing it")
+	cmd.Flags().IntVarP(&maxParallel, "max-parallel", "p", 0, "maximum number of parallel processes. 0 means no limit")
+	cmd.Flags().StringVar(&streamLang, "stream", "eng", "stream ISO 639-3 language code")
+	cmd.Flags().StringVar(&streamType, "stream-type", "", "stream type (audio|sub)")
+	cmd.Flags().StringVar(&subtitleExtension, "sub-ext", util.AcceptedSubtitleExtension, "filter subtitles by extension")
+	cmd.Flags().StringVar(&subtitleLang, "sub-lang", "eng", "subtitle ISO 639-3 language code")
+	cmd.Flags().StringArrayVarP(&videoExtensions, "video-ext", "e", util.AcceptedVideoExtensions, "filter video files by extension")
+	cmd.Flags().StringVar(&videoLang, "video-lang", "eng", "video ISO 639-3 language code")
+	cmd.Flags().BoolVarP(&yes, "yes", "y", false, "automatic yes to prompts")
 
 	return cmd
 }
