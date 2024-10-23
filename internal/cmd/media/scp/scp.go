@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/jedib0t/go-pretty/v6/progress"
+	"github.com/samber/lo"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"golang.org/x/sync/errgroup"
@@ -21,6 +22,7 @@ import (
 	"github.com/jeremiergz/nas-cli/internal/config"
 	"github.com/jeremiergz/nas-cli/internal/model"
 	svc "github.com/jeremiergz/nas-cli/internal/service"
+	"github.com/jeremiergz/nas-cli/internal/service/str"
 	"github.com/jeremiergz/nas-cli/internal/util/cmdutil"
 	"github.com/jeremiergz/nas-cli/internal/util/fsutil"
 )
@@ -182,72 +184,10 @@ func getDiskUsage(str, path string) (percentage int, err error) {
 	return percentage, nil
 }
 
-// Uploads files & folders to configured destination using SFTP.
-// func process(ctx context.Context, out io.Writer, files []string, destination string, subdestination string) error {
-// 	sftpSvc := ctxutil.Singleton[*sftpsvc.Service](ctx)
-
-// 	err := sftpSvc.Connect()
-// 	if err != nil {
-// 		return err
-// 	}
-// 	defer sftpSvc.Disconnect()
-
-// 	pw := cmdutil.NewProgressWriter(out, len(files))
-// 	go pw.Render()
-
-// 	eg, _ := errgroup.WithContext(ctx)
-// 	eg.SetLimit(cmdutil.MaxConcurrentGoroutines)
-// 	if maxParallel > 0 {
-// 		eg.SetLimit(maxParallel)
-// 	}
-
-// 	destinationDir := filepath.Join(destination, subdestination)
-
-// 	for _, srcFile := range files {
-// 		tracker := &progress.Tracker{
-// 			DeferStart: true,
-// 			Message:    srcFile,
-// 			Total:      100,
-// 		}
-// 		pw.AppendTracker(tracker)
-// 		eg.Go(func() error {
-// 			destinationFile := filepath.Join(destinationDir, filepath.Base(srcFile))
-// 			err := internal.Upload(
-// 				ctx,
-// 				sftpSvc.Client,
-// 				tracker,
-// 				srcFile,
-// 				destinationFile,
-// 			)
-// 			if err != nil {
-// 				tracker.MarkAsErrored()
-// 				return err
-// 			}
-// 			tracker.MarkAsDone()
-// 			return nil
-// 		})
-// 	}
-// 	if err := eg.Wait(); err != nil {
-// 		return err
-// 	}
-
-// 	if delete {
-// 		for _, asset := range assets {
-// 			eg.Go(func() error {
-// 				return os.RemoveAll(asset)
-// 			})
-// 		}
-// 	}
-// 	if err := eg.Wait(); err != nil {
-// 		return err
-// 	}
-
-// 	return nil
-// }
-
 type upload struct {
-	File        *model.File
+	File        model.MediaFile
 	Destination string
+	DisplayName string
 }
 
 func process(ctx context.Context, out io.Writer, uploads []*upload) error {
@@ -259,14 +199,42 @@ func process(ctx context.Context, out io.Writer, uploads []*upload) error {
 		eg.SetLimit(maxParallel)
 	}
 
-	uploaders := make([]svc.Runnable, len(uploads))
-	for index, upload := range uploads {
+	uploadsToProcess := []*upload{}
+	for _, upload := range uploads {
+		if !yes {
+			shouldProcess := svc.Console.AskConfirmation(
+				fmt.Sprintf(
+					"Process %q? -> %s",
+					upload.DisplayName,
+					svc.Console.Gray(upload.Destination),
+				),
+				true,
+			)
+			if !shouldProcess {
+				continue
+			}
+		}
+		uploadsToProcess = append(uploadsToProcess, upload)
+	}
+
+	if len(uploadsToProcess) == 0 {
+		return nil
+	}
+
+	fmt.Fprintln(out)
+
+	padder := str.NewPadder(lo.Map(uploadsToProcess, func(u *upload, _ int) string { return u.DisplayName }))
+
+	uploaders := make([]svc.Runnable, len(uploadsToProcess))
+	for index, upload := range uploadsToProcess {
+		paddingLength := padder.PaddingLength(upload.DisplayName, 1)
 		tracker := &progress.Tracker{
 			DeferStart: true,
-			Message:    upload.File.FilePath(),
+			Message:    fmt.Sprintf("%s%*s", upload.DisplayName, paddingLength, " "),
 			Total:      100,
 		}
 		pw.AppendTracker(tracker)
+
 		uploader := rsync.
 			New(upload.File, upload.Destination, !delete).
 			SetOutput(out).
