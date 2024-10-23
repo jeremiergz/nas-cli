@@ -274,13 +274,9 @@ func process(ctx context.Context, out io.Writer, uploads []*upload) error {
 			SetOutput(out).
 			SetTracker(tracker)
 
-		eg.Go(func() error {
+		eg.TryGo(func() error {
 			wg.Wait()
-			err := uploader.Run()
-			if err != nil {
-				return err
-			}
-			return nil
+			return uploader.Run()
 		})
 	}
 	wg.Done()

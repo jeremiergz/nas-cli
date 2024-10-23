@@ -55,14 +55,21 @@ func newMovieCmd() *cobra.Command {
 			pw := cmdutil.NewProgressWriter(out, len(movies))
 
 			eg, _ := errgroup.WithContext(ctx)
+			eg.SetLimit(cmdutil.MaxConcurrentGoroutines)
+			if maxParallel > 0 {
+				eg.SetLimit(maxParallel)
+			}
 
 			padder := str.NewPadder(lo.Map(movies, func(file *model.Movie, _ int) string { return file.Basename() }))
 
 			moviesToProcess := []*model.Movie{}
 			for _, movie := range movies {
 				if !yes {
-					process := svc.Console.AskConfirmation(fmt.Sprintf("Process %q", movie.FullName()), true)
-					if !process {
+					shouldProcess := svc.Console.AskConfirmation(
+						fmt.Sprintf("Process %q", movie.FullName()),
+						true,
+					)
+					if !shouldProcess {
 						continue
 					}
 				}
@@ -92,13 +99,9 @@ func newMovieCmd() *cobra.Command {
 					SetOutput(out).
 					SetTracker(tracker)
 
-				eg.Go(func() error {
+				eg.TryGo(func() error {
 					wg.Wait()
-					err := uploader.Run()
-					if err != nil {
-						return err
-					}
-					return nil
+					return uploader.Run()
 				})
 			}
 			wg.Done()

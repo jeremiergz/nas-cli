@@ -114,7 +114,6 @@ func (p *process) Run() error {
 			}(backupFile)
 		}
 		wg.Wait()
-
 		p.tracker.MarkAsErrored()
 		return err
 	}

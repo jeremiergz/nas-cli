@@ -175,13 +175,9 @@ func process(ctx context.Context, out io.Writer, videoFiles, subtitleFiles []str
 			SetOutput(out).
 			SetTracker(tracker)
 
-		eg.Go(func() error {
+		eg.TryGo(func() error {
 			wg.Wait()
-			err := syncer.Run()
-			if err != nil {
-				return err
-			}
-			return nil
+			return syncer.Run()
 		})
 	}
 	wg.Done()

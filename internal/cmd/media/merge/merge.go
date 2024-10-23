@@ -166,13 +166,9 @@ func process(ctx context.Context, w io.Writer, files []*model.File, keepOriginal
 			SetOutput(w).
 			SetTracker(tracker)
 
-		eg.Go(func() error {
+		eg.TryGo(func() error {
 			wg.Wait()
-			err := merger.Run()
-			if err != nil {
-				return err
-			}
-			return nil
+			return merger.Run()
 		})
 	}
 	wg.Done()

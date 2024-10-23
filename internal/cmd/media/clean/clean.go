@@ -31,6 +31,7 @@ var (
 	delete            bool
 	dryRun            bool
 	languageRegions   []string
+	maxParallel       int
 	subtitleExtension string
 	subtitleLanguages []string
 	videoExtensions   []string
@@ -136,6 +137,7 @@ func New() *cobra.Command {
 	cmd.Flags().BoolVarP(&delete, "delete", "d", false, "delete original converted files")
 	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "print result without processing it")
 	cmd.Flags().StringArrayVar(&languageRegions, "lang-region", nil, "override default language regions")
+	cmd.Flags().IntVarP(&maxParallel, "max-parallel", "p", 0, "maximum number of parallel processes. 0 means no limit")
 	cmd.Flags().StringArrayVarP(&subtitleLanguages, "language", "l", []string{"eng", "fre"}, "language tracks to merge")
 	cmd.Flags().StringVar(&subtitleExtension, "sub-ext", util.AcceptedSubtitleExtension, "filter subtitles by extension")
 	cmd.Flags().StringArrayVarP(&videoExtensions, "video-ext", "e", util.AcceptedVideoExtensions, "filter video files by extension")
@@ -149,6 +151,10 @@ func process(ctx context.Context, w io.Writer, files []*model.File) error {
 	pw := cmdutil.NewProgressWriter(w, len(files))
 
 	eg, _ := errgroup.WithContext(ctx)
+	eg.SetLimit(cmdutil.MaxConcurrentGoroutines)
+	if maxParallel > 0 {
+		eg.SetLimit(maxParallel)
+	}
 
 	padder := str.NewPadder(lo.Map(files, func(file *model.File, _ int) string { return file.Basename() }))
 
@@ -167,13 +173,9 @@ func process(ctx context.Context, w io.Writer, files []*model.File) error {
 			SetOutput(w).
 			SetTracker(tracker)
 
-		eg.Go(func() error {
+		eg.TryGo(func() error {
 			wg.Wait()
-			err := cleaner.Run()
-			if err != nil {
-				return err
-			}
-			return nil
+			return cleaner.Run()
 		})
 	}
 	wg.Done()
