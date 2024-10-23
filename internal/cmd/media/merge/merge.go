@@ -84,7 +84,7 @@ func New() *cobra.Command {
 			for _, file := range files {
 				if !yes {
 					shouldProcess := svc.Console.AskConfirmation(
-						fmt.Sprintf("Process %q", file.FullName()),
+						fmt.Sprintf("Process %q?", file.FullName()),
 						true,
 					)
 					if !shouldProcess {

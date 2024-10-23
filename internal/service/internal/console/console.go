@@ -115,7 +115,7 @@ func (s *Service) AskConfirmation(label string, yesByDefault bool) bool {
 		choices = "y/N"
 	}
 
-	fmt.Fprintf(s.w, "%s %s? [%s] ", s.Blue("?"), label, s.Gray(choices))
+	fmt.Fprintf(s.w, "%s %s [%s] ", s.Blue("?"), label, s.Gray(choices))
 
 	var result bool
 	for {

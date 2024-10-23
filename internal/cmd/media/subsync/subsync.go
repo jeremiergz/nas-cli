@@ -85,7 +85,7 @@ func New() *cobra.Command {
 
 			if !yes {
 				fmt.Fprintln(out)
-				shouldProcess := svc.Console.AskConfirmation("Process", true)
+				shouldProcess := svc.Console.AskConfirmation("Process?", true)
 				if !shouldProcess {
 					return nil
 				}
