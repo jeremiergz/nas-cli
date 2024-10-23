@@ -1,9 +1,11 @@
 package model
 
 import (
+	"cmp"
 	"fmt"
 	"path/filepath"
 	"regexp"
+	"slices"
 
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
@@ -80,6 +82,16 @@ func Shows(wd string, extensions []string, recursive bool, subtitleExtension str
 				episode.season = season
 				season.episodes = append(season.episodes, &episode)
 			}
+
+			for _, season := range show.seasons {
+				slices.SortFunc(season.episodes, func(i, j *Episode) int {
+					return cmp.Compare(i.index, j.index)
+				})
+			}
+			slices.SortFunc(show.seasons, func(i, j *Season) int {
+				return cmp.Compare(i.index, j.index)
+			})
+
 			if showIndex == -1 {
 				shows = append(shows, show)
 			}
