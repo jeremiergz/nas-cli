@@ -83,6 +83,10 @@ type DownloadedFile struct {
 	ThreeD     bool   `json:"3d,omitempty"`
 }
 
+var (
+	dashSuffixRegexp = regexp.MustCompile(`\s+-\s*$`)
+)
+
 func Parse(filename string) (*DownloadedFile, error) {
 	file := &DownloadedFile{}
 
@@ -120,6 +124,7 @@ func Parse(filename string) (*DownloadedFile, error) {
 	}
 
 	cleanName = strings.Replace(cleanName, "_", " ", -1)
+	cleanName = dashSuffixRegexp.ReplaceAllString(cleanName, "")
 	setField(file, "title", strings.TrimSpace(cleanName))
 
 	return file, nil
