@@ -74,7 +74,9 @@ func (p *process) Run() error {
 
 	rsync := exec.Command(cmdutil.CommandRsync, options...)
 	rsync.Stdout = &buf
-	rsync.Stderr = p.w
+	if cmdutil.DebugMode {
+		rsync.Stderr = p.w
+	}
 
 	if err := rsync.Start(); err != nil {
 		p.tracker.MarkAsErrored()

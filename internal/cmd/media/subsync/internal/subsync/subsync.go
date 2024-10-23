@@ -87,6 +87,9 @@ func (p *process) Run() error {
 	var buf bytes.Buffer
 	subsync := exec.Command(cmdutil.CommandSubsync, options...)
 	subsync.Stdout = &buf
+	if cmdutil.DebugMode {
+		subsync.Stderr = p.w
+	}
 
 	if err := subsync.Start(); err != nil {
 		p.tracker.MarkAsErrored()

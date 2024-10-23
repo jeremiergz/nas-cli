@@ -93,7 +93,9 @@ func (p *process) convertToMKV() error {
 
 	convert := exec.Command(cmdutil.CommandMKVMerge, options...)
 	convert.Stdout = &buf
-	convert.Stderr = p.w
+	if cmdutil.DebugMode {
+		convert.Stderr = p.w
+	}
 
 	if err := convert.Start(); err != nil {
 		return err
@@ -138,7 +140,7 @@ func (p *process) convertToMKV() error {
 }
 
 func (p *process) cleanTracks() error {
-	characteristics, err := getCharacteristics(p.file.FilePath())
+	characteristics, err := p.getCharacteristics()
 	if err != nil {
 		return err
 	}
@@ -227,19 +229,22 @@ func (p *process) cleanTracks() error {
 }
 
 // Retrieves the characteristics of given MKV file.
-func getCharacteristics(filePath string) (*mkvmergeIdentificationOutput, error) {
+func (p *process) getCharacteristics() (*mkvmergeIdentificationOutput, error) {
 	options := []string{
 		"--identification-format",
 		"json",
 		"--identify",
-		filePath,
+		p.file.FilePath(),
 	}
 
 	buf := new(bytes.Buffer)
 
 	merge := exec.Command(cmdutil.CommandMKVMerge, options...)
 	merge.Stdout = buf
-	merge.Stderr = os.Stderr
+	if cmdutil.DebugMode {
+		merge.Stderr = p.w
+	}
+
 	err := merge.Run()
 	if err != nil {
 		return nil, fmt.Errorf("unable to retrieve characteristics: %w", err)

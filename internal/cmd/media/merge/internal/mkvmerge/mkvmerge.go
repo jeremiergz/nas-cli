@@ -86,7 +86,9 @@ func (p *process) Run() error {
 
 	merge := exec.Command(cmdutil.CommandMKVMerge, options...)
 	merge.Stdout = &buf
-	merge.Stderr = p.w
+	if cmdutil.DebugMode {
+		merge.Stderr = p.w
+	}
 
 	if err = merge.Start(); err != nil {
 		p.tracker.MarkAsErrored()
