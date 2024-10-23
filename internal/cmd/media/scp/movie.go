@@ -8,6 +8,7 @@ import (
 
 	"github.com/jeremiergz/nas-cli/internal/config"
 	"github.com/jeremiergz/nas-cli/internal/model"
+	svc "github.com/jeremiergz/nas-cli/internal/service"
 	"github.com/jeremiergz/nas-cli/internal/util"
 	"github.com/jeremiergz/nas-cli/internal/util/cmdutil"
 )
@@ -39,6 +40,11 @@ func newMovieCmd() *cobra.Command {
 			movies, err := model.Movies(config.WD, []string{util.ExtensionMKV}, recursive)
 			if err != nil {
 				return err
+			}
+
+			if len(movies) == 0 {
+				svc.Console.Success("Nothing to upload")
+				return nil
 			}
 
 			uploads := make([]*upload, len(movies))
