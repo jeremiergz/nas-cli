@@ -7,7 +7,6 @@ import (
 	"os/exec"
 	"regexp"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/disiqueira/gotree/v3"
@@ -154,9 +153,8 @@ func process(ctx context.Context, w io.Writer, files []*model.File, keepOriginal
 
 	padder := str.NewPadder(lo.Map(files, func(file *model.File, _ int) string { return file.Basename() }))
 
-	wg := sync.WaitGroup{}
-	wg.Add(1)
-	for _, file := range files {
+	mergers := make([]svc.Runnable, len(files))
+	for index, file := range files {
 		paddingLength := padder.PaddingLength(file.Basename(), 1)
 		tracker := &progress.Tracker{
 			DeferStart: true,
@@ -168,13 +166,13 @@ func process(ctx context.Context, w io.Writer, files []*model.File, keepOriginal
 			New(file, keepOriginal).
 			SetOutput(w).
 			SetTracker(tracker)
-
-		eg.TryGo(func() error {
-			wg.Wait()
+		mergers[index] = merger
+	}
+	for _, merger := range mergers {
+		eg.Go(func() error {
 			return merger.Run()
 		})
 	}
-	wg.Done()
 	if err := eg.Wait(); err != nil {
 		return err
 	}

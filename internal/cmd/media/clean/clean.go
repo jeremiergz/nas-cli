@@ -7,7 +7,6 @@ import (
 	"os/exec"
 	"regexp"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/jedib0t/go-pretty/v6/progress"
@@ -149,9 +148,8 @@ func process(ctx context.Context, w io.Writer, files []*model.File) error {
 
 	padder := str.NewPadder(lo.Map(files, func(file *model.File, _ int) string { return file.Basename() }))
 
-	wg := sync.WaitGroup{}
-	wg.Add(1)
-	for _, file := range files {
+	cleaners := make([]svc.Runnable, len(files))
+	for index, file := range files {
 		paddingLength := padder.PaddingLength(file.Basename(), 1)
 		tracker := &progress.Tracker{
 			DeferStart: true,
@@ -163,13 +161,13 @@ func process(ctx context.Context, w io.Writer, files []*model.File) error {
 			New(file, !delete).
 			SetOutput(w).
 			SetTracker(tracker)
-
-		eg.TryGo(func() error {
-			wg.Wait()
+		cleaners[index] = cleaner
+	}
+	for _, cleaner := range cleaners {
+		eg.Go(func() error {
 			return cleaner.Run()
 		})
 	}
-	wg.Done()
 	if err := eg.Wait(); err != nil {
 		return err
 	}

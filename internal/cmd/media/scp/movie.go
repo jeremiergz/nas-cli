@@ -3,7 +3,6 @@ package scp
 import (
 	"fmt"
 	"path/filepath"
-	"sync"
 	"time"
 
 	"github.com/jedib0t/go-pretty/v6/progress"
@@ -82,9 +81,8 @@ func newMovieCmd() *cobra.Command {
 
 			fmt.Fprintln(out)
 
-			wg := sync.WaitGroup{}
-			wg.Add(1)
-			for _, movie := range moviesToProcess {
+			uploaders := make([]svc.Runnable, len(moviesToProcess))
+			for index, movie := range moviesToProcess {
 				paddingLength := padder.PaddingLength(movie.Basename(), 1)
 				tracker := &progress.Tracker{
 					DeferStart: true,
@@ -98,13 +96,13 @@ func newMovieCmd() *cobra.Command {
 					New(movie, destPath, !delete).
 					SetOutput(out).
 					SetTracker(tracker)
-
-				eg.TryGo(func() error {
-					wg.Wait()
+				uploaders[index] = uploader
+			}
+			for _, uploader := range uploaders {
+				eg.Go(func() error {
 					return uploader.Run()
 				})
 			}
-			wg.Done()
 			if err := eg.Wait(); err != nil {
 				return err
 			}

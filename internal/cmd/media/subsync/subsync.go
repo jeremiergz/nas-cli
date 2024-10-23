@@ -8,7 +8,6 @@ import (
 	"path"
 	"sort"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/jedib0t/go-pretty/v6/progress"
@@ -143,8 +142,7 @@ func process(ctx context.Context, out io.Writer, videoFiles, subtitleFiles []str
 
 	padder := str.NewPadder(videoFiles)
 
-	wg := sync.WaitGroup{}
-	wg.Add(1)
+	syncers := make([]svc.Runnable, len(videoFiles))
 	for index, videoFile := range videoFiles {
 		paddingLength := padder.PaddingLength(videoFile, 12)
 		tracker := &progress.Tracker{
@@ -165,13 +163,13 @@ func process(ctx context.Context, out io.Writer, videoFiles, subtitleFiles []str
 			).
 			SetOutput(out).
 			SetTracker(tracker)
-
-		eg.TryGo(func() error {
-			wg.Wait()
+		syncers[index] = syncer
+	}
+	for _, syncer := range syncers {
+		eg.Go(func() error {
 			return syncer.Run()
 		})
 	}
-	wg.Done()
 	if err := eg.Wait(); err != nil {
 		return err
 	}

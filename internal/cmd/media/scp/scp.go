@@ -10,7 +10,6 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/jedib0t/go-pretty/v6/progress"
@@ -260,9 +259,8 @@ func process(ctx context.Context, out io.Writer, uploads []*upload) error {
 		eg.SetLimit(maxParallel)
 	}
 
-	wg := sync.WaitGroup{}
-	wg.Add(1)
-	for _, upload := range uploads {
+	uploaders := make([]svc.Runnable, len(uploads))
+	for index, upload := range uploads {
 		tracker := &progress.Tracker{
 			DeferStart: true,
 			Message:    upload.File.FilePath(),
@@ -273,13 +271,13 @@ func process(ctx context.Context, out io.Writer, uploads []*upload) error {
 			New(upload.File, upload.Destination, !delete).
 			SetOutput(out).
 			SetTracker(tracker)
-
-		eg.TryGo(func() error {
-			wg.Wait()
+		uploaders[index] = uploader
+	}
+	for _, uploader := range uploaders {
+		eg.Go(func() error {
 			return uploader.Run()
 		})
 	}
-	wg.Done()
 	if err := eg.Wait(); err != nil {
 		return err
 	}
