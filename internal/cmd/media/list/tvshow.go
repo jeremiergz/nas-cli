@@ -19,14 +19,14 @@ var (
 )
 
 func newTVShowCmd() *tvShowCommand {
-	cmd := &tvShowCommand{}
-	cmd.c = &cobra.Command{
+	tvShowCmd := &tvShowCommand{}
+	tvShowCmd.c = &cobra.Command{
 		Use:     "tvshows [name]",
 		Aliases: []string{"tv", "t"},
 		Short:   tvShowDesc,
 		Long:    tvShowDesc + ".",
 		Args:    cobra.MaximumNArgs(1),
-		RunE: func(_ *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			tvShowsFolders := viper.GetStringSlice(config.KeySCPDestTVShowsPaths)
 			if len(tvShowsFolders) == 0 {
 				return fmt.Errorf("%s configuration entry is missing", config.KeySCPDestTVShowsPaths)
@@ -37,7 +37,7 @@ func newTVShowCmd() *tvShowCommand {
 				tvShowName = args[0]
 			}
 
-			err := process(cmd, tvShowsFolders, tvShowName)
+			err := process(cmd.Context(), tvShowCmd, tvShowsFolders, tvShowName)
 			if err != nil {
 				return err
 			}
@@ -45,7 +45,7 @@ func newTVShowCmd() *tvShowCommand {
 			return nil
 		},
 	}
-	return cmd
+	return tvShowCmd
 }
 
 func (c *tvShowCommand) Command() *cobra.Command {

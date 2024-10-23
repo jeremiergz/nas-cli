@@ -2,6 +2,7 @@ package mkvmerge
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"os"
@@ -43,7 +44,7 @@ type backup struct {
 	originalPath string
 }
 
-func (p *process) Run() error {
+func (p *process) Run(ctx context.Context) error {
 	if p.tracker == nil {
 		return fmt.Errorf("required tracker is not set")
 	}
@@ -84,7 +85,7 @@ func (p *process) Run() error {
 
 	var buf bytes.Buffer
 
-	merge := exec.Command(cmdutil.CommandMKVMerge, options...)
+	merge := exec.CommandContext(ctx, cmdutil.CommandMKVMerge, options...)
 	merge.Stdout = &buf
 	if cmdutil.DebugMode {
 		merge.Stderr = p.w

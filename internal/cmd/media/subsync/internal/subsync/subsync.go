@@ -2,6 +2,7 @@ package subsync
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"os"
@@ -48,7 +49,7 @@ func New(video, videoLang, subtitle, subtitleLang, streamLang, streamType, outFi
 }
 
 // Attempts to synchronize given subtitle with given video file.
-func (p *process) Run() error {
+func (p *process) Run(ctx context.Context) error {
 	if p.tracker == nil {
 		return fmt.Errorf("required tracker is not set")
 	}
@@ -85,7 +86,7 @@ func (p *process) Run() error {
 	}
 
 	var buf bytes.Buffer
-	subsync := exec.Command(cmdutil.CommandSubsync, options...)
+	subsync := exec.CommandContext(ctx, cmdutil.CommandSubsync, options...)
 	subsync.Stdout = &buf
 	if cmdutil.DebugMode {
 		subsync.Stderr = p.w

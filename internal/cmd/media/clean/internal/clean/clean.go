@@ -2,6 +2,7 @@ package clean
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -39,7 +40,7 @@ func New(file *model.File, keepOriginal bool) svc.Runnable {
 	}
 }
 
-func (p *process) Run() error {
+func (p *process) Run(ctx context.Context) error {
 	if p.tracker == nil {
 		return fmt.Errorf("required tracker is not set")
 	}
@@ -47,14 +48,14 @@ func (p *process) Run() error {
 	p.tracker.Start()
 
 	if p.file.Extension() != util.ExtensionMKV {
-		err := p.convertToMKV()
+		err := p.convertToMKV(ctx)
 		if err != nil {
 			p.tracker.MarkAsErrored()
 			return fmt.Errorf("failed to convert file to MKV: %w", err)
 		}
 	}
 
-	err := p.cleanTracks()
+	err := p.cleanTracks(ctx)
 	if err != nil {
 		p.tracker.MarkAsErrored()
 		return fmt.Errorf("failed to clean file: %w", err)
@@ -74,7 +75,7 @@ func (p *process) SetOutput(out io.Writer) svc.Runnable {
 	return p
 }
 
-func (p *process) convertToMKV() error {
+func (p *process) convertToMKV(ctx context.Context) error {
 	originalFilePath := p.file.FilePath()
 	originalFilePathWithoutExtension := strings.TrimSuffix(
 		originalFilePath,
@@ -91,7 +92,7 @@ func (p *process) convertToMKV() error {
 
 	var buf bytes.Buffer
 
-	convert := exec.Command(cmdutil.CommandMKVMerge, options...)
+	convert := exec.CommandContext(ctx, cmdutil.CommandMKVMerge, options...)
 	convert.Stdout = &buf
 	if cmdutil.DebugMode {
 		convert.Stderr = p.w
@@ -139,8 +140,8 @@ func (p *process) convertToMKV() error {
 	return nil
 }
 
-func (p *process) cleanTracks() error {
-	characteristics, err := p.getCharacteristics()
+func (p *process) cleanTracks(ctx context.Context) error {
+	characteristics, err := p.getCharacteristics(ctx)
 	if err != nil {
 		return err
 	}
@@ -218,7 +219,7 @@ func (p *process) cleanTracks() error {
 
 	options = append(options, p.file.FilePath())
 
-	propedit := exec.Command(cmdutil.CommandMKVPropEdit, options...)
+	propedit := exec.CommandContext(ctx, cmdutil.CommandMKVPropEdit, options...)
 
 	err = propedit.Run()
 	if err != nil {
@@ -229,7 +230,7 @@ func (p *process) cleanTracks() error {
 }
 
 // Retrieves the characteristics of given MKV file.
-func (p *process) getCharacteristics() (*mkvmergeIdentificationOutput, error) {
+func (p *process) getCharacteristics(ctx context.Context) (*mkvmergeIdentificationOutput, error) {
 	options := []string{
 		"--identification-format",
 		"json",
@@ -239,7 +240,7 @@ func (p *process) getCharacteristics() (*mkvmergeIdentificationOutput, error) {
 
 	buf := new(bytes.Buffer)
 
-	merge := exec.Command(cmdutil.CommandMKVMerge, options...)
+	merge := exec.CommandContext(ctx, cmdutil.CommandMKVMerge, options...)
 	merge.Stdout = buf
 	if cmdutil.DebugMode {
 		merge.Stderr = p.w

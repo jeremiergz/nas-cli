@@ -2,6 +2,7 @@ package rsync
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"io/fs"
@@ -47,7 +48,7 @@ func New(file model.MediaFile, destDir string, keepOriginal bool) svc.Runnable {
 	}
 }
 
-func (p *process) Run() error {
+func (p *process) Run(ctx context.Context) error {
 	if p.tracker == nil {
 		return fmt.Errorf("required tracker is not set")
 	}
@@ -72,7 +73,7 @@ func (p *process) Run() error {
 
 	var buf bytes.Buffer
 
-	rsync := exec.Command(cmdutil.CommandRsync, options...)
+	rsync := exec.CommandContext(ctx, cmdutil.CommandRsync, options...)
 	rsync.Stdout = &buf
 	if cmdutil.DebugMode {
 		rsync.Stderr = p.w
@@ -110,7 +111,10 @@ func (p *process) Run() error {
 		remoteParentDir: config.DirectoryMode,
 		p.destination:   config.FileMode,
 	}
-	eg := errgroup.Group{}
+
+	eg, _ := errgroup.WithContext(ctx)
+	eg.SetLimit(cmdutil.MaxConcurrentGoroutines)
+
 	for entry, chmod := range entriesToChangePermsFor {
 		eg.Go(func() error {
 			err := svc.SFTP.Client.Chmod(entry, chmod)

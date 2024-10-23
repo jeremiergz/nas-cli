@@ -165,7 +165,7 @@ func process(ctx context.Context, w io.Writer, files []*model.File) error {
 	}
 	for _, cleaner := range cleaners {
 		eg.Go(func() error {
-			return cleaner.Run()
+			return cleaner.Run(ctx)
 		})
 	}
 	if err := eg.Wait(); err != nil {

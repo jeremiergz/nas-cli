@@ -170,7 +170,7 @@ func process(ctx context.Context, w io.Writer, files []*model.File, keepOriginal
 	}
 	for _, merger := range mergers {
 		eg.Go(func() error {
-			return merger.Run()
+			return merger.Run(ctx)
 		})
 	}
 	if err := eg.Wait(); err != nil {

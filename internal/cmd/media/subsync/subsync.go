@@ -167,7 +167,7 @@ func process(ctx context.Context, out io.Writer, videoFiles, subtitleFiles []str
 	}
 	for _, syncer := range syncers {
 		eg.Go(func() error {
-			return syncer.Run()
+			return syncer.Run(ctx)
 		})
 	}
 	if err := eg.Wait(); err != nil {

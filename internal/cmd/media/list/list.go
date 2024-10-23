@@ -2,6 +2,7 @@ package list
 
 import (
 	"cmp"
+	"context"
 	"fmt"
 	"io/fs"
 	"path/filepath"
@@ -58,7 +59,7 @@ func New() *cobra.Command {
 	return cmd
 }
 
-func process(lst lister, targets []string, nameFilter string) error {
+func process(ctx context.Context, lst lister, targets []string, nameFilter string) error {
 	err := svc.SFTP.Connect()
 	if err != nil {
 		return err
@@ -74,7 +75,7 @@ func process(lst lister, targets []string, nameFilter string) error {
 		folders[folder] = subFiles
 	}
 
-	eg := errgroup.Group{}
+	eg, _ := errgroup.WithContext(ctx)
 	eg.SetLimit(cmdutil.MaxConcurrentGoroutines)
 
 	all := map[string]gotree.Tree{}

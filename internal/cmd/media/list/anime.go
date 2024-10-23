@@ -19,14 +19,14 @@ var (
 )
 
 func newAnimeCmd() *animeCommand {
-	cmd := &animeCommand{}
-	cmd.c = &cobra.Command{
+	animeCmd := &animeCommand{}
+	animeCmd.c = &cobra.Command{
 		Use:     "animes [name]",
 		Aliases: []string{"ani", "a"},
 		Short:   animeDesc,
 		Long:    animeDesc + ".",
 		Args:    cobra.MaximumNArgs(1),
-		RunE: func(_ *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			animesFolders := viper.GetStringSlice(config.KeySCPDestAnimesPaths)
 			if len(animesFolders) == 0 {
 				return fmt.Errorf("%s configuration entry is missing", config.KeySCPDestAnimesPaths)
@@ -37,7 +37,7 @@ func newAnimeCmd() *animeCommand {
 				animeName = args[0]
 			}
 
-			err := process(cmd, animesFolders, animeName)
+			err := process(cmd.Context(), animeCmd, animesFolders, animeName)
 			if err != nil {
 				return err
 			}
@@ -45,7 +45,7 @@ func newAnimeCmd() *animeCommand {
 			return nil
 		},
 	}
-	return cmd
+	return animeCmd
 }
 
 func (c *animeCommand) Command() *cobra.Command {
