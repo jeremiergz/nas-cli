@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/jedib0t/go-pretty/v6/progress"
-	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
 
@@ -87,17 +86,9 @@ func New() *cobra.Command {
 
 			if !yes {
 				fmt.Fprintln(out)
-				prompt := promptui.Prompt{
-					Label:     "Process",
-					IsConfirm: true,
-					Default:   "y",
-				}
-				input, err := prompt.Run()
-				if err != nil {
-					if err.Error() == "^C" || input != "" {
-						return nil
-					}
-					return err
+				shouldProcess := svc.Console.AskConfirmation("Process", true)
+				if !shouldProcess {
+					return nil
 				}
 			}
 

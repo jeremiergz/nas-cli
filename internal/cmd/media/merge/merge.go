@@ -12,7 +12,6 @@ import (
 
 	"github.com/disiqueira/gotree/v3"
 	"github.com/jedib0t/go-pretty/v6/progress"
-	"github.com/manifoldco/promptui"
 	"github.com/samber/lo"
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
@@ -80,25 +79,29 @@ func New() *cobra.Command {
 				return nil
 			}
 
-			if !yes {
-				fmt.Fprintln(out)
-				prompt := promptui.Prompt{
-					Label:     "Process",
-					IsConfirm: true,
-					Default:   "y",
-				}
-				input, err := prompt.Run()
-				if err != nil {
-					if err.Error() == "^C" || input != "" {
-						return nil
+			fmt.Fprintln(out)
+
+			filesToProcess := []*model.File{}
+			for _, file := range files {
+				if !yes {
+					shouldProcess := svc.Console.AskConfirmation(
+						fmt.Sprintf("Process %q", file.FullName()),
+						true,
+					)
+					if !shouldProcess {
+						continue
 					}
-					return err
 				}
+				filesToProcess = append(filesToProcess, file)
+			}
+
+			if len(filesToProcess) == 0 {
+				return nil
 			}
 
 			fmt.Fprintln(out)
 
-			err = process(cmd.Context(), out, files, !delete)
+			err = process(cmd.Context(), out, filesToProcess, !delete)
 			if err != nil {
 				return err
 			}
