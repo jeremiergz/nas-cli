@@ -44,8 +44,15 @@ func (s *Service) Connect() error {
 }
 
 func (s *Service) Disconnect() error {
-	_ = s.ssh.Client.Conn.Close()
-	return s.Client.Close()
+	if s.ssh != nil {
+		if err := s.ssh.Disconnect(); err != nil {
+			return err
+		}
+	}
+	if s.Client != nil {
+		return s.Client.Close()
+	}
+	return nil
 }
 
 func (s *Service) SendCommands(cmds ...string) ([]byte, error) {

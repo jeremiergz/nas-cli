@@ -6,14 +6,13 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strings"
 
-	"github.com/disiqueira/gotree/v3"
 	"github.com/manifoldco/promptui"
 	"github.com/samber/lo"
 
 	"github.com/jeremiergz/nas-cli/internal/model"
+	"github.com/jeremiergz/nas-cli/internal/util/cmdutil"
 )
 
 type Service struct {
@@ -44,45 +43,75 @@ func (s *Service) Success(message string) {
 	fmt.Fprintln(s.w, promptui.Styler(promptui.FGGreen)("✔"), message)
 }
 
-var (
-	lastSpaceRegexp = regexp.MustCompile(`\s$`)
-)
-
 // Prints given files array as a tree.
 func (s *Service) PrintFiles(wd string, files []*model.File) {
-	tree := gotree.New(wd)
-	for _, f := range files {
-		tree.Add(f.Basename())
-	}
-	toPrint := tree.Print()
-	toPrint = lastSpaceRegexp.ReplaceAllString(toPrint, "")
+	lw := cmdutil.NewListWriter()
+	filesCount := len(files)
 
-	fmt.Fprintln(s.w, toPrint)
+	lw.AppendItem(
+		fmt.Sprintf(
+			"%s (%d %s)",
+			wd,
+			filesCount,
+			lo.Ternary(filesCount <= 1, "file", "files"),
+		),
+	)
+
+	lw.Indent()
+	for _, f := range files {
+		lw.AppendItem(f.Basename())
+	}
+
+	fmt.Fprintln(s.w, lw.Render())
 }
 
 // Prints given movies array as a tree.
 func (s *Service) PrintMovies(wd string, movies []*model.Movie) {
-	moviesTree := gotree.New(wd)
-	for _, m := range movies {
-		moviesTree.Add(fmt.Sprintf(
-			"%s  %s",
-			filepath.Join(m.FullName(), fmt.Sprintf("%s.%s", m.FullName(), m.Extension())),
-			m.Basename(),
-		))
-	}
-	toPrint := moviesTree.Print()
-	toPrint = lastSpaceRegexp.ReplaceAllString(toPrint, "")
+	lw := cmdutil.NewListWriter()
+	moviesCount := len(movies)
 
-	fmt.Fprintln(s.w, toPrint)
+	lw.AppendItem(
+		fmt.Sprintf(
+			"%s (%d %s)",
+			wd,
+			moviesCount,
+			lo.Ternary(moviesCount <= 1, "movie", "movies"),
+		),
+	)
+
+	lw.Indent()
+	for _, m := range movies {
+		lw.AppendItem(
+			fmt.Sprintf(
+				"%s  <-  %s",
+				filepath.Join(m.FullName(), fmt.Sprintf("%s.%s", m.FullName(), m.Extension())),
+				m.Basename(),
+			),
+		)
+	}
+
+	fmt.Fprintln(s.w, lw.Render())
 }
 
 // Prints given shows as a tree.
 func (s *Service) PrintShows(wd string, shows []*model.Show) {
-	rootTree := gotree.New(wd)
+	lw := cmdutil.NewListWriter()
+	showsCount := len(shows)
+
+	lw.AppendItem(
+		fmt.Sprintf(
+			"%s (%d %s)",
+			wd,
+			showsCount,
+			lo.Ternary(showsCount <= 1, "show", "shows"),
+		),
+	)
+
+	lw.Indent()
 	for _, show := range shows {
-		showTree := rootTree.Add(
+		lw.AppendItem(
 			fmt.Sprintf(
-				"%s (%d %s - %d %s)",
+				"%s (%d %s / %d %s)",
 				show.Name(),
 				show.SeasonsCount(),
 				lo.Ternary(show.SeasonsCount() <= 1, "season", "seasons"),
@@ -91,22 +120,36 @@ func (s *Service) PrintShows(wd string, shows []*model.Show) {
 			),
 		)
 
+		lw.Indent()
 		for _, season := range show.Seasons() {
 			episodesCount := len(season.Episodes())
 			episodeStr := "episodes"
 			if episodesCount == 1 {
 				episodeStr = "episode"
 			}
-			seasonsTree := showTree.Add(fmt.Sprintf("%s (%d %s)", season.Name(), episodesCount, episodeStr))
+			lw.AppendItem(
+				fmt.Sprintf(
+					"%s (%d %s)",
+					season.Name(),
+					episodesCount,
+					episodeStr,
+				),
+			)
+			lw.Indent()
 			for _, episode := range season.Episodes() {
-				seasonsTree.Add(fmt.Sprintf("%s  %s", episode.FullName(), episode.Basename()))
+				lw.AppendItem(fmt.Sprintf(
+					"%s  <-  %s",
+					episode.FullName(),
+					episode.Basename(),
+				),
+				)
 			}
+			lw.UnIndent()
 		}
+		lw.UnIndent()
 	}
-	toPrint := rootTree.Print()
-	toPrint = lastSpaceRegexp.ReplaceAllString(toPrint, "")
 
-	fmt.Fprintln(s.w, toPrint)
+	fmt.Fprintln(s.w, lw.Render())
 }
 
 func (s *Service) AskConfirmation(label string, yesByDefault bool) bool {

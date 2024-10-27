@@ -68,9 +68,10 @@ func (s *Service) Connect() error {
 }
 
 func (s *Service) Disconnect() error {
-	s.Client.Conn.Close()
-
-	return s.Client.Close()
+	if s.Client.Close() != nil {
+		return s.Client.Close()
+	}
+	return nil
 }
 
 func (s *Service) SendCommands(cmds ...string) ([]byte, error) {

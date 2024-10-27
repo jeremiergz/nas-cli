@@ -102,9 +102,6 @@ func New() *cobra.Command {
 
 			return nil
 		},
-		PersistentPostRun: func(cmd *cobra.Command, args []string) {
-			svc.SFTP.Disconnect()
-		},
 	}
 
 	cmd.PersistentFlags().BoolVarP(&delete, "delete", "d", false, "remove source files after upload")
@@ -204,7 +201,7 @@ func process(ctx context.Context, out io.Writer, uploads []*upload) error {
 		if !yes {
 			shouldProcess := svc.Console.AskConfirmation(
 				fmt.Sprintf(
-					"Process %q? -> %s",
+					"Process %q?  ->  %s",
 					upload.DisplayName,
 					svc.Console.Gray(upload.Destination),
 				),

@@ -5,11 +5,9 @@ import (
 	"fmt"
 	"io"
 	"os/exec"
-	"regexp"
 	"strings"
 	"time"
 
-	"github.com/disiqueira/gotree/v3"
 	"github.com/jedib0t/go-pretty/v6/progress"
 	"github.com/samber/lo"
 	"github.com/spf13/cobra"
@@ -122,23 +120,38 @@ func New() *cobra.Command {
 
 // Prints given files and their subtitles as a tree.
 func print(w io.Writer, files []*model.File) {
-	rootTree := gotree.New(config.WD)
+	lw := cmdutil.NewListWriter()
+	filesCount := len(files)
+
+	lw.AppendItem(
+		fmt.Sprintf(
+			"%s (%d %s)",
+			config.WD,
+			filesCount,
+			lo.Ternary(filesCount <= 1, "file", "files"),
+		),
+	)
+
+	lw.Indent()
 	for _, file := range files {
-		fileTree := rootTree.Add(file.Name())
+		lw.AppendItem(file.Name())
+
+		lw.Indent()
 		for lang, subtitle := range file.Subtitles() {
 			flag := util.ToLanguageFlag(lang)
+			var str string
 			if flag != "" {
-				fileTree.Add(fmt.Sprintf("%s  %s", flag, subtitle))
+				str = fmt.Sprintf("%s  %s", flag, subtitle)
 			} else {
 				langCode := lang[0:1] + lang[1:2]
-				fileTree.Add(fmt.Sprintf("%s  %s", strings.ToUpper(langCode), subtitle))
+				str = fmt.Sprintf("%s  %s", strings.ToUpper(langCode), subtitle)
 			}
+			lw.AppendItem(str)
 		}
+		lw.UnIndent()
 	}
-	toPrint := rootTree.Print()
-	lastSpaceRegexp := regexp.MustCompile(`\s$`)
-	toPrint = lastSpaceRegexp.ReplaceAllString(toPrint, "")
-	fmt.Fprintln(w, toPrint)
+
+	fmt.Fprintln(w, lw.Render())
 }
 
 // Merges language tracks into one video file.

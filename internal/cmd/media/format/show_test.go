@@ -9,12 +9,12 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/disiqueira/gotree/v3"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/jeremiergz/nas-cli/internal/cmd"
 	"github.com/jeremiergz/nas-cli/internal/config"
 	svc "github.com/jeremiergz/nas-cli/internal/service"
+	"github.com/jeremiergz/nas-cli/internal/util/cmdutil"
 )
 
 func Test_Show_With_Dry_Run(t *testing.T) {
@@ -34,22 +34,32 @@ func Test_Show_With_Dry_Run(t *testing.T) {
 		"test.s02e05.mkv",
 	}
 	prepareShows(t, tempDir, baseFiles)
-	rootTree := gotree.New(tempDir)
-	showTree := rootTree.Add("Test (2 seasons - 10 episodes)")
+	lw := cmdutil.NewListWriter()
+	lw.AppendItem(fmt.Sprintf("%s (1 show)", tempDir))
+	lw.Indent()
+	lw.AppendItem("Test (2 seasons / 10 episodes)")
 
-	season1Tree := showTree.Add(fmt.Sprintf("%s (%d episodes)", "Season 1", 5))
-	season1Tree.Add(fmt.Sprintf("%s  %s", "Test - S01E01.mkv", "test.s01e01.mkv"))
-	season1Tree.Add(fmt.Sprintf("%s  %s", "Test - S01E02.mkv", "test.s01e02.mkv"))
-	season1Tree.Add(fmt.Sprintf("%s  %s", "Test - S01E03.mkv", "test.s01e03.mkv"))
-	season1Tree.Add(fmt.Sprintf("%s  %s", "Test - S01E04.mkv", "test.s01e04.mkv"))
-	season1Tree.Add(fmt.Sprintf("%s  %s", "Test - S01E05.mkv", "test.s01e05.mkv"))
+	lw.Indent()
+	lw.AppendItem(fmt.Sprintf("%s (%d episodes)", "Season 1", 5))
+	lw.Indent()
+	lw.AppendItem(fmt.Sprintf("%s  <-  %s", "Test - S01E01.mkv", "test.s01e01.mkv"))
+	lw.AppendItem(fmt.Sprintf("%s  <-  %s", "Test - S01E02.mkv", "test.s01e02.mkv"))
+	lw.AppendItem(fmt.Sprintf("%s  <-  %s", "Test - S01E03.mkv", "test.s01e03.mkv"))
+	lw.AppendItem(fmt.Sprintf("%s  <-  %s", "Test - S01E04.mkv", "test.s01e04.mkv"))
+	lw.AppendItem(fmt.Sprintf("%s  <-  %s", "Test - S01E05.mkv", "test.s01e05.mkv"))
+	lw.UnIndent()
+	lw.UnIndent()
 
-	season2Tree := showTree.Add(fmt.Sprintf("%s (%d episodes)", "Season 2", 5))
-	season2Tree.Add(fmt.Sprintf("%s  %s", "Test - S02E01.mkv", "test.s02e01.mkv"))
-	season2Tree.Add(fmt.Sprintf("%s  %s", "Test - S02E02.mkv", "test.s02e02.mkv"))
-	season2Tree.Add(fmt.Sprintf("%s  %s", "Test - S02E03.mkv", "test.s02e03.mkv"))
-	season2Tree.Add(fmt.Sprintf("%s  %s", "Test - S02E04.mkv", "test.s02e04.mkv"))
-	season2Tree.Add(fmt.Sprintf("%s  %s", "Test - S02E05.mkv", "test.s02e05.mkv"))
+	lw.Indent()
+	lw.AppendItem(fmt.Sprintf("%s (%d episodes)", "Season 2", 5))
+	lw.Indent()
+	lw.AppendItem(fmt.Sprintf("%s  <-  %s", "Test - S02E01.mkv", "test.s02e01.mkv"))
+	lw.AppendItem(fmt.Sprintf("%s  <-  %s", "Test - S02E02.mkv", "test.s02e02.mkv"))
+	lw.AppendItem(fmt.Sprintf("%s  <-  %s", "Test - S02E03.mkv", "test.s02e03.mkv"))
+	lw.AppendItem(fmt.Sprintf("%s  <-  %s", "Test - S02E04.mkv", "test.s02e04.mkv"))
+	lw.AppendItem(fmt.Sprintf("%s  <-  %s", "Test - S02E05.mkv", "test.s02e05.mkv"))
+	lw.UnIndent()
+	lw.UnIndent()
 
 	rootCMD := cmd.New()
 	rootCMD.AddCommand(New())
@@ -67,7 +77,7 @@ func Test_Show_With_Dry_Run(t *testing.T) {
 
 	assert.NoError(t, err)
 
-	assert.Equal(t, strings.TrimSpace(rootTree.Print()), strings.TrimSpace(output.String()))
+	assert.Equal(t, strings.TrimSpace(lw.Render()), strings.TrimSpace(output.String()))
 }
 
 func Test_Show_Without_Options(t *testing.T) {

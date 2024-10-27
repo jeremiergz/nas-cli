@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/jeremiergz/nas-cli/internal/config"
+	svc "github.com/jeremiergz/nas-cli/internal/service"
 	"github.com/jeremiergz/nas-cli/internal/util/cmdutil"
 )
 
@@ -25,6 +26,7 @@ func New() *cobra.Command {
 		Short: desc,
 		Long:  desc + ".",
 		PersistentPostRun: func(cmd *cobra.Command, args []string) {
+			svc.SFTP.Disconnect()
 			if cmdutil.DebugMode {
 				out := cmd.OutOrStdout()
 				fmt.Fprintln(out)
