@@ -85,7 +85,7 @@ func (s *Service) PrintMovies(wd string, movies []*model.Movie) {
 			fmt.Sprintf(
 				"%s  <-  %s",
 				filepath.Join(m.FullName(), fmt.Sprintf("%s.%s", m.FullName(), m.Extension())),
-				m.Basename(),
+				s.Gray(m.Basename()),
 			),
 		)
 	}
@@ -140,7 +140,7 @@ func (s *Service) PrintShows(wd string, shows []*model.Show) {
 				lw.AppendItem(fmt.Sprintf(
 					"%s  <-  %s",
 					episode.FullName(),
-					episode.Basename(),
+					s.Gray(episode.Basename()),
 				),
 				)
 			}
