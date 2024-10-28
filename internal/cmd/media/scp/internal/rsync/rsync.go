@@ -18,6 +18,7 @@ import (
 	"github.com/jeremiergz/nas-cli/internal/config"
 	"github.com/jeremiergz/nas-cli/internal/model"
 	svc "github.com/jeremiergz/nas-cli/internal/service"
+	"github.com/jeremiergz/nas-cli/internal/util"
 	"github.com/jeremiergz/nas-cli/internal/util/cmdutil"
 )
 
@@ -71,13 +72,12 @@ func (p *process) Run(ctx context.Context) error {
 		fmt.Sprintf("%s:%q", p.remoteHost, remoteParentDir),
 	}
 
-	var buf bytes.Buffer
-
 	rsync := exec.CommandContext(ctx, cmdutil.CommandRsync, options...)
-	rsync.Stdout = &buf
-	if cmdutil.DebugMode {
-		rsync.Stderr = p.w
-	}
+
+	bufOut := new(bytes.Buffer)
+	bufErr := new(bytes.Buffer)
+	rsync.Stdout = bufOut
+	rsync.Stderr = bufErr
 
 	if err := rsync.Start(); err != nil {
 		p.tracker.MarkAsErrored()
@@ -86,21 +86,25 @@ func (p *process) Run(ctx context.Context) error {
 
 	go func() {
 		for !p.tracker.IsDone() {
-			progress, err := cmdutil.GetRsyncProgress(buf.String())
+			progress, err := cmdutil.GetRsyncProgress(bufOut.String())
 			if err == nil {
 				// Keep the progress under 99 because the last 1% is for changing permissions.
 				if progress > 1 && progress <= 99 {
 					p.tracker.SetValue(int64(progress))
 				}
 			}
-			buf.Reset()
+			bufOut.Reset()
 			time.Sleep(100 * time.Millisecond)
 		}
 	}()
 
 	if err := rsync.Wait(); err != nil {
 		p.tracker.MarkAsErrored()
-		return err
+		return util.ErrorFromStrings(
+			fmt.Errorf("failed to run Rsync: %w", err),
+			bufOut.String(),
+			bufErr.String(),
+		)
 	}
 
 	if !p.keepOriginal {

@@ -2,6 +2,7 @@ package clean
 
 import (
 	"bytes"
+	"cmp"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -90,13 +91,12 @@ func (p *process) convertToMKV(ctx context.Context) error {
 		originalFilePath,
 	}
 
-	var buf bytes.Buffer
-
 	convert := exec.CommandContext(ctx, cmdutil.CommandMKVMerge, options...)
-	convert.Stdout = &buf
-	if cmdutil.DebugMode {
-		convert.Stderr = p.w
-	}
+
+	bufOut := new(bytes.Buffer)
+	bufErr := new(bytes.Buffer)
+	convert.Stdout = bufOut
+	convert.Stderr = bufErr
 
 	if err := convert.Start(); err != nil {
 		return err
@@ -104,20 +104,24 @@ func (p *process) convertToMKV(ctx context.Context) error {
 
 	go func() {
 		for !p.tracker.IsDone() {
-			progress, err := cmdutil.GetMKVMergeProgress(buf.String())
+			progress, err := cmdutil.GetMKVMergeProgress(bufOut.String())
 			if err == nil {
 				if progress == 100 {
 					return
 				}
 				p.tracker.SetValue(int64(progress))
 			}
-			buf.Reset()
+			bufOut.Reset()
 			time.Sleep(100 * time.Millisecond)
 		}
 	}()
 
 	if err := convert.Wait(); err != nil {
-		return err
+		return util.ErrorFromStrings(
+			fmt.Errorf("failed to convert file to MKV: %w", err),
+			bufOut.String(),
+			bufErr.String(),
+		)
 	}
 
 	os.Chown(newFilePath, config.UID, config.GID)
@@ -160,13 +164,17 @@ func (p *process) cleanTracks(ctx context.Context) error {
 	videoTrackNumber := 1
 
 	for _, track := range characteristics.Tracks {
+		lang := util.ToLanguageRegionalized(
+			cmp.Or(track.Properties.LanguageIETF, track.Properties.Language),
+		)
+
 		switch track.Type {
 		case "audio":
 			options = append(options,
 				"--edit",
 				fmt.Sprintf("track:a%d", audioTrackNumber),
 				"--set",
-				fmt.Sprintf("language=%s", util.ToLanguageRegionalized(track.Properties.LanguageIETF)),
+				fmt.Sprintf("language=%s", lang),
 				"--set",
 				"name=",
 			)
@@ -183,7 +191,7 @@ func (p *process) cleanTracks(ctx context.Context) error {
 				"--edit",
 				fmt.Sprintf("track:s%d", subtitleTrackNumber),
 				"--set",
-				fmt.Sprintf("language=%s", util.ToLanguageRegionalized(track.Properties.LanguageIETF)),
+				fmt.Sprintf("language=%s", lang),
 				"--set",
 				fmt.Sprintf("name=%s", util.ToLanguageDisplayName(track.Properties.Language, isForced)),
 			)
@@ -221,9 +229,18 @@ func (p *process) cleanTracks(ctx context.Context) error {
 
 	propedit := exec.CommandContext(ctx, cmdutil.CommandMKVPropEdit, options...)
 
+	bufOut := new(bytes.Buffer)
+	bufErr := new(bytes.Buffer)
+	propedit.Stdout = bufOut
+	propedit.Stderr = bufErr
+
 	err = propedit.Run()
 	if err != nil {
-		return err
+		return util.ErrorFromStrings(
+			fmt.Errorf("failed to run MKVPropEdit: %w", err),
+			bufOut.String(),
+			bufErr.String(),
+		)
 	}
 
 	return nil
@@ -238,21 +255,24 @@ func (p *process) getCharacteristics(ctx context.Context) (*mkvmergeIdentificati
 		p.file.FilePath(),
 	}
 
-	buf := new(bytes.Buffer)
-
 	merge := exec.CommandContext(ctx, cmdutil.CommandMKVMerge, options...)
-	merge.Stdout = buf
-	if cmdutil.DebugMode {
-		merge.Stderr = p.w
-	}
+
+	bufOut := new(bytes.Buffer)
+	bufErr := new(bytes.Buffer)
+	merge.Stdout = bufOut
+	merge.Stderr = bufErr
 
 	err := merge.Run()
 	if err != nil {
-		return nil, fmt.Errorf("unable to retrieve characteristics: %w", err)
+		return nil, util.ErrorFromStrings(
+			fmt.Errorf("unable to retrieve characteristics: %w", err),
+			bufOut.String(),
+			bufErr.String(),
+		)
 	}
 
 	var characteristics *mkvmergeIdentificationOutput
-	err = json.Unmarshal(buf.Bytes(), &characteristics)
+	err = json.Unmarshal(bufOut.Bytes(), &characteristics)
 	if err != nil {
 		return nil, fmt.Errorf("unable to parse characteristics: %w", err)
 	}

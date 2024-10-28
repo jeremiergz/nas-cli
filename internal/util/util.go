@@ -1,6 +1,7 @@
 package util
 
 import (
+	"errors"
 	"strings"
 	"unicode"
 
@@ -38,4 +39,17 @@ func RemoveDiacritics(s string) (string, error) {
 	}
 
 	return output, nil
+}
+
+// Returns an error from a list of strings.
+//
+// Useful when using stdout & stderr buffers from a command output.
+func ErrorFromStrings(err error, messages ...string) error {
+	errs := []error{err}
+	for _, message := range messages {
+		if message != "" {
+			errs = append(errs, errors.New(message))
+		}
+	}
+	return errors.Join(errs...)
 }

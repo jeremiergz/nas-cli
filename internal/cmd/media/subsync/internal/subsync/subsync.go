@@ -85,12 +85,12 @@ func (p *process) Run(ctx context.Context) error {
 		options = append(options, "--ref-stream-by-type", p.streamType)
 	}
 
-	var buf bytes.Buffer
 	subsync := exec.CommandContext(ctx, cmdutil.CommandSubsync, options...)
-	subsync.Stdout = &buf
-	if cmdutil.DebugMode {
-		subsync.Stderr = p.w
-	}
+
+	bufOut := new(bytes.Buffer)
+	bufErr := new(bytes.Buffer)
+	subsync.Stdout = bufOut
+	subsync.Stderr = bufErr
 
 	if err := subsync.Start(); err != nil {
 		p.tracker.MarkAsErrored()
@@ -100,19 +100,23 @@ func (p *process) Run(ctx context.Context) error {
 	go func() {
 		originalMessage := p.tracker.Message[:(len(p.tracker.Message) - 12)] // Remove margin from the message.
 		for !p.tracker.IsDone() {
-			progress, points, err := cmdutil.GetSubsyncProgress(buf.String())
+			progress, points, err := cmdutil.GetSubsyncProgress(bufOut.String())
 			if err == nil {
 				p.tracker.SetValue(int64(progress))
 				p.tracker.UpdateMessage(fmt.Sprintf("%s %s points ", originalMessage, formatPoints(points)))
 			}
-			buf.Reset()
+			bufOut.Reset()
 			time.Sleep(100 * time.Millisecond)
 		}
 	}()
 
 	if err := subsync.Wait(); err != nil {
 		p.tracker.MarkAsErrored()
-		return err
+		return util.ErrorFromStrings(
+			fmt.Errorf("failed to run Subsync: %w", err),
+			bufOut.String(),
+			bufErr.String(),
+		)
 	}
 
 	os.Chown(outFilePath, config.UID, config.GID)

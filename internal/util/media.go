@@ -141,7 +141,18 @@ var (
 			"uk": "eng-uk", // English (UK).
 			"us": "eng-us", // English (US).
 		},
+		"eng": {
+			"":   "eng-us", // English (Default).
+			"ca": "eng-ca", // English (Canada).
+			"uk": "eng-uk", // English (UK).
+			"us": "eng-us", // English (US).
+		},
 		"fr": {
+			"":   "fre-fr", // French (Default).
+			"ca": "fre-ca", // French (Canada).
+			"fr": "fre-fr", // French (France).
+		},
+		"fre": {
 			"":   "fre-fr", // French (Default).
 			"ca": "fre-ca", // French (Canada).
 			"fr": "fre-fr", // French (France).
@@ -151,7 +162,17 @@ var (
 			"at": "ger-at", // German (Austria).
 			"de": "ger-de", // German (Germany).
 		},
+		"ger": {
+			"":   "ger-de", // German (Default).
+			"at": "ger-at", // German (Austria).
+			"de": "ger-de", // German (Germany).
+		},
 		"es": {
+			"":   "spa-es", // Spanish (Default).
+			"es": "spa-es", // Spanish (Spain).
+			"mx": "spa-mx", // Spanish (Mexico).
+		},
+		"spa": {
 			"":   "spa-es", // Spanish (Default).
 			"es": "spa-es", // Spanish (Spain).
 			"mx": "spa-mx", // Spanish (Mexico).

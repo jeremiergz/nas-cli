@@ -17,6 +17,7 @@ import (
 	"github.com/jeremiergz/nas-cli/internal/config"
 	"github.com/jeremiergz/nas-cli/internal/model"
 	svc "github.com/jeremiergz/nas-cli/internal/service"
+	"github.com/jeremiergz/nas-cli/internal/util"
 	"github.com/jeremiergz/nas-cli/internal/util/cmdutil"
 )
 
@@ -83,13 +84,12 @@ func (p *process) Run(ctx context.Context) error {
 	}
 	options = append(options, videoFileBackupPath)
 
-	var buf bytes.Buffer
-
 	merge := exec.CommandContext(ctx, cmdutil.CommandMKVMerge, options...)
-	merge.Stdout = &buf
-	if cmdutil.DebugMode {
-		merge.Stderr = p.w
-	}
+
+	bufOut := new(bytes.Buffer)
+	bufErr := new(bytes.Buffer)
+	merge.Stdout = bufOut
+	merge.Stderr = bufErr
 
 	if err = merge.Start(); err != nil {
 		p.tracker.MarkAsErrored()
@@ -98,11 +98,11 @@ func (p *process) Run(ctx context.Context) error {
 
 	go func() {
 		for !p.tracker.IsDone() {
-			progress, err := cmdutil.GetMKVMergeProgress(buf.String())
+			progress, err := cmdutil.GetMKVMergeProgress(bufOut.String())
 			if err == nil {
 				p.tracker.SetValue(int64(progress))
 			}
-			buf.Reset()
+			bufOut.Reset()
 			time.Sleep(100 * time.Millisecond)
 		}
 	}()
@@ -118,7 +118,11 @@ func (p *process) Run(ctx context.Context) error {
 		}
 		wg.Wait()
 		p.tracker.MarkAsErrored()
-		return err
+		return util.ErrorFromStrings(
+			fmt.Errorf("failed to run MKVMerge: %w", err),
+			bufOut.String(),
+			bufErr.String(),
+		)
 	}
 
 	os.Chown(p.file.FilePath(), config.UID, config.GID)
