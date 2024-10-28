@@ -56,7 +56,7 @@ func newMovieCmd() *cobra.Command {
 				}
 			}
 
-			err = process(cmd.Context(), cmd.OutOrStdout(), uploads)
+			err = process(cmd.Context(), cmd.OutOrStdout(), uploads, model.KindMovie)
 			if err != nil {
 				return err
 			}

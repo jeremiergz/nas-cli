@@ -1,7 +1,9 @@
 package scp
 
 import (
+	"context"
 	"fmt"
+	"io"
 	"path/filepath"
 
 	"github.com/samber/lo"
@@ -39,15 +41,11 @@ func newAnimeCmd() *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			fmt.Println("remoteDiskUsageStats", remoteDiskUsageStats)
-			fmt.Println("remoteDirWithLowestUsage", remoteDirWithLowestUsage)
+			err := processShows(cmd.Context(), cmd.OutOrStdout(), model.KindAnime)
+			if err != nil {
+				return err
+			}
 
-			// animesDest := viper.GetString(config.KeySCPDestAnimesPath)
-			// if animesDest == "" {
-			// 	return fmt.Errorf("%s configuration entry is missing", config.KeySCPDestAnimesPath)
-			// }
-
-			// return process(cmd.Context(), cmd.OutOrStdout(), assets, animesDest, subpath)
 			return nil
 		},
 	}
@@ -78,50 +76,7 @@ func newTVShowCmd() *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			shows, err := model.Shows(config.WD, []string{util.ExtensionMKV}, true, "", nil, true)
-			if err != nil {
-				return err
-			}
-
-			if len(shows) == 0 {
-				svc.Console.Success("Nothing to upload")
-				return nil
-			}
-
-			remoteShows, err := listRemoteShows(remoteFolders)
-			if err != nil {
-				return err
-			}
-
-			uploads := []*upload{}
-			for _, show := range shows {
-				remoteShowPath, exists := remoteShows[show.Name()]
-				showDir := lo.Ternary(exists,
-					remoteShowPath,
-					filepath.Join(remoteDirWithLowestUsage, show.Name()),
-				)
-
-				for _, season := range show.Seasons() {
-					for _, episode := range season.Episodes() {
-						uploads = append(uploads, &upload{
-							File: episode,
-							Destination: filepath.Join(
-								showDir,
-								episode.Season().Name(),
-								episode.FullName(),
-							),
-							DisplayName: fmt.Sprintf(
-								"%s/%s/%s",
-								episode.Season().Show().Name(),
-								episode.Season().Name(),
-								episode.FullName(),
-							),
-						})
-					}
-				}
-			}
-
-			err = process(cmd.Context(), cmd.OutOrStdout(), uploads)
+			err := processShows(cmd.Context(), cmd.OutOrStdout(), model.KindTVShow)
 			if err != nil {
 				return err
 			}
@@ -134,6 +89,58 @@ func newTVShowCmd() *cobra.Command {
 	cmd.MarkFlagFilename("assets")
 
 	return cmd
+}
+
+func processShows(ctx context.Context, out io.Writer, kind model.Kind) error {
+	shows, err := model.Shows(config.WD, []string{util.ExtensionMKV}, true, "", nil, true)
+	if err != nil {
+		return err
+	}
+
+	if len(shows) == 0 {
+		svc.Console.Success("Nothing to upload")
+		return nil
+	}
+
+	remoteShows, err := listRemoteShows(remoteFolders)
+	if err != nil {
+		return err
+	}
+
+	uploads := []*upload{}
+	for _, show := range shows {
+		remoteShowPath, exists := remoteShows[show.Name()]
+		showDir := lo.Ternary(exists,
+			remoteShowPath,
+			filepath.Join(remoteDirWithLowestUsage, show.Name()),
+		)
+
+		for _, season := range show.Seasons() {
+			for _, episode := range season.Episodes() {
+				uploads = append(uploads, &upload{
+					File: episode,
+					Destination: filepath.Join(
+						showDir,
+						episode.Season().Name(),
+						episode.FullName(),
+					),
+					DisplayName: fmt.Sprintf(
+						"%s/%s/%s",
+						episode.Season().Show().Name(),
+						episode.Season().Name(),
+						episode.FullName(),
+					),
+				})
+			}
+		}
+	}
+
+	err = process(ctx, out, uploads, kind)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func listRemoteShows(paths []string) (map[string]string, error) {

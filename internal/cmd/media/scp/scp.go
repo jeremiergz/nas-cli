@@ -4,10 +4,12 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"maps"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -187,7 +189,7 @@ type upload struct {
 	DisplayName string
 }
 
-func process(ctx context.Context, out io.Writer, uploads []*upload) error {
+func process(ctx context.Context, out io.Writer, uploads []*upload, kind model.Kind) error {
 	pw := cmdutil.NewProgressWriter(out, len(uploads))
 
 	eg, _ := errgroup.WithContext(ctx)
@@ -196,34 +198,59 @@ func process(ctx context.Context, out io.Writer, uploads []*upload) error {
 		eg.SetLimit(maxParallel)
 	}
 
-	uploadsToProcess := []*upload{}
-	for _, upload := range uploads {
-		if !yes {
-			shouldProcess := svc.Console.AskConfirmation(
-				fmt.Sprintf(
-					"Process %q?  ->  %s",
-					upload.DisplayName,
-					svc.Console.Gray(upload.Destination),
-				),
-				true,
-			)
-			if !shouldProcess {
-				continue
-			}
-		}
-		uploadsToProcess = append(uploadsToProcess, upload)
-	}
+	// Group uploads by destination directory so we can ask for a bunch of uploads at once
+	// instead of one by one.
+	uploadsGroupedByDirName := lo.GroupBy(uploads, func(u *upload) string {
+		return filepath.Dir(u.Destination)
+	})
 
-	if len(uploadsToProcess) == 0 {
-		return nil
+	lw := cmdutil.NewListWriter()
+	for _, remoteDirName := range slices.Sorted(maps.Keys(uploadsGroupedByDirName)) {
+		var rootName string
+		switch kind {
+		case model.KindAnime, model.KindTVShow:
+			rootName = toShortName(remoteDirName, 2)
+
+		case model.KindMovie:
+			rootName = toShortName(remoteDirName, 1)
+		}
+
+		lw.AppendItem(rootName)
+		lw.Indent()
+		for _, upload := range uploadsGroupedByDirName[remoteDirName] {
+			var localName string
+			switch kind {
+			case model.KindAnime, model.KindTVShow:
+				localName = toShortName(upload.File.FilePath(), 3)
+
+			case model.KindMovie:
+				localName = toShortName(upload.File.FilePath(), 2)
+			}
+
+			lw.AppendItem(fmt.Sprintf(
+				"%s  ->  %s",
+				svc.Console.Gray(localName),
+				upload.Destination),
+			)
+		}
+		lw.UnIndent()
+	}
+	fmt.Fprintln(out, lw.Render())
+
+	if !yes {
+		fmt.Fprintln(out)
+		shouldProcess := svc.Console.AskConfirmation("Process?", true)
+		if !shouldProcess {
+			return nil
+		}
 	}
 
 	fmt.Fprintln(out)
 
-	padder := str.NewPadder(lo.Map(uploadsToProcess, func(u *upload, _ int) string { return u.DisplayName }))
+	padder := str.NewPadder(lo.Map(uploads, func(u *upload, _ int) string { return u.DisplayName }))
 
-	uploaders := make([]svc.Runnable, len(uploadsToProcess))
-	for index, upload := range uploadsToProcess {
+	uploaders := make([]svc.Runnable, len(uploads))
+	for index, upload := range uploads {
 		paddingLength := padder.PaddingLength(upload.DisplayName, 1)
 		tracker := &progress.Tracker{
 			DeferStart: true,
@@ -255,4 +282,9 @@ func process(ctx context.Context, out io.Writer, uploads []*upload) error {
 	}
 
 	return nil
+}
+
+func toShortName(remoteDirName string, from int) string {
+	parts := strings.Split(remoteDirName, string(filepath.Separator))
+	return strings.Join(parts[len(parts)-from:], string(filepath.Separator))
 }

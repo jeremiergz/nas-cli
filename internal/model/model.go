@@ -18,6 +18,18 @@ var (
 	ErrEmptyFilePath = errors.New("file path cannot be empty")
 )
 
+type Kind string
+
+const (
+	KindAnime  Kind = "anime"
+	KindMovie  Kind = "movie"
+	KindTVShow Kind = "tvshow"
+)
+
+func (k Kind) String() string {
+	return string(k)
+}
+
 type MediaFile interface {
 	Basename() string
 	Extension() string
