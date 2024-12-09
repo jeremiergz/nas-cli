@@ -3,6 +3,7 @@ package scp
 import (
 	"fmt"
 	"path/filepath"
+	"strings"
 
 	"github.com/spf13/cobra"
 
@@ -49,9 +50,10 @@ func newMovieCmd() *cobra.Command {
 
 			uploads := make([]*upload, len(movies))
 			for i, movie := range movies {
+				movieDirname := strings.TrimSuffix(movie.FullName(), fmt.Sprintf(".%s", movie.Extension()))
 				uploads[i] = &upload{
 					File:        movie,
-					Destination: filepath.Join(remoteDirWithLowestUsage, movie.FullName(), movie.Basename()),
+					Destination: filepath.Join(remoteDirWithLowestUsage, movieDirname, movie.Basename()),
 					DisplayName: movie.FullName(),
 				}
 			}

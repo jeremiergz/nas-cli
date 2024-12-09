@@ -249,6 +249,15 @@ func process(ctx context.Context, out io.Writer, uploads []*upload, kind model.K
 
 	padder := str.NewPadder(lo.Map(uploads, func(u *upload, _ int) string { return u.DisplayName }))
 
+	var permissionsDepth uint
+	switch kind {
+	case model.KindAnime, model.KindTVShow:
+		permissionsDepth = 2
+
+	case model.KindMovie:
+		permissionsDepth = 1
+	}
+
 	uploaders := make([]svc.Runnable, len(uploads))
 	for index, upload := range uploads {
 		paddingLength := padder.PaddingLength(upload.DisplayName, 1)
@@ -260,7 +269,7 @@ func process(ctx context.Context, out io.Writer, uploads []*upload, kind model.K
 		pw.AppendTracker(tracker)
 
 		uploader := rsync.
-			New(upload.File, upload.Destination, !delete).
+			New(upload.File, upload.Destination, !delete, permissionsDepth).
 			SetOutput(out).
 			SetTracker(tracker)
 		uploaders[index] = uploader

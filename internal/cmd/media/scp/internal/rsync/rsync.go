@@ -27,25 +27,27 @@ var (
 )
 
 type process struct {
-	destination  string
-	file         model.MediaFile
-	keepOriginal bool
-	ownerUID     int
-	ownerGID     int
-	remoteHost   string
-	tracker      *progress.Tracker
-	w            io.Writer
+	destination      string
+	file             model.MediaFile
+	keepOriginal     bool
+	ownerUID         int
+	ownerGID         int
+	permissionsDepth uint
+	remoteHost       string
+	tracker          *progress.Tracker
+	w                io.Writer
 }
 
-func New(file model.MediaFile, destDir string, keepOriginal bool) svc.Runnable {
+func New(file model.MediaFile, destDir string, keepOriginal bool, permissionsDepth uint) svc.Runnable {
 	return &process{
-		destination:  destDir,
-		file:         file,
-		keepOriginal: keepOriginal,
-		ownerUID:     viper.GetInt(config.KeySCPChownUID),
-		ownerGID:     viper.GetInt(config.KeySCPChownGID),
-		remoteHost:   viper.GetString(config.KeySSHHost),
-		w:            os.Stdout,
+		destination:      destDir,
+		file:             file,
+		keepOriginal:     keepOriginal,
+		ownerUID:         viper.GetInt(config.KeySCPChownUID),
+		ownerGID:         viper.GetInt(config.KeySCPChownGID),
+		permissionsDepth: permissionsDepth,
+		remoteHost:       viper.GetString(config.KeySSHHost),
+		w:                os.Stdout,
 	}
 }
 
@@ -111,10 +113,15 @@ func (p *process) Run(ctx context.Context) error {
 		_ = os.Remove(p.file.FilePath())
 	}
 
-	entriesToChangePermsFor := map[string]fs.FileMode{
-		remoteParentDir: config.DirectoryMode,
-		p.destination:   config.FileMode,
+	entriesToChangePermsFor := map[string]fs.FileMode{}
+
+	// Add permissions for each parent directory depending on given depth.
+	currentRemoteParentDir := remoteParentDir
+	for i := uint(0); i < p.permissionsDepth; i++ {
+		entriesToChangePermsFor[currentRemoteParentDir] = config.DirectoryMode
+		currentRemoteParentDir = filepath.Dir(currentRemoteParentDir)
 	}
+	entriesToChangePermsFor[p.destination] = config.FileMode
 
 	eg, _ := errgroup.WithContext(ctx)
 	eg.SetLimit(cmdutil.MaxConcurrentGoroutines)
