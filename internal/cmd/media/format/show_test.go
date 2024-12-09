@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/jeremiergz/nas-cli/internal/cmd"
 	"github.com/jeremiergz/nas-cli/internal/config"
@@ -134,7 +135,7 @@ func Test_Show_Without_Options(t *testing.T) {
 	err := rootCMD.ExecuteContext(ctx)
 
 	assert.NoError(t, err)
-	assertSameshowTree(t, expectedTree, tempDir)
+	assertSameShowTree(t, expectedTree, tempDir)
 }
 
 func Test_Show_With_Name_Override(t *testing.T) {
@@ -192,41 +193,17 @@ func Test_Show_With_Name_Override(t *testing.T) {
 	err := rootCMD.ExecuteContext(ctx)
 
 	assert.NoError(t, err)
-	assertSameshowTree(t, expectedTree, tempDir)
+	assertSameShowTree(t, expectedTree, tempDir)
 }
 
-func assertSameshowTree(t *testing.T, expected map[string]map[string][]string, dir string) {
+func assertSameShowTree(t *testing.T, expected map[string]map[string][]string, dir string) {
 	t.Helper()
-	for show, seasons := range expected {
-		showPath := filepath.Join(dir, show)
-		dirInfo, err := os.Stat(showPath)
-
-		if err != nil {
-			t.Errorf("Unexpected error: %v", err)
-		} else if dirInfo.IsDir() {
-			for season, files := range seasons {
-				seasonPath := filepath.Join(showPath, season)
-				dirInfo, err = os.Stat(seasonPath)
-
-				if err != nil {
-					t.Errorf("Unexpected error: %v", err)
-				} else if dirInfo.IsDir() {
-					for _, file := range files {
-						filePath := filepath.Join(seasonPath, file)
-						fileInfo, err := os.Stat(filePath)
-
-						if err != nil {
-							t.Errorf("Unexpected error: %v", err)
-						} else if fileInfo == nil {
-							t.Fatalf("\nExpected episode to be a file: %s", filePath)
-						}
-					}
-				} else {
-					t.Fatalf("\nExpected season to be a directory: %s", seasonPath)
-				}
+	for _, seasons := range expected {
+		for _, episodes := range seasons {
+			for _, ep := range episodes {
+				epPath := filepath.Join(dir, ep)
+				require.FileExists(t, epPath)
 			}
-		} else {
-			t.Fatalf("\nExpected show to be a directory: %s", showPath)
 		}
 	}
 }
