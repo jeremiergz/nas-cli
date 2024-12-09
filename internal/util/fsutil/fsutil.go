@@ -52,10 +52,3 @@ func List(wd string, extensions []string, regExp *regexp.Regexp, recursive bool)
 
 	return fileList
 }
-
-// Creates target directory, setting its mode to 755 and setting ownership.
-func PrepareDir(targetDirectory string, owner, group int) {
-	os.Mkdir(targetDirectory, config.DirectoryMode)
-	os.Chmod(targetDirectory, config.DirectoryMode)
-	os.Chown(targetDirectory, owner, group)
-}

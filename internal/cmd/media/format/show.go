@@ -13,7 +13,6 @@ import (
 	"github.com/jeremiergz/nas-cli/internal/config"
 	"github.com/jeremiergz/nas-cli/internal/model"
 	svc "github.com/jeremiergz/nas-cli/internal/service"
-	"github.com/jeremiergz/nas-cli/internal/util/fsutil"
 )
 
 var (
@@ -87,9 +86,6 @@ func processShows(_ context.Context, w io.Writer, wd string, shows []*model.Show
 			continue
 		}
 
-		showPath := filepath.Join(wd, show.Name())
-		fsutil.PrepareDir(showPath, owner, group)
-
 		for _, season := range show.Seasons() {
 			if ask {
 				prompt := promptui.Prompt{
@@ -106,15 +102,17 @@ func processShows(_ context.Context, w io.Writer, wd string, shows []*model.Show
 				continue
 			}
 
-			seasonPath := filepath.Join(showPath, season.Name())
-			fsutil.PrepareDir(seasonPath, owner, group)
-
 			for _, episode := range season.Episodes() {
-				oldPath := filepath.Join(wd, episode.Basename())
-				newPath := filepath.Join(seasonPath, episode.FullName())
-				os.Rename(oldPath, newPath)
+				currentPath := filepath.Join(wd, episode.Basename())
+				newPath := filepath.Join(wd, episode.FullName())
+
+				if err := os.Rename(currentPath, newPath); err != nil {
+					return fmt.Errorf("could not rename %s to %s: %w", currentPath, newPath, err)
+				}
+
 				os.Chown(newPath, owner, group)
 				os.Chmod(newPath, config.FileMode)
+
 				svc.Console.Success(episode.FullName())
 			}
 		}
