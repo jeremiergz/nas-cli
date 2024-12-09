@@ -61,7 +61,12 @@ func (m *Movie) SetName(name string) {
 }
 
 func (m *Movie) FullName() string {
-	return fmt.Sprintf("%s (%d)", m.title, m.year)
+	return fmt.Sprintf(
+		"%s (%d).%s",
+		m.Name(),
+		m.Year(),
+		m.Extension(),
+	)
 }
 
 func (m *Movie) Year() int {
