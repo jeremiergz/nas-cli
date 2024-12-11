@@ -92,8 +92,8 @@ func NewProgressWriter(out io.Writer, expectedLength int) progress.Writer {
 	pw.Style().Options.TimeOverallPrecision = time.Second
 	pw.Style().Visibility.Tracker = false
 	pw.Style().Visibility.Value = false
-	pw.Style().Options.DoneString = fmt.Sprintf("   %s", util.StyleSuccess("✔"))
-	pw.Style().Options.ErrorString = fmt.Sprintf("   %s", util.StyleError("✘"))
+	pw.Style().Options.DoneString = fmt.Sprintf("  %s ", util.StyleSuccess("✔"))
+	pw.Style().Options.ErrorString = fmt.Sprintf("  %s ", util.StyleError("✘"))
 	pw.Style().Options.PercentIndeterminate = "   "
 	pw.Style().Options.Separator = ""
 	pw.Style().Chars.BoxLeft = ""
