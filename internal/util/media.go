@@ -210,3 +210,10 @@ func ToLanguageRegionalized(lang string) string {
 
 	return langRegional
 }
+
+func ToUpperFirst(s string) string {
+	if s == "" {
+		return ""
+	}
+	return strings.ToUpper(s[:1]) + s[1:]
+}

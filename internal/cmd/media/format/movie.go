@@ -61,6 +61,7 @@ func newMovieCmd() *cobra.Command {
 func processMovies(_ context.Context, w io.Writer, wd string, movies []*model.Movie, owner, group int) error {
 	for _, m := range movies {
 		fmt.Fprintln(w)
+
 		// Ask if current movie must be processed.
 		prompt := promptui.Prompt{
 			Label:     fmt.Sprintf("Rename %s", m.Basename()),

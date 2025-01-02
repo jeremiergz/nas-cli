@@ -7,18 +7,15 @@ import (
 	"regexp"
 	"slices"
 
-	"golang.org/x/text/cases"
-	"golang.org/x/text/language"
-
 	"github.com/jeremiergz/nas-cli/internal/model/internal/parser"
+	"github.com/jeremiergz/nas-cli/internal/util"
 	"github.com/jeremiergz/nas-cli/internal/util/fsutil"
 )
 
 var (
 	_ MediaFile = (*Episode)(nil)
 
-	episodeNameCaser = cases.Title(language.Und)
-	showFmtRegexp    = regexp.MustCompile(`(^.+)(\s-\s)S\d+E\d+\.(.+)$`)
+	showFmtRegexp = regexp.MustCompile(`(^.+)(\s-\s)S\d+E\d+\.(.+)$`)
 )
 
 // Holds information about a show such as its name and seasons.
@@ -40,8 +37,8 @@ func Shows(wd string, extensions []string, recursive bool, subtitleExtension str
 	for _, path := range toProcess {
 		basename := filepath.Base(path)
 		e, err := parser.Parse(basename)
+		e.Title = util.ToUpperFirst(e.Title)
 
-		e.Title = episodeNameCaser.String(e.Title)
 		if err == nil {
 			var show *Show
 			showIndex := findShowIndex(e.Title, shows)

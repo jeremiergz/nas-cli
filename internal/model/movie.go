@@ -4,17 +4,13 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"golang.org/x/text/cases"
-	"golang.org/x/text/language"
-
 	"github.com/jeremiergz/nas-cli/internal/model/internal/parser"
+	"github.com/jeremiergz/nas-cli/internal/util"
 	"github.com/jeremiergz/nas-cli/internal/util/fsutil"
 )
 
 var (
 	_ MediaFile = (*Movie)(nil)
-
-	movieNameCaser = cases.Title(language.Und)
 )
 
 // Holds information about a file parsed as a movie such as its title and year.
@@ -33,17 +29,19 @@ func Movies(wd string, extensions []string, recursive bool) ([]*Movie, error) {
 	movies := []*Movie{}
 	for _, path := range toProcess {
 		basename := filepath.Base(path)
-		parsed, err := parser.Parse(basename)
+		m, err := parser.Parse(basename)
+		m.Title = util.ToUpperFirst(m.Title)
+
 		if err == nil {
-			f, err := newFile(basename, parsed.Container, filepath.Join(wd, path))
+			f, err := newFile(basename, m.Container, filepath.Join(wd, path))
 			if err != nil {
 				return nil, err
 			}
 
 			movies = append(movies, &Movie{
 				file:  f,
-				title: movieNameCaser.String(parsed.Title),
-				year:  parsed.Year,
+				title: m.Title,
+				year:  m.Year,
 			})
 		} else {
 			return nil, err
