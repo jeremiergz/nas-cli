@@ -144,7 +144,7 @@ func New() *cobra.Command {
 
 			fmt.Fprintln(out)
 
-			err := subCmd.ExecuteContext(cmd.Context())
+			err := subCmd.RunE(cmd, args)
 			if err != nil {
 				return err
 			}
