@@ -70,7 +70,7 @@ func New() *cobra.Command {
 
 			fmt.Fprintln(out)
 
-			err := subCmd.RunE(cmd, args)
+			err := subCmd.ExecuteContext(cmd.Context())
 			if err != nil {
 				return err
 			}

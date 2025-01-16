@@ -40,6 +40,8 @@ var (
 	remoteDirWithLowestUsage string
 	remoteDiskUsageStats     map[string]int
 	remoteFolders            []string
+
+	selectedCommand string
 )
 
 func New() *cobra.Command {
@@ -57,6 +59,21 @@ func New() *cobra.Command {
 			err := cmdutil.CallParentPersistentPreRunE(cmd.Parent(), args)
 			if err != nil {
 				return err
+			}
+
+			if cmd.Name() == "scp" {
+				options := []string{
+					"movies",
+					"tvshows",
+					"animes",
+				}
+
+				selectedCommand, _ = pterm.DefaultInteractiveSelect.
+					WithDefaultText("Select media type").
+					WithOptions(options).
+					Show()
+			} else {
+				selectedCommand = cmd.Name()
 			}
 
 			_, err = exec.LookPath(cmdutil.CommandRsync)
@@ -92,7 +109,7 @@ func New() *cobra.Command {
 				return fmt.Errorf("failed to connect to SFTP server: %w", err)
 			}
 
-			switch cmd.Name() {
+			switch selectedCommand {
 			case "animes":
 				remoteFolders = viper.GetStringSlice(config.KeySCPDestAnimesPaths)
 
@@ -113,19 +130,8 @@ func New() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			out := cmd.OutOrStdout()
 
-			options := []string{
-				"movies",
-				"tvshows",
-				"animes",
-			}
-
-			selectedOption, _ := pterm.DefaultInteractiveSelect.
-				WithDefaultText("Select media type").
-				WithOptions(options).
-				Show()
-
 			var subCmd *cobra.Command
-			switch selectedOption {
+			switch selectedCommand {
 			case "movies":
 				subCmd = newMovieCmd()
 
@@ -138,7 +144,7 @@ func New() *cobra.Command {
 
 			fmt.Fprintln(out)
 
-			err := subCmd.RunE(cmd, args)
+			err := subCmd.ExecuteContext(cmd.Context())
 			if err != nil {
 				return err
 			}
@@ -301,6 +307,7 @@ func process(ctx context.Context, out io.Writer, uploads []*upload, kind model.K
 
 	uploaders := make([]svc.Runnable, len(uploads))
 	for index, upload := range uploads {
+		fmt.Println(upload)
 		paddingLength := padder.PaddingLength(upload.DisplayName, 1)
 		tracker := &progress.Tracker{
 			DeferStart: true,
