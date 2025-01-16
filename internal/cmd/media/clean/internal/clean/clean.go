@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -223,6 +224,13 @@ func (p *process) cleanTracks(ctx context.Context) error {
 			)
 			videoTrackNumber++
 		}
+	}
+
+	for _, attachment := range characteristics.Attachments {
+		options = append(options,
+			"--delete-attachment",
+			strconv.Itoa(attachment.ID),
+		)
 	}
 
 	options = append(options, p.file.FilePath())
