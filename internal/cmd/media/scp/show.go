@@ -27,7 +27,7 @@ func newAnimeCmd() *cobra.Command {
 		Aliases: []string{"anime", "ani", "a"},
 		Short:   animeDesc,
 		Long:    animeDesc + ".",
-		Args:    cobra.MinimumNArgs(1),
+		Args:    cobra.MaximumNArgs(0),
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			if cmdutil.DebugMode {
 				fmt.Fprintf(cmd.OutOrStdout(), "%s PreRunE\n", cmd.CommandPath())

@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/jedib0t/go-pretty/v6/progress"
+	"github.com/pterm/pterm"
 	"github.com/samber/lo"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -47,7 +48,7 @@ func New() *cobra.Command {
 		Aliases: []string{"sc"},
 		Short:   scpDesc,
 		Long:    scpDesc + ".",
-		Args:    cobra.MinimumNArgs(1),
+		Args:    cobra.MaximumNArgs(1),
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			if cmdutil.DebugMode {
 				fmt.Fprintf(cmd.OutOrStdout(), "%s PersistentPreRunE\n", cmd.CommandPath())
@@ -63,7 +64,12 @@ func New() *cobra.Command {
 				return fmt.Errorf("command not found: %s", cmdutil.CommandRsync)
 			}
 
-			err = fsutil.InitializeWorkingDir(args[0])
+			selectedDir := "."
+			if len(args) > 0 {
+				selectedDir = args[0]
+			}
+
+			err = fsutil.InitializeWorkingDir(selectedDir)
 			if err != nil {
 				return err
 			}
@@ -98,6 +104,41 @@ func New() *cobra.Command {
 			}
 
 			err = setRemoteDiskUsageStats(remoteFolders)
+			if err != nil {
+				return err
+			}
+
+			return nil
+		},
+		RunE: func(cmd *cobra.Command, args []string) error {
+			out := cmd.OutOrStdout()
+
+			options := []string{
+				"movies",
+				"tvshows",
+				"animes",
+			}
+
+			selectedOption, _ := pterm.DefaultInteractiveSelect.
+				WithDefaultText("Select media type").
+				WithOptions(options).
+				Show()
+
+			var subCmd *cobra.Command
+			switch selectedOption {
+			case "movies":
+				subCmd = newMovieCmd()
+
+			case "tvshows":
+				subCmd = newTVShowCmd()
+
+			case "animes":
+				subCmd = newAnimeCmd()
+			}
+
+			fmt.Fprintln(out)
+
+			err := subCmd.RunE(cmd, args)
 			if err != nil {
 				return err
 			}
@@ -229,7 +270,7 @@ func process(ctx context.Context, out io.Writer, uploads []*upload, kind model.K
 
 			lw.AppendItem(fmt.Sprintf(
 				"%s  ->  %s",
-				svc.Console.Gray(localName),
+				pterm.Gray(localName),
 				upload.Destination),
 			)
 		}

@@ -4,6 +4,8 @@ import (
 	"context"
 	"os"
 
+	"github.com/pterm/pterm"
+
 	"github.com/jeremiergz/nas-cli/internal/cmd"
 	"github.com/jeremiergz/nas-cli/internal/cmd/backup"
 	"github.com/jeremiergz/nas-cli/internal/cmd/completion"
@@ -15,6 +17,10 @@ import (
 )
 
 func main() {
+	pterm.DefaultInteractiveSelect.OptionStyle = pterm.NewStyle()
+	pterm.DefaultInteractiveSelect.SelectorStyle = pterm.NewStyle(pterm.FgBlue)
+	pterm.DefaultInteractiveSelect.TextStyle = pterm.NewStyle()
+
 	rootCmd := cmd.New()
 	rootCmd.AddCommand(backup.New())
 	rootCmd.AddCommand(completion.New())

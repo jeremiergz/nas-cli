@@ -44,7 +44,7 @@ func New() *cobra.Command {
 		Aliases: []string{"cln"},
 		Short:   cleanDesc,
 		Long:    cleanDesc + ".",
-		Args:    cobra.MinimumNArgs(1),
+		Args:    cobra.MaximumNArgs(1),
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			if cmdutil.DebugMode {
 				fmt.Fprintf(cmd.OutOrStdout(), "%s PersistentPreRunE\n", cmd.CommandPath())
@@ -60,7 +60,12 @@ func New() *cobra.Command {
 				return fmt.Errorf("command not found: %s", cmdutil.CommandMKVPropEdit)
 			}
 
-			err = fsutil.InitializeWorkingDir(args[0])
+			selectedDir := "."
+			if len(args) > 0 {
+				selectedDir = args[0]
+			}
+
+			err = fsutil.InitializeWorkingDir(selectedDir)
 			if err != nil {
 				return err
 			}

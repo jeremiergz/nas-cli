@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/manifoldco/promptui"
+	"github.com/pterm/pterm"
 	"github.com/samber/lo"
 
 	"github.com/jeremiergz/nas-cli/internal/model"
@@ -30,17 +30,17 @@ func (s *Service) SetOutput(w io.Writer) {
 
 // Pretty-prints given error message.
 func (s *Service) Error(message string) {
-	fmt.Fprintln(s.w, promptui.Styler(promptui.FGRed)("✗"), message)
+	fmt.Fprintln(s.w, pterm.Red("✗"), message)
 }
 
 // Pretty-prints given info message.
 func (s *Service) Info(message string) {
-	fmt.Fprintln(s.w, promptui.Styler(promptui.FGYellow)("❯"), message)
+	fmt.Fprintln(s.w, pterm.Yellow("❯"), message)
 }
 
 // Pretty-prints given success message.
 func (s *Service) Success(message string) {
-	fmt.Fprintln(s.w, promptui.Styler(promptui.FGGreen)("✔"), message)
+	fmt.Fprintln(s.w, pterm.Green("✔"), message)
 }
 
 // Prints given files array as a tree.
@@ -85,7 +85,7 @@ func (s *Service) PrintMovies(wd string, movies []*model.Movie) {
 			fmt.Sprintf(
 				"%s  <-  %s",
 				filepath.Join(m.FullName(), fmt.Sprintf("%s.%s", m.FullName(), m.Extension())),
-				s.Gray(m.Basename()),
+				pterm.Gray(m.Basename()),
 			),
 		)
 	}
@@ -140,7 +140,7 @@ func (s *Service) PrintShows(wd string, shows []*model.Show) {
 				lw.AppendItem(fmt.Sprintf(
 					"%s  <-  %s",
 					episode.FullName(),
-					s.Gray(episode.Basename()),
+					pterm.Gray(episode.Basename()),
 				),
 				)
 			}
@@ -158,7 +158,7 @@ func (s *Service) AskConfirmation(label string, yesByDefault bool) bool {
 		choices = "y/N"
 	}
 
-	fmt.Fprintf(s.w, "%s %s [%s] ", s.Blue("?"), label, s.Gray(choices))
+	fmt.Fprintf(s.w, "%s %s [%s] ", pterm.Blue("?"), label, pterm.Gray(choices))
 
 	var result bool
 	for {
@@ -187,34 +187,10 @@ func (s *Service) AskConfirmation(label string, yesByDefault bool) bool {
 	}
 
 	fmt.Printf("\033[1A\033[K%s %s  %s\n",
-		lo.Ternary(result, s.Green("✔"), s.Red("✖")),
+		lo.Ternary(result, pterm.Green("✔"), pterm.Red("✖")),
 		label,
-		s.Gray(lo.Ternary(result, "yes", "no")),
+		pterm.Gray(lo.Ternary(result, "yes", "no")),
 	)
 
 	return result
-}
-
-var (
-	reset = "\033[0m"
-	blue  = "\033[34m"
-	gray  = "\033[90m"
-	green = "\033[32m"
-	red   = "\033[31m"
-)
-
-func (s *Service) Blue(label string) string {
-	return fmt.Sprintf("%s%s%s", blue, label, reset)
-}
-
-func (s *Service) Gray(label string) string {
-	return fmt.Sprintf("%s%s%s", gray, label, reset)
-}
-
-func (s *Service) Green(label string) string {
-	return fmt.Sprintf("%s%s%s", green, label, reset)
-}
-
-func (s *Service) Red(label string) string {
-	return fmt.Sprintf("%s%s%s", red, label, reset)
 }

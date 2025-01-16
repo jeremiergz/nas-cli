@@ -77,19 +77,23 @@ func processMovies(
 	eg.SetLimit(cmdutil.MaxConcurrentGoroutines)
 
 	movies := []*movie{}
+	moviesGroupedByFolder := map[string][]*movie{}
 
 	for destination, entries := range folders {
+		moviesGroupedByFolder[destination] = []*movie{}
 		for _, entry := range entries {
 			if nameFilter != "" {
 				if !strings.Contains(strings.ToLower(entry.Name()), strings.ToLower(nameFilter)) {
-					return nil
+					continue
 				}
 			}
-			movies = append(movies, &movie{
+			m := &movie{
 				sftp:      svc.SFTP.Client,
 				RemoteDir: destination,
 				Name:      entry.Name(),
-			})
+			}
+			moviesGroupedByFolder[destination] = append(moviesGroupedByFolder[destination], m)
+			movies = append(movies, m)
 		}
 	}
 	if err := eg.Wait(); err != nil {
@@ -111,21 +115,24 @@ func processMovies(
 		}
 	}
 
-	printMovies(out, folders, movies)
+	printMovies(out, moviesGroupedByFolder)
 
 	return nil
 }
 
-func printMovies(out io.Writer, folders map[string][]fs.FileInfo, movies []*movie) {
+func printMovies(out io.Writer, moviesGroupedByFolder map[string][]*movie) {
 	lw := cmdutil.NewListWriter()
 
-	for folder := range folders {
-		filesCount := len(folders[folder])
+	movies := []*movie{}
+
+	for folder, movieGroup := range moviesGroupedByFolder {
+		filesCount := len(movieGroup)
 		lw.AppendItem(fmt.Sprintf("%s (%d result%s)",
 			filepath.Clean(folder),
 			filesCount,
 			lo.Ternary(filesCount > 1, "s", ""),
 		))
+		movies = append(movies, movieGroup...)
 	}
 
 	sortMovies(movies)

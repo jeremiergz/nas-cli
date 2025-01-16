@@ -8,7 +8,7 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/manifoldco/promptui"
+	"github.com/pterm/pterm"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"gopkg.in/yaml.v3"
@@ -120,7 +120,7 @@ func init() {
 		if backupPlexSrc != "" {
 			backupPlexSrcPath, err := filepath.Abs(backupPlexSrc)
 			if err != nil {
-				fmt.Println(promptui.Styler(promptui.FGRed)("✗"), err.Error())
+				fmt.Println(pterm.Red("✗"), err.Error())
 				os.Exit(1)
 			}
 			viper.Set(KeyBackupPlexSrc, backupPlexSrcPath)
@@ -129,7 +129,7 @@ func init() {
 		if backupPlexDest != "" {
 			backupPlexDestPath, err := filepath.Abs(backupPlexDest)
 			if err != nil {
-				fmt.Println(promptui.Styler(promptui.FGRed)("✗"), err.Error())
+				fmt.Println(pterm.Red("✗"), err.Error())
 				os.Exit(1)
 			}
 			viper.Set(KeyBackupPlexDest, backupPlexDestPath)
@@ -187,7 +187,7 @@ func init() {
 
 		err := Save()
 		if err != nil {
-			fmt.Println(promptui.Styler(promptui.FGRed)("✗"), err.Error())
+			fmt.Println(pterm.Red("✗"), err.Error())
 			os.Exit(1)
 		}
 	})

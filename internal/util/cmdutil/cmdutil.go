@@ -11,9 +11,8 @@ import (
 
 	"github.com/jedib0t/go-pretty/v6/list"
 	"github.com/jedib0t/go-pretty/v6/progress"
+	"github.com/pterm/pterm"
 	"github.com/spf13/cobra"
-
-	"github.com/jeremiergz/nas-cli/internal/util"
 )
 
 const (
@@ -92,8 +91,8 @@ func NewProgressWriter(out io.Writer, expectedLength int) progress.Writer {
 	pw.Style().Options.TimeOverallPrecision = time.Second
 	pw.Style().Visibility.Tracker = false
 	pw.Style().Visibility.Value = false
-	pw.Style().Options.DoneString = fmt.Sprintf("  %s ", util.StyleSuccess("✔"))
-	pw.Style().Options.ErrorString = fmt.Sprintf("  %s ", util.StyleError("✘"))
+	pw.Style().Options.DoneString = fmt.Sprintf("  %s ", pterm.Green("✔"))
+	pw.Style().Options.ErrorString = fmt.Sprintf("  %s ", pterm.Red("✘"))
 	pw.Style().Options.PercentIndeterminate = "   "
 	pw.Style().Options.Separator = ""
 	pw.Style().Chars.BoxLeft = ""

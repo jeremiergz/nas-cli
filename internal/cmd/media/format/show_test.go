@@ -9,6 +9,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/pterm/pterm"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -43,22 +44,22 @@ func Test_Show_With_Dry_Run(t *testing.T) {
 	lw.Indent()
 	lw.AppendItem(fmt.Sprintf("%s (%d episodes)", "Season 1", 5))
 	lw.Indent()
-	lw.AppendItem(fmt.Sprintf("%s  <-  %s", "Test - S01E01.mkv", svc.Console.Gray("test.s01e01.mkv")))
-	lw.AppendItem(fmt.Sprintf("%s  <-  %s", "Test - S01E02.mkv", svc.Console.Gray("test.s01e02.mkv")))
-	lw.AppendItem(fmt.Sprintf("%s  <-  %s", "Test - S01E03.mkv", svc.Console.Gray("test.s01e03.mkv")))
-	lw.AppendItem(fmt.Sprintf("%s  <-  %s", "Test - S01E04.mkv", svc.Console.Gray("test.s01e04.mkv")))
-	lw.AppendItem(fmt.Sprintf("%s  <-  %s", "Test - S01E05.mkv", svc.Console.Gray("test.s01e05.mkv")))
+	lw.AppendItem(fmt.Sprintf("%s  <-  %s", "Test - S01E01.mkv", pterm.Gray("test.s01e01.mkv")))
+	lw.AppendItem(fmt.Sprintf("%s  <-  %s", "Test - S01E02.mkv", pterm.Gray("test.s01e02.mkv")))
+	lw.AppendItem(fmt.Sprintf("%s  <-  %s", "Test - S01E03.mkv", pterm.Gray("test.s01e03.mkv")))
+	lw.AppendItem(fmt.Sprintf("%s  <-  %s", "Test - S01E04.mkv", pterm.Gray("test.s01e04.mkv")))
+	lw.AppendItem(fmt.Sprintf("%s  <-  %s", "Test - S01E05.mkv", pterm.Gray("test.s01e05.mkv")))
 	lw.UnIndent()
 	lw.UnIndent()
 
 	lw.Indent()
 	lw.AppendItem(fmt.Sprintf("%s (%d episodes)", "Season 2", 5))
 	lw.Indent()
-	lw.AppendItem(fmt.Sprintf("%s  <-  %s", "Test - S02E01.mkv", svc.Console.Gray("test.s02e01.mkv")))
-	lw.AppendItem(fmt.Sprintf("%s  <-  %s", "Test - S02E02.mkv", svc.Console.Gray("test.s02e02.mkv")))
-	lw.AppendItem(fmt.Sprintf("%s  <-  %s", "Test - S02E03.mkv", svc.Console.Gray("test.s02e03.mkv")))
-	lw.AppendItem(fmt.Sprintf("%s  <-  %s", "Test - S02E04.mkv", svc.Console.Gray("test.s02e04.mkv")))
-	lw.AppendItem(fmt.Sprintf("%s  <-  %s", "Test - S02E05.mkv", svc.Console.Gray("test.s02e05.mkv")))
+	lw.AppendItem(fmt.Sprintf("%s  <-  %s", "Test - S02E01.mkv", pterm.Gray("test.s02e01.mkv")))
+	lw.AppendItem(fmt.Sprintf("%s  <-  %s", "Test - S02E02.mkv", pterm.Gray("test.s02e02.mkv")))
+	lw.AppendItem(fmt.Sprintf("%s  <-  %s", "Test - S02E03.mkv", pterm.Gray("test.s02e03.mkv")))
+	lw.AppendItem(fmt.Sprintf("%s  <-  %s", "Test - S02E04.mkv", pterm.Gray("test.s02e04.mkv")))
+	lw.AppendItem(fmt.Sprintf("%s  <-  %s", "Test - S02E05.mkv", pterm.Gray("test.s02e05.mkv")))
 	lw.UnIndent()
 	lw.UnIndent()
 

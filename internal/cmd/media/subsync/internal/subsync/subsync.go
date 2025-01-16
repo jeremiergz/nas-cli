@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/jedib0t/go-pretty/v6/progress"
+	"github.com/pterm/pterm"
 	"github.com/spf13/viper"
 
 	"github.com/jeremiergz/nas-cli/internal/config"
@@ -137,13 +138,13 @@ func (p *process) SetTracker(tracker *progress.Tracker) svc.Runnable {
 }
 
 func formatPoints(points int) string {
-	var style func(interface{}) string
+	var style func(...any) string
 	if points < 30 {
-		style = util.StyleError
+		style = pterm.Red
 	} else if points < 60 {
-		style = util.StyleWarning
+		style = pterm.Yellow
 	} else {
-		style = util.StyleSuccess
+		style = pterm.Green
 	}
 
 	return style(fmt.Sprintf("%3d", points))

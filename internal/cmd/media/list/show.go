@@ -122,19 +122,22 @@ func processShows(
 	eg.SetLimit(cmdutil.MaxConcurrentGoroutines)
 
 	shows := []*show{}
+	showsGroupedByFolder := map[string][]*show{}
 
 	for destination, entries := range folders {
 		for _, entry := range entries {
 			if nameFilter != "" {
 				if !strings.Contains(strings.ToLower(entry.Name()), strings.ToLower(nameFilter)) {
-					return nil
+					continue
 				}
 			}
-			shows = append(shows, &show{
+			s := &show{
 				sftp:      svc.SFTP.Client,
 				RemoteDir: destination,
 				Name:      entry.Name(),
-			})
+			}
+			showsGroupedByFolder[destination] = append(showsGroupedByFolder[destination], s)
+			shows = append(shows, s)
 		}
 	}
 	if err := eg.Wait(); err != nil {
@@ -156,21 +159,24 @@ func processShows(
 		}
 	}
 
-	printShows(out, folders, shows)
+	printShows(out, showsGroupedByFolder)
 
 	return nil
 }
 
-func printShows(out io.Writer, folders map[string][]fs.FileInfo, shows []*show) {
+func printShows(out io.Writer, showsGroupedByFolder map[string][]*show) {
 	lw := cmdutil.NewListWriter()
 
-	for folder := range folders {
-		filesCount := len(folders[folder])
+	shows := []*show{}
+
+	for folder, showGroup := range showsGroupedByFolder {
+		filesCount := len(showGroup)
 		lw.AppendItem(fmt.Sprintf("%s (%d result%s)",
 			filepath.Clean(folder),
 			filesCount,
 			lo.Ternary(filesCount > 1, "s", ""),
 		))
+		shows = append(shows, showGroup...)
 	}
 
 	sortShows(shows)

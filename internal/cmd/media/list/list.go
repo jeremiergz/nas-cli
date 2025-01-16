@@ -3,10 +3,12 @@ package list
 import (
 	"cmp"
 	"context"
+	"fmt"
 	"io/fs"
 	"slices"
 	"sync"
 
+	"github.com/pterm/pterm"
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
 
@@ -25,9 +27,44 @@ func New() *cobra.Command {
 		Aliases: []string{"ls"},
 		Short:   listDesc,
 		Long:    listDesc + ".",
-		Args:    cobra.MinimumNArgs(1),
+		Args:    cobra.MaximumNArgs(1),
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			err := svc.SFTP.Connect()
+			if err != nil {
+				return err
+			}
+
+			return nil
+		},
+		RunE: func(cmd *cobra.Command, args []string) error {
+			out := cmd.OutOrStdout()
+
+			options := []string{
+				"movies",
+				"tvshows",
+				"animes",
+			}
+
+			selectedOption, _ := pterm.DefaultInteractiveSelect.
+				WithDefaultText("Select media type").
+				WithOptions(options).
+				Show()
+
+			var subCmd *cobra.Command
+			switch selectedOption {
+			case "movies":
+				subCmd = newMovieCmd()
+
+			case "tvshows":
+				subCmd = newTVShowCmd()
+
+			case "animes":
+				subCmd = newAnimeCmd()
+			}
+
+			fmt.Fprintln(out)
+
+			err := subCmd.RunE(cmd, args)
 			if err != nil {
 				return err
 			}

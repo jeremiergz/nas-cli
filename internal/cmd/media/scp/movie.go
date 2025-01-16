@@ -24,7 +24,7 @@ func newMovieCmd() *cobra.Command {
 		Aliases: []string{"movie", "mov", "m"},
 		Short:   movieDesc,
 		Long:    movieDesc + ".",
-		Args:    cobra.MinimumNArgs(1),
+		Args:    cobra.MaximumNArgs(0),
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			if cmdutil.DebugMode {
 				fmt.Fprintf(cmd.OutOrStdout(), "%s PreRunE\n", cmd.CommandPath())

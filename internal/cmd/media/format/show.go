@@ -27,7 +27,7 @@ func newShowCmd() *cobra.Command {
 		Aliases: []string{"show", "s"},
 		Short:   showDesc,
 		Long:    showDesc + ".",
-		Args:    cobra.MinimumNArgs(1),
+		Args:    cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			shows, err := model.Shows(config.WD, extensions, false, "", nil, false)
 			if err != nil {
