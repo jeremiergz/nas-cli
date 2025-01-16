@@ -307,7 +307,6 @@ func process(ctx context.Context, out io.Writer, uploads []*upload, kind model.K
 
 	uploaders := make([]svc.Runnable, len(uploads))
 	for index, upload := range uploads {
-		fmt.Println(upload)
 		paddingLength := padder.PaddingLength(upload.DisplayName, 1)
 		tracker := &progress.Tracker{
 			DeferStart: true,
