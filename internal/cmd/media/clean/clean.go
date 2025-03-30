@@ -35,6 +35,8 @@ var (
 	videoExtensions   []string
 	yes               bool
 
+	shouldOverrideLanguageRegions bool
+
 	langRegionRegexp = regexp.MustCompile(`^[a-z]{3}=[a-z]{2}-[a-z]{2}$`)
 )
 
@@ -71,6 +73,7 @@ func New() *cobra.Command {
 			}
 
 			if len(languageRegions) > 0 {
+				shouldOverrideLanguageRegions = true
 				flag := cmd.Flag("lang-region")
 				for _, region := range languageRegions {
 					isValid := langRegionRegexp.MatchString(region)
@@ -163,7 +166,7 @@ func process(ctx context.Context, w io.Writer, files []*model.File) error {
 		}
 		pw.AppendTracker(tracker)
 		cleaner := clean.
-			New(file, !delete).
+			New(file, !delete, shouldOverrideLanguageRegions).
 			SetOutput(w).
 			SetTracker(tracker)
 		cleaners[index] = cleaner

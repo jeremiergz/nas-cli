@@ -104,7 +104,7 @@ var (
 	langFlagsMapping = map[string]string{
 		"eng":    "🇺🇸", // English (All).
 		"eng-ca": "🇨🇦", // English (Canada).
-		"eng-uk": "🇬🇧", // English (UK).
+		"eng-gb": "🇬🇧", // English (UK).
 		"eng-us": "🇺🇸", // English (US).
 		"fre":    "🇫🇷", // French (All).
 		"fre-ca": "🇨🇦", // French (Canada).
@@ -138,13 +138,13 @@ var (
 		"en": {
 			"":   "eng-us", // English (Default).
 			"ca": "eng-ca", // English (Canada).
-			"uk": "eng-uk", // English (UK).
+			"gb": "eng-gb", // English (UK).
 			"us": "eng-us", // English (US).
 		},
 		"eng": {
 			"":   "eng-us", // English (Default).
 			"ca": "eng-ca", // English (Canada).
-			"uk": "eng-uk", // English (UK).
+			"gb": "eng-gb", // English (UK).
 			"us": "eng-us", // English (US).
 		},
 		"fr": {
@@ -181,22 +181,42 @@ var (
 )
 
 // Sets default regionalized language code.
-func SetDefaultLanguageRegion(lang, region string) {
-	lang = strings.ToLower(lang)
+func SetDefaultLanguageRegion(lang3Letter, region string) {
+	lang3Letter = strings.ToLower(lang3Letter)
+	lang2Letter := to2LetterCode(lang3Letter)
 	region = strings.ToLower(region)
+	region = strings.Replace(region, lang2Letter, lang3Letter, 1)
 
-	langIndex, ok := langRegionalsMapping[lang]
+	lang3LetterIndex, ok := langRegionalsMapping[lang3Letter]
 	if !ok {
-		langIndex = map[string]string{}
-		langRegionalsMapping[lang] = langIndex
+		lang3LetterIndex = map[string]string{}
+		langRegionalsMapping[lang3Letter] = lang3LetterIndex
 	}
 
-	langIndex[""] = region
+	lang3LetterIndex[""] = region
+
+	lang2LetterIndex, ok := langRegionalsMapping[to2LetterCode(lang3Letter)]
+	if !ok {
+		lang2LetterIndex = map[string]string{}
+		langRegionalsMapping[lang3Letter] = lang2LetterIndex
+	}
+
+	lang2LetterIndex[""] = region
 }
 
 // Returns regionalized language code. If not found, it returns the original language code.
-func ToLanguageRegionalized(lang string) string {
-	countryCode := countryCodeRegexp.FindString(lang)
+func ToLanguageRegionalized(language string, override bool) string {
+	parts := strings.Split(language, "-")
+	lang := strings.ToLower(parts[0])
+
+	var countryCode string
+	if len(parts) > 1 {
+		countryCode = strings.ToLower(parts[1])
+	}
+
+	if override {
+		countryCode = ""
+	}
 
 	langIndex, ok := langRegionalsMapping[lang]
 	if !ok {
@@ -216,4 +236,19 @@ func ToUpperFirst(s string) string {
 		return ""
 	}
 	return strings.ToUpper(s[:1]) + s[1:]
+}
+
+func to2LetterCode(lang3Letter string) string {
+	switch lang3Letter {
+	case "eng":
+		return "en"
+	case "fre":
+		return "fr"
+	case "ger":
+		return "de"
+	case "spa":
+		return "es"
+	default:
+		return lang3Letter
+	}
 }

@@ -28,17 +28,19 @@ var (
 )
 
 type process struct {
-	file         *model.File
-	keepOriginal bool
-	tracker      *progress.Tracker
-	w            io.Writer
+	file           *model.File
+	keepOriginal   bool
+	useDefaultLang bool
+	tracker        *progress.Tracker
+	w              io.Writer
 }
 
-func New(file *model.File, keepOriginal bool) svc.Runnable {
+func New(file *model.File, keepOriginal, useDefaultLangRegions bool) svc.Runnable {
 	return &process{
-		file:         file,
-		keepOriginal: keepOriginal,
-		w:            os.Stdout,
+		file:           file,
+		keepOriginal:   keepOriginal,
+		useDefaultLang: useDefaultLangRegions,
+		w:              os.Stdout,
 	}
 }
 
@@ -167,6 +169,7 @@ func (p *process) cleanTracks(ctx context.Context) error {
 	for _, track := range characteristics.Tracks {
 		lang := util.ToLanguageRegionalized(
 			cmp.Or(track.Properties.LanguageIETF, track.Properties.Language),
+			p.useDefaultLang,
 		)
 
 		switch track.Type {
