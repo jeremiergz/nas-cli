@@ -68,11 +68,6 @@ func newTVShowCmd() *cobra.Command {
 				fmt.Fprintf(cmd.OutOrStdout(), "%s PreRunE\n", cmd.CommandPath())
 			}
 
-			err := cmdutil.CallParentPersistentPreRunE(cmd, args)
-			if err != nil {
-				return err
-			}
-
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
