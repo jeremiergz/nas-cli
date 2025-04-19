@@ -37,7 +37,7 @@ func Shows(wd string, extensions []string, recursive bool, subtitleExtension str
 	for _, path := range toProcess {
 		basename := filepath.Base(path)
 		e, err := parser.Parse(basename)
-		e.Title = util.ToUpperFirst(e.Title)
+		e.Title = util.ToTitleCase(e.Title)
 
 		if err == nil {
 			var show *Show

@@ -30,7 +30,7 @@ func Movies(wd string, extensions []string, recursive bool) ([]*Movie, error) {
 	for _, path := range toProcess {
 		basename := filepath.Base(path)
 		m, err := parser.Parse(basename)
-		m.Title = util.ToUpperFirst(m.Title)
+		m.Title = util.ToTitleCase(m.Title)
 
 		if err == nil {
 			f, err := newFile(basename, m.Container, filepath.Join(wd, path))

@@ -7,6 +7,9 @@ import (
 	"strconv"
 	"strings"
 
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
+
 	"github.com/jeremiergz/nas-cli/internal/config"
 )
 
@@ -231,11 +234,12 @@ func ToLanguageRegionalized(language string, override bool) string {
 	return langRegional
 }
 
-func ToUpperFirst(s string) string {
-	if s == "" {
-		return ""
-	}
-	return strings.ToUpper(s[:1]) + s[1:]
+var (
+	caser = cases.Title(language.English)
+)
+
+func ToTitleCase(s string) string {
+	return caser.String(s)
 }
 
 func to2LetterCode(lang3Letter string) string {
