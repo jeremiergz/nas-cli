@@ -109,10 +109,6 @@ func (p *process) Run(ctx context.Context) error {
 		)
 	}
 
-	if !p.keepOriginal {
-		_ = os.Remove(p.file.FilePath())
-	}
-
 	entriesToChangePermsFor := map[string]fs.FileMode{}
 
 	// Add permissions for each parent directory depending on given depth.
@@ -145,6 +141,10 @@ func (p *process) Run(ctx context.Context) error {
 	if err := eg.Wait(); err != nil {
 		p.tracker.MarkAsErrored()
 		return err
+	}
+
+	if !p.keepOriginal {
+		_ = os.Remove(p.file.FilePath())
 	}
 
 	p.tracker.MarkAsDone()
