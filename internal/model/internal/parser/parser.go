@@ -104,10 +104,7 @@ func Parse(filename string) (*DownloadedFile, error) {
 		}
 
 		index := strings.Index(cleanName, matches[matchIdx][1])
-		if index == 0 {
-			startIndex = len(matches[matchIdx][1])
-
-		} else if index < endIndex {
+		if index > 0 && index < endIndex {
 			endIndex = index
 		}
 		setField(file, pattern.name, matches[matchIdx][2])
