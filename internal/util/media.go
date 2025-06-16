@@ -7,9 +7,6 @@ import (
 	"strconv"
 	"strings"
 
-	"golang.org/x/text/cases"
-	"golang.org/x/text/language"
-
 	"github.com/jeremiergz/nas-cli/internal/config"
 )
 
@@ -234,12 +231,13 @@ func ToLanguageRegionalized(language string, override bool) string {
 	return langRegional
 }
 
-var (
-	caser = cases.Title(language.English)
-)
-
+// Converts starting letter of each word in a string to uppercase.
 func ToTitleCase(s string) string {
-	return caser.String(s)
+	words := strings.Fields(s)
+	for i, word := range words {
+		words[i] = strings.ToUpper(string(word[0])) + word[1:]
+	}
+	return strings.Join(words, " ")
 }
 
 func to2LetterCode(lang3Letter string) string {
