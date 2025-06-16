@@ -39,6 +39,8 @@ type MediaFile interface {
 	Name() string
 	SetFilePath(path string)
 	Subtitles(languages ...string) map[string]string
+	BackgroundImageFilePath() *string
+	PosterImageFilePath() *string
 }
 
 type file struct {
@@ -135,6 +137,14 @@ func (f *file) Subtitles(languages ...string) map[string]string {
 	}
 
 	return f.subtitles
+}
+
+func (f *file) BackgroundImageFilePath() *string {
+	return nil
+}
+
+func (f *file) PosterImageFilePath() *string {
+	return nil
 }
 
 var (

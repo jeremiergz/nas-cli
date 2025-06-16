@@ -182,6 +182,14 @@ func (e *Episode) Season() *Season {
 	return e.season
 }
 
+func (e *Episode) BackgroundImageFilePath() *string {
+	return nil
+}
+
+func (e *Episode) PosterImageFilePath() *string {
+	return nil
+}
+
 // Finds season index in seasons array.
 func findShowSeasonIndex(name string, seasons []*Season) int {
 	seasonIndex := -1

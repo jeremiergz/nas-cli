@@ -122,6 +122,43 @@ func (p *process) Run(ctx context.Context) error {
 	eg, _ := errgroup.WithContext(ctx)
 	eg.SetLimit(cmdutil.MaxConcurrentGoroutines)
 
+	hasImageFile := false
+
+	imageFiles := []struct {
+		name string
+		path *string
+	}{
+		{"background", p.file.BackgroundImageFilePath()},
+		{"poster", p.file.PosterImageFilePath()},
+	}
+
+	for _, imageFile := range imageFiles {
+		if imageFile.path != nil {
+			hasImageFile = true
+			eg.Go(func() error {
+				imageSrcFilePath := *imageFile.path
+				imageDestFileName := imageFile.name + filepath.Ext(imageSrcFilePath)
+				imageDestFilePath := filepath.Join(remoteParentDir, imageDestFileName)
+
+				err := p.uploadImageFile(ctx, imageSrcFilePath, imageDestFilePath)
+				if err != nil {
+					return fmt.Errorf("failed to upload %s image file: %w", imageFile.name, err)
+				}
+
+				entriesToChangePermsFor[imageDestFilePath] = config.FileMode
+
+				return nil
+			})
+		}
+	}
+
+	if hasImageFile {
+		if err := eg.Wait(); err != nil {
+			p.tracker.MarkAsErrored()
+			return err
+		}
+	}
+
 	for entry, chmod := range entriesToChangePermsFor {
 		eg.Go(func() error {
 			err := svc.SFTP.Client.Chmod(entry, chmod)
@@ -144,10 +181,33 @@ func (p *process) Run(ctx context.Context) error {
 	}
 
 	if !p.keepOriginal {
+		if p.file.BackgroundImageFilePath() != nil {
+			_ = os.Remove(*p.file.BackgroundImageFilePath())
+		}
+		if p.file.PosterImageFilePath() != nil {
+			_ = os.Remove(*p.file.PosterImageFilePath())
+		}
 		_ = os.Remove(p.file.FilePath())
 	}
 
 	p.tracker.MarkAsDone()
+	return nil
+}
+
+func (p *process) uploadImageFile(ctx context.Context, imageFilePath, targetFilePath string) error {
+	options := []string{
+		"--append",
+		imageFilePath,
+		fmt.Sprintf("%s:%q", p.remoteHost, targetFilePath),
+	}
+
+	rsync := exec.CommandContext(ctx, cmdutil.CommandRsync, options...)
+
+	err := rsync.Run()
+	if err != nil {
+		return fmt.Errorf("failed to run rsync command: %w", err)
+	}
+
 	return nil
 }
 
