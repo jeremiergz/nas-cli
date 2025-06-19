@@ -109,9 +109,7 @@ func listMovieImageFiles(movieFilePath string) (background, poster *string, err 
 
 	validFileExtensions := []string{"jpg", "jpeg", "png", "webp"}
 
-	fileName := strings.TrimSuffix(filepath.Base(movieFilePath), filepath.Ext(movieFilePath))
-	backgroundFileNameBase := fileName + ".background"
-	posterFileNameBase := fileName + ".poster"
+	movieName := strings.TrimSuffix(filepath.Base(movieFilePath), filepath.Ext(movieFilePath))
 
 	for _, file := range files {
 		filePath := filepath.Join(".", file.Name())
@@ -119,15 +117,18 @@ func listMovieImageFiles(movieFilePath string) (background, poster *string, err 
 		fileExtension := strings.ToLower(strings.TrimPrefix(filepath.Ext(file.Name()), "."))
 
 		hasValidExtension := slices.Contains(validFileExtensions, fileExtension)
-		if hasValidExtension {
-			if fileName == backgroundFileNameBase {
+		hasMovieName := strings.HasPrefix(fileName, movieName)
+
+		if hasValidExtension && hasMovieName {
+			if slices.Contains([]string{"background", "bg"}, fileName) {
 				background = &filePath
 				err = processMovieImageFile(filePath)
 				if err != nil {
 					return nil, nil, fmt.Errorf("failed to process background image file %s: %w", filePath, err)
 				}
 			}
-			if fileName == posterFileNameBase {
+
+			if slices.Contains([]string{"poster", "pt"}, fileName) {
 				poster = &filePath
 				err = processMovieImageFile(filePath)
 				if err != nil {
