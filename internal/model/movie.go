@@ -120,7 +120,8 @@ func listMovieImageFiles(movieFilePath string) (background, poster *string, err 
 		hasMovieName := strings.HasPrefix(fileName, movieName)
 
 		if hasValidExtension && hasMovieName {
-			if slices.Contains([]string{"background", "bg"}, fileName) {
+			isBackgroundImage := strings.HasSuffix(fileName, ".background") || strings.HasSuffix(fileName, ".bg")
+			if isBackgroundImage {
 				background = &filePath
 				err = processMovieImageFile(filePath)
 				if err != nil {
@@ -128,7 +129,8 @@ func listMovieImageFiles(movieFilePath string) (background, poster *string, err 
 				}
 			}
 
-			if slices.Contains([]string{"poster", "pt"}, fileName) {
+			isPosterImage := strings.HasSuffix(fileName, ".poster") || strings.HasSuffix(fileName, ".pt")
+			if isPosterImage {
 				poster = &filePath
 				err = processMovieImageFile(filePath)
 				if err != nil {
