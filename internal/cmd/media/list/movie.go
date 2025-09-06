@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/pkg/sftp"
+	"github.com/pterm/pterm"
 	"github.com/samber/lo"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -18,6 +19,7 @@ import (
 
 	"github.com/jeremiergz/nas-cli/internal/config"
 	svc "github.com/jeremiergz/nas-cli/internal/service"
+	"github.com/jeremiergz/nas-cli/internal/util"
 	"github.com/jeremiergz/nas-cli/internal/util/cmdutil"
 )
 
@@ -100,18 +102,31 @@ func processMovies(
 		return err
 	}
 
-	if recursive {
-		for _, movie := range movies {
-			eg.Go(func() error {
-				err := movie.loadFiles()
-				if err != nil {
-					return err
-				}
-				return nil
-			})
+	for _, movie := range movies {
+		eg.Go(func() error {
+			err := movie.loadFiles()
+			if err != nil {
+				return err
+			}
+			return nil
+		})
+	}
+	if err := eg.Wait(); err != nil {
+		return err
+	}
+
+	if flagOnlyComplete || flagOnlyIncomplete || flagOnlyPartial {
+		filterFlags := map[movieState]bool{
+			movieStateComplete:   flagOnlyComplete,
+			movieStateIncomplete: flagOnlyIncomplete,
+			movieStatePartial:    flagOnlyPartial,
 		}
-		if err := eg.Wait(); err != nil {
-			return err
+
+		for folder, movieGroup := range moviesGroupedByFolder {
+			filteredGroup := lo.Filter(movieGroup, func(m *movie, _ int) bool {
+				return filterFlags[m.State]
+			})
+			moviesGroupedByFolder[folder] = filteredGroup
 		}
 	}
 
@@ -139,8 +154,20 @@ func printMovies(out io.Writer, moviesGroupedByFolder map[string][]*movie) {
 
 	lw.Indent()
 	for _, movie := range movies {
-		lw.AppendItem(movie.Name)
-		if recursive {
+		var movieName string
+		switch movie.State {
+		case movieStateComplete:
+			movieName = pterm.Green(movie.Name)
+		case movieStatePartial:
+			movieName = pterm.Magenta(movie.Name)
+		case movieStateIncomplete:
+			movieName = pterm.Red(movie.Name)
+		default:
+			movieName = movie.Name
+		}
+
+		lw.AppendItem(movieName)
+		if flagExtended {
 			for _, file := range movie.Files {
 				lw.Indent()
 				lw.AppendItem(file)
@@ -152,12 +179,22 @@ func printMovies(out io.Writer, moviesGroupedByFolder map[string][]*movie) {
 	fmt.Fprintln(out, lw.Render())
 }
 
+type movieState int
+
+const (
+	movieStateUnknown    movieState = iota
+	movieStateComplete              // Movie file + "poster.jpg" + "background.jpg".
+	movieStateIncomplete            // Only the movie file is present.
+	movieStatePartial               // Missing either "poster.jpg" or "background.jpg".
+)
+
 type movie struct {
 	sftp *sftp.Client
 
 	RemoteDir string
 	Name      string
 	Files     []string
+	State     movieState
 }
 
 func (m *movie) loadFiles() error {
@@ -170,8 +207,33 @@ func (m *movie) loadFiles() error {
 
 	sortFiles(movieEntries)
 
+	hasMovieFile := false
+	hasBackgroundImageFile := false
+	hasPosterImageFile := false
+
 	for _, movieEntry := range movieEntries {
-		m.Files = append(m.Files, movieEntry.Name())
+		movieEntryName := movieEntry.Name()
+		if slices.Contains(util.AcceptedVideoExtensions, strings.ToLower(filepath.Ext(movieEntryName)[1:])) {
+			hasMovieFile = true
+		}
+		if movieEntryName == "background.jpg" {
+			hasBackgroundImageFile = true
+		}
+		if movieEntryName == "poster.jpg" {
+			hasPosterImageFile = true
+		}
+
+		m.Files = append(m.Files, movieEntryName)
+	}
+
+	if hasMovieFile {
+		if hasBackgroundImageFile && hasPosterImageFile {
+			m.State = movieStateComplete
+		} else if hasBackgroundImageFile || hasPosterImageFile {
+			m.State = movieStatePartial
+		} else {
+			m.State = movieStateIncomplete
+		}
 	}
 
 	return nil

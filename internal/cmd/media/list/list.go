@@ -17,8 +17,11 @@ import (
 )
 
 var (
-	listDesc  = "List media files"
-	recursive bool
+	listDesc           = "List media files"
+	flagExtended       bool
+	flagOnlyComplete   bool
+	flagOnlyIncomplete bool
+	flagOnlyPartial    bool
 )
 
 func New() *cobra.Command {
@@ -73,7 +76,11 @@ func New() *cobra.Command {
 		},
 	}
 
-	cmd.PersistentFlags().BoolVarP(&recursive, "recursive", "r", false, "find files and folders recursively")
+	cmd.PersistentFlags().BoolVarP(&flagExtended, "extended", "e", false, "display extended information")
+	cmd.PersistentFlags().BoolVar(&flagOnlyComplete, "only-complete", false, "list only complete items")
+	cmd.PersistentFlags().BoolVar(&flagOnlyIncomplete, "only-incomplete", false, "list only incomplete items")
+	cmd.PersistentFlags().BoolVar(&flagOnlyPartial, "only-partial", false, "list only partial items")
+	cmd.MarkFlagsMutuallyExclusive("only-complete", "only-incomplete", "only-partial")
 	cmd.AddCommand(newAnimeCmd())
 	cmd.AddCommand(newMovieCmd())
 	cmd.AddCommand(newTVShowCmd())
