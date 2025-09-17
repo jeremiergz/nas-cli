@@ -61,6 +61,7 @@ func (p *process) Run(ctx context.Context) error {
 	subtitlePath := filepath.Join(config.WD, p.subtitle)
 	outFilePath := filepath.Join(config.WD, p.outFile)
 	options := []string{
+		"--cli",
 		"sync",
 		"--ref",
 		videoPath,
