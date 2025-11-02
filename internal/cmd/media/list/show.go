@@ -296,7 +296,7 @@ func (s *show) loadSeasons() error {
 
 			seasonEntries, err := s.sftp.ReadDir(seasonPath)
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to read season directory %s: %w", seasonPath, err)
 			}
 
 			sortFiles(seasonEntries)
@@ -307,7 +307,9 @@ func (s *show) loadSeasons() error {
 			for _, seasonEntry := range seasonEntries {
 				seasonEntryName := seasonEntry.Name()
 				// FIXME: Poster detection should be based on the exact season number.
-				isSeasonPoster := strings.HasPrefix(seasonEntryName, "Season") && strings.HasSuffix(seasonEntryName, ".jpg")
+				isSeasonPoster :=
+					(strings.HasPrefix(seasonEntryName, "Season") && strings.HasSuffix(seasonEntryName, ".jpg")) ||
+						seasonEntryName == "season-specials-poster.jpg"
 				if isSeasonPoster {
 					seasonFiles = append(seasonFiles, seasonEntryName)
 					hasSeasonPosterImageFile = true
