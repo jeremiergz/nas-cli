@@ -119,11 +119,6 @@ func (p *process) Run(ctx context.Context) error {
 	}
 	entriesToChangePermsFor[p.destination] = config.FileMode
 
-	eg, _ := errgroup.WithContext(ctx)
-	eg.SetLimit(cmdutil.MaxConcurrentGoroutines)
-
-	hasImageFile := false
-
 	imageFiles := []struct {
 		name string
 		path *string
@@ -134,30 +129,22 @@ func (p *process) Run(ctx context.Context) error {
 
 	for _, imageFile := range imageFiles {
 		if imageFile.path != nil {
-			hasImageFile = true
-			eg.Go(func() error {
-				imageSrcFilePath := *imageFile.path
-				imageDestFileName := imageFile.name + filepath.Ext(imageSrcFilePath)
-				imageDestFilePath := filepath.Join(remoteParentDir, imageDestFileName)
+			imageSrcFilePath := *imageFile.path
+			imageDestFileName := imageFile.name + filepath.Ext(imageSrcFilePath)
+			imageDestFilePath := filepath.Join(remoteParentDir, imageDestFileName)
 
-				err := p.uploadImageFile(ctx, imageSrcFilePath, imageDestFilePath)
-				if err != nil {
-					return fmt.Errorf("failed to upload %s image file: %w", imageFile.name, err)
-				}
+			err := p.uploadImageFile(ctx, imageSrcFilePath, imageDestFilePath)
+			if err != nil {
+				p.tracker.MarkAsErrored()
+				return fmt.Errorf("failed to upload %s image file: %w", imageFile.name, err)
+			}
 
-				entriesToChangePermsFor[imageDestFilePath] = config.FileMode
-
-				return nil
-			})
+			entriesToChangePermsFor[imageDestFilePath] = config.FileMode
 		}
 	}
 
-	if hasImageFile {
-		if err := eg.Wait(); err != nil {
-			p.tracker.MarkAsErrored()
-			return err
-		}
-	}
+	eg, _ := errgroup.WithContext(ctx)
+	eg.SetLimit(cmdutil.MaxConcurrentGoroutines)
 
 	for entry, chmod := range entriesToChangePermsFor {
 		eg.Go(func() error {
