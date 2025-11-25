@@ -292,6 +292,12 @@ func (s *show) loadSeasons() error {
 				return nil
 			}
 
+			if !strings.HasPrefix(showEntryName, "Season") {
+				return nil
+			}
+
+			// Handle season directory now that we've established it is one.
+
 			seasonPath := filepath.Join(showPath, showEntry.Name())
 
 			seasonEntries, err := s.sftp.ReadDir(seasonPath)
