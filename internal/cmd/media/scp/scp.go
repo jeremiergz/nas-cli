@@ -4,12 +4,10 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"maps"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"regexp"
-	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -252,7 +250,7 @@ func process(ctx context.Context, out io.Writer, uploads []*upload, kind model.K
 	})
 
 	lw := cmdutil.NewListWriter()
-	for _, remoteDirName := range slices.Sorted(maps.Keys(uploadsGroupedByDirName)) {
+	for remoteDirName := range uploadsGroupedByDirName {
 		var rootName string
 		switch kind {
 		case model.KindAnime, model.KindTVShow:

@@ -31,6 +31,20 @@ type Movie struct {
 	posterImagePath     *string
 }
 
+// Sorts movies by name in ascending order.
+func SortMoviesByName(movies []*Movie) {
+	slices.SortFunc(movies, func(a, b *Movie) int {
+		return strings.Compare(a.Name(), b.Name())
+	})
+}
+
+// Sorts movies by year in ascending order.
+func SortMoviesByYear(movies []*Movie) {
+	slices.SortFunc(movies, func(a, b *Movie) int {
+		return a.Year() - b.Year()
+	})
+}
+
 // Lists movies in given folder.
 //
 // Result can be filtered by extensions.

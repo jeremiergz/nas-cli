@@ -1,11 +1,14 @@
 package scp
 
 import (
+	"context"
 	"fmt"
+	"io"
 	"path/filepath"
 	"strings"
 
 	"github.com/spf13/cobra"
+	"github.com/thediveo/enumflag/v2"
 
 	"github.com/jeremiergz/nas-cli/internal/config"
 	"github.com/jeremiergz/nas-cli/internal/model"
@@ -15,8 +18,24 @@ import (
 )
 
 var (
-	movieDesc = "Upload movies"
+	movieDesc  = "Upload movies"
+	flagSortBy SortBy
 )
+
+// Defines the sortBy enumeration type.
+type SortBy enumflag.Flag
+
+// Enumeration values for the SortBy type.
+const (
+	SortByYear SortBy = iota
+	SortByName
+)
+
+// Maps enumeration values to their textual representations.
+var SortByIDs = map[SortBy][]string{
+	SortByYear: {"year", "y"},
+	SortByName: {"name", "n"},
+}
 
 func newMovieCmd() *cobra.Command {
 	cmd := &cobra.Command{
@@ -33,27 +52,7 @@ func newMovieCmd() *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			movies, err := model.Movies(config.WD, []string{util.ExtensionMKV}, recursive)
-			if err != nil {
-				return err
-			}
-
-			if len(movies) == 0 {
-				svc.Console.Success("Nothing to upload")
-				return nil
-			}
-
-			uploads := make([]*upload, len(movies))
-			for i, movie := range movies {
-				movieDirname := strings.TrimSuffix(movie.FullName(), fmt.Sprintf(".%s", movie.Extension()))
-				uploads[i] = &upload{
-					File:        movie,
-					Destination: filepath.Join(remoteDirWithLowestUsage, movieDirname, movie.Basename()),
-					DisplayName: movie.FullName(),
-				}
-			}
-
-			err = process(cmd.Context(), cmd.OutOrStdout(), uploads, model.KindMovie)
+			err := processMovies(cmd.Context(), cmd.OutOrStdout())
 			if err != nil {
 				return err
 			}
@@ -64,6 +63,56 @@ func newMovieCmd() *cobra.Command {
 
 	cmd.MarkFlagDirname("assets")
 	cmd.MarkFlagFilename("assets")
+	cmd.Flags().VarP(
+		enumflag.New(&flagSortBy, "", SortByIDs, enumflag.EnumCaseInsensitive),
+		"sort-by",
+		"s",
+		"sort results by: year|name",
+	)
+	cmd.RegisterFlagCompletionFunc("sort-by", sortByCompletion)
 
 	return cmd
+}
+
+func processMovies(ctx context.Context, out io.Writer) error {
+	movies, err := model.Movies(config.WD, []string{util.ExtensionMKV}, recursive)
+	if err != nil {
+		return err
+	}
+
+	if len(movies) == 0 {
+		svc.Console.Success("Nothing to upload")
+		return nil
+	}
+
+	switch flagSortBy {
+	case SortByYear:
+		model.SortMoviesByYear(movies)
+	case SortByName:
+		model.SortMoviesByName(movies)
+	}
+
+	uploads := make([]*upload, len(movies))
+	for i, movie := range movies {
+		movieDirname := strings.TrimSuffix(movie.FullName(), fmt.Sprintf(".%s", movie.Extension()))
+		uploads[i] = &upload{
+			File:        movie,
+			Destination: filepath.Join(remoteDirWithLowestUsage, movieDirname, movie.Basename()),
+			DisplayName: movie.FullName(),
+		}
+	}
+
+	err = process(ctx, out, uploads, model.KindMovie)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func sortByCompletion(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	return []string{
+		"year\tsort by year",
+		"name\tsort by name",
+	}, cobra.ShellCompDirectiveDefault
 }

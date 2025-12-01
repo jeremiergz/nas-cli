@@ -62,7 +62,7 @@ func newTVShowCmd() *cobra.Command {
 		Aliases: []string{"tvshow", "tv", "t"},
 		Short:   tvShowDesc,
 		Long:    tvShowDesc + ".",
-		Args:    cobra.MinimumNArgs(1),
+		Args:    cobra.MinimumNArgs(0),
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			if cmdutil.DebugMode {
 				fmt.Fprintf(cmd.OutOrStdout(), "%s PreRunE\n", cmd.CommandPath())
