@@ -11,7 +11,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/chai2010/webp"
+	"golang.org/x/image/webp"
 
 	"github.com/jeremiergz/nas-cli/internal/model/internal/parser"
 	"github.com/jeremiergz/nas-cli/internal/util"
