@@ -74,9 +74,15 @@ func New() *cobra.Command {
 				selectedCommand = cmd.Name()
 			}
 
-			_, err = exec.LookPath(cmdutil.CommandRsync)
-			if err != nil {
-				return fmt.Errorf("command not found: %s", cmdutil.CommandRsync)
+			requiredCommands := []string{
+				cmdutil.CommandExifTool,
+				cmdutil.CommandRsync,
+			}
+			for _, command := range requiredCommands {
+				_, err = exec.LookPath(command)
+				if err != nil {
+					return fmt.Errorf("command not found: %s", command)
+				}
 			}
 
 			selectedDir := "."

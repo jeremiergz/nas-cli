@@ -1,6 +1,7 @@
 package model
 
 import (
+	"context"
 	"fmt"
 	"image"
 	"image/jpeg"
@@ -10,11 +11,12 @@ import (
 	"slices"
 	"strings"
 
-	"golang.org/x/image/webp"
+	"github.com/chai2010/webp"
 
 	"github.com/jeremiergz/nas-cli/internal/model/internal/parser"
 	"github.com/jeremiergz/nas-cli/internal/util"
 	"github.com/jeremiergz/nas-cli/internal/util/fsutil"
+	"github.com/jeremiergz/nas-cli/internal/util/imgutil"
 )
 
 var (
@@ -137,7 +139,7 @@ func listMovieImageFiles(movieFilePath string) (background, poster *string, err 
 			isBackgroundImage := strings.HasSuffix(fileName, ".background") || strings.HasSuffix(fileName, ".bg")
 			if isBackgroundImage {
 				background = &filePath
-				err = processMovieImageFile(filePath)
+				err = processMovieImageFile(filePath, imgutil.ImageKindBackground)
 				if err != nil {
 					return nil, nil, fmt.Errorf("failed to process background image file %s: %w", filePath, err)
 				}
@@ -146,7 +148,7 @@ func listMovieImageFiles(movieFilePath string) (background, poster *string, err 
 			isPosterImage := strings.HasSuffix(fileName, ".poster") || strings.HasSuffix(fileName, ".pt")
 			if isPosterImage {
 				poster = &filePath
-				err = processMovieImageFile(filePath)
+				err = processMovieImageFile(filePath, imgutil.ImageKindPoster)
 				if err != nil {
 					return nil, nil, fmt.Errorf("failed to process poster image file %s: %w", filePath, err)
 				}
@@ -161,7 +163,7 @@ func listMovieImageFiles(movieFilePath string) (background, poster *string, err 
 	return background, poster, nil
 }
 
-func processMovieImageFile(src string) error {
+func processMovieImageFile(src string, kind imgutil.ImageKind) error {
 	imgName := strings.TrimSuffix(filepath.Base(src), filepath.Ext(src))
 	imgExtension := strings.ToLower(strings.TrimPrefix(filepath.Ext(src), "."))
 
@@ -172,47 +174,85 @@ func processMovieImageFile(src string) error {
 	defer srcFile.Close()
 
 	var decoded image.Image
+	shouldEncode := false
+	shouldDeleteSourceFile := false
 
 	switch imgExtension {
 	case "jpg", "jpeg":
+		decoded, err = jpeg.Decode(srcFile)
+		if err != nil {
+			return fmt.Errorf("failed to decode jpeg image file: %w", err)
+		}
 		if imgExtension == "jpeg" {
 			err = os.Rename(src, imgName+".jpg")
 			if err != nil {
 				return fmt.Errorf("failed to rename jpeg image file: %w", err)
 			}
 		}
-		return nil
 
 	case "png":
 		decoded, err = png.Decode(srcFile)
 		if err != nil {
 			return fmt.Errorf("failed to decode png image file: %w", err)
 		}
+		shouldEncode = true
+		shouldDeleteSourceFile = true
 
 	case "webp":
 		decoded, err = webp.Decode(srcFile)
 		if err != nil {
 			return fmt.Errorf("failed to decode webp image file: %w", err)
 		}
+		shouldEncode = true
+		shouldDeleteSourceFile = true
 
 	default:
 		return fmt.Errorf("unsupported image file format: %s", imgExtension)
 	}
 
-	outputFile, err := os.Create(imgName + ".jpg")
-	if err != nil {
-		return fmt.Errorf("failed to create output image file: %w", err)
+	// Check if the image has the desired dimensions.
+	var expectedX, expectedY int
+	switch kind {
+	case imgutil.ImageKindBackground:
+		expectedX = imgutil.ImageKindBackgroundWidth
+		expectedY = imgutil.ImageKindBackgroundHeight
+	case imgutil.ImageKindPoster:
+		expectedX = imgutil.ImageKindPosterWidth
+		expectedY = imgutil.ImageKindPosterHeight
 	}
-	defer outputFile.Close()
-
-	err = jpeg.Encode(outputFile, decoded, &jpeg.Options{Quality: 90})
-	if err != nil {
-		return fmt.Errorf("failed to encode jpeg image file: %w", err)
+	currentX := decoded.Bounds().Dx()
+	currentY := decoded.Bounds().Dy()
+	if currentX != expectedX || currentY != expectedY {
+		shouldEncode = true
 	}
 
-	err = os.Remove(src)
+	outputFilePath := imgName + ".jpg"
+
+	if shouldEncode {
+		decoded = imgutil.Scale(decoded, kind)
+
+		outputFile, err := os.Create(outputFilePath)
+		if err != nil {
+			return fmt.Errorf("failed to create output image file: %w", err)
+		}
+		defer outputFile.Close()
+
+		err = jpeg.Encode(outputFile, decoded, &jpeg.Options{Quality: 90})
+		if err != nil {
+			return fmt.Errorf("failed to encode jpeg image file: %w", err)
+		}
+	}
+
+	if shouldDeleteSourceFile {
+		err = os.Remove(src)
+		if err != nil {
+			return fmt.Errorf("failed to remove original image file: %w", err)
+		}
+	}
+
+	err = imgutil.SetDPI(context.Background(), outputFilePath)
 	if err != nil {
-		return fmt.Errorf("failed to remove original image file: %w", err)
+		return fmt.Errorf("failed to set DPI for image file: %w", err)
 	}
 
 	return nil
