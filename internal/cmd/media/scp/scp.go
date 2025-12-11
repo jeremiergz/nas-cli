@@ -59,6 +59,17 @@ func New() *cobra.Command {
 				return err
 			}
 
+			requiredCommands := []string{
+				cmdutil.CommandExifTool,
+				cmdutil.CommandRsync,
+			}
+			for _, command := range requiredCommands {
+				_, err = exec.LookPath(command)
+				if err != nil {
+					return fmt.Errorf("command not found: %s", command)
+				}
+			}
+
 			if cmd.Name() == "scp" {
 				options := []string{
 					"movies",
@@ -72,17 +83,6 @@ func New() *cobra.Command {
 					Show()
 			} else {
 				selectedCommand = cmd.Name()
-			}
-
-			requiredCommands := []string{
-				cmdutil.CommandExifTool,
-				cmdutil.CommandRsync,
-			}
-			for _, command := range requiredCommands {
-				_, err = exec.LookPath(command)
-				if err != nil {
-					return fmt.Errorf("command not found: %s", command)
-				}
 			}
 
 			selectedDir := "."

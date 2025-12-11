@@ -48,6 +48,8 @@ const (
 	KeyBackupPlexDest      string = "backup.plex.dest"
 	KeyBackupPlexSrc       string = "backup.plex.src"
 	KeyNASFQDN             string = "nas.fqdn"
+	KeyPlexAPIURL          string = "plex.api.url"
+	KeyPlexAPIToken        string = "plex.api.token"
 	KeySCPChownGID         string = "scp.chown.gid"
 	KeySCPChownGroup       string = "scp.chown.group"
 	KeySCPChownUID         string = "scp.chown.uid"
@@ -78,6 +80,8 @@ var (
 		KeyNASFQDN,
 		KeyBackupPlexSrc,
 		KeyBackupPlexDest,
+		KeyPlexAPIURL,
+		KeyPlexAPIToken,
 		KeySCPChownGID,
 		KeySCPChownGroup,
 		KeySCPChownUID,
@@ -134,6 +138,9 @@ func init() {
 			}
 			viper.Set(KeyBackupPlexDest, backupPlexDestPath)
 		}
+
+		viper.SetDefault(KeyPlexAPIURL, "https://localhost:32400")
+		viper.SetDefault(KeyPlexAPIToken, "")
 
 		viper.SetDefault(KeySCPChownGID, 1000)
 		viper.SetDefault(KeySCPChownGroup, "media")
@@ -197,6 +204,7 @@ type (
 	Config struct {
 		NAS     NAS     `yaml:"nas"`
 		Backup  Backup  `yaml:"backup"`
+		Plex    Plex    `yaml:"plex"`
 		SCP     SCP     `yaml:"scp"`
 		SSH     SSH     `yaml:"ssh"`
 		Subsync Subsync `yaml:"subsync"`
@@ -205,11 +213,18 @@ type (
 		FQDN string `yaml:"fqdn"`
 	}
 	Backup struct {
-		Plex Plex `yaml:"plex"`
+		Plex BackupPlex `yaml:"plex"`
 	}
-	Plex struct {
+	BackupPlex struct {
 		Src  string `yaml:"src"`
 		Dest string `yaml:"dest"`
+	}
+	Plex struct {
+		API PlexAPI `yaml:"api"`
+	}
+	PlexAPI struct {
+		URL   string `yaml:"url"`
+		Token string `yaml:"token"`
 	}
 	SCP struct {
 		Chown Chown `yaml:"chown"`
@@ -247,9 +262,15 @@ func Save() error {
 			FQDN: viper.GetString(KeyNASFQDN),
 		},
 		Backup: Backup{
-			Plex: Plex{
+			Plex: BackupPlex{
 				Src:  viper.GetString(KeyBackupPlexSrc),
 				Dest: viper.GetString(KeyBackupPlexDest),
+			},
+		},
+		Plex: Plex{
+			API: PlexAPI{
+				URL:   viper.GetString(KeyPlexAPIURL),
+				Token: viper.GetString(KeyPlexAPIToken),
 			},
 		},
 		SCP: SCP{

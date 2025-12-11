@@ -17,6 +17,12 @@ import (
 )
 
 func main() {
+	pterm.DefaultSpinner.RemoveWhenDone = true
+	pterm.DefaultSpinner.Style = pterm.NewStyle()
+
+	pterm.DefaultInteractiveConfirm.SuffixStyle = pterm.NewStyle(pterm.FgBlue)
+	pterm.DefaultInteractiveConfirm.TextStyle = pterm.NewStyle()
+
 	pterm.DefaultInteractiveSelect.OptionStyle = pterm.NewStyle()
 	pterm.DefaultInteractiveSelect.SelectorStyle = pterm.NewStyle(pterm.FgBlue)
 	pterm.DefaultInteractiveSelect.TextStyle = pterm.NewStyle()
@@ -31,6 +37,7 @@ func main() {
 
 	ctx := context.Background()
 
+	pterm.SetDefaultOutput(rootCmd.OutOrStdout())
 	svc.Console.SetOutput(rootCmd.OutOrStdout())
 
 	if err := rootCmd.ExecuteContext(ctx); err != nil {

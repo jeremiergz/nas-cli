@@ -7,7 +7,7 @@ require (
 	github.com/jedib0t/go-pretty/v6 v6.6.8
 	github.com/manifoldco/promptui v0.9.0
 	github.com/pkg/sftp v1.13.9
-	github.com/pterm/pterm v0.12.81
+	github.com/pterm/pterm v0.12.82
 	github.com/samber/lo v1.51.0
 	github.com/spf13/cobra v1.10.1
 	github.com/spf13/viper v1.20.1
