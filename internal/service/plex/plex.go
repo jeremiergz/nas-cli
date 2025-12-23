@@ -63,7 +63,7 @@ func (p *Plex) Get(path string, output any) error {
 type LibraryKind string
 
 const (
-	LibraryKindAnimes  LibraryKind = "tvshows"
+	LibraryKindAnimes  LibraryKind = "animes"
 	LibraryKindMovies  LibraryKind = "movies"
 	LibraryKindTVShows LibraryKind = "tvshows"
 )

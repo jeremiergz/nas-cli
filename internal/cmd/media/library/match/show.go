@@ -17,6 +17,7 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/jeremiergz/nas-cli/internal/config"
+	"github.com/jeremiergz/nas-cli/internal/model"
 	svc "github.com/jeremiergz/nas-cli/internal/service"
 	"github.com/jeremiergz/nas-cli/internal/service/plex"
 )
@@ -34,7 +35,7 @@ func newAnimeCmd() *cobra.Command {
 		Long:    animeDesc + ".",
 		Args:    cobra.MaximumNArgs(0),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return nil
+			return processShows(showsKindAnime)
 		},
 	}
 	return cmd
@@ -48,147 +49,181 @@ func newTVShowCmd() *cobra.Command {
 		Long:    tvShowDesc + ".",
 		Args:    cobra.MaximumNArgs(0),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			spinner, err := pterm.DefaultSpinner.
-				Start("Loading information...")
-			if err != nil {
-				return fmt.Errorf("could not start spinner: %w", err)
-			}
-
-			shows, err := fetchPlexShows()
-			if err != nil {
-				return fmt.Errorf("could not fetch TV shows: %w", err)
-			}
-
-			eG := errgroup.Group{}
-			mu := sync.Mutex{}
-			results := make([]*tvShow, len(shows))
-
-			for index, show := range shows {
-				eG.Go(func() error {
-					tvShow, err := getPlexTVShowDetails(show.Title, show.RatingKey)
-					if err != nil {
-						return fmt.Errorf("could not get details for %q: %w", show.Title, err)
-					}
-
-					mu.Lock()
-					results[index] = tvShow
-					mu.Unlock()
-
-					return nil
-				})
-			}
-			if err := eG.Wait(); err != nil {
-				return fmt.Errorf("could not match TV shows: %w", err)
-			}
-
-			sortTVShows(results)
-
-			removeTVShows, err := getRemoteTVShowsDetails()
-			if err != nil {
-				return fmt.Errorf("could not list remote TV show folders: %w", err)
-			}
-
-			err = spinner.Stop()
-			if err != nil {
-				return fmt.Errorf("could not stop spinner: %w", err)
-			}
-
-			hasMatchedAny := false
-
-			for _, tvShow := range results {
-				remoteTVShowDetails := removeTVShows[tvShow.FolderName]
-				if remoteTVShowDetails == nil {
-					return fmt.Errorf("could not find remote TV show folder for %q", tvShow.FolderName)
-				}
-
-				// Ignore if already fully matched.
-				if slices.EqualFunc(remoteTVShowDetails.DBIDs, tvShow.DBIDs, func(a, b *dbID) bool {
-					return a.Identifier == b.Identifier && a.Value == b.Value
-				}) {
-					continue
-				}
-
-				textToDisplay := fmt.Sprintf("Match %s %s:\n",
-					pterm.Blue(tvShow.Name),
-					pterm.Gray("["+remoteTVShowDetails.Path+"]"),
-				)
-				for _, dbID := range tvShow.DBIDs {
-					textToDisplay += fmt.Sprintf(" %sid: %s\n", dbID.Identifier, dbID.Value)
-				}
-
-				shouldMatch, _ := pterm.DefaultInteractiveConfirm.
-					WithDefaultText(textToDisplay).
-					WithDefaultValue(true).
-					Show()
-				if shouldMatch {
-					if err := writeRemoteTVShowMatchingFile(tvShow, remoteTVShowDetails.Path); err != nil {
-						return fmt.Errorf("could not write matching file for %q: %w", tvShow.Name, err)
-					}
-					hasMatchedAny = true
-				}
-			}
-
-			if !hasMatchedAny {
-				svc.Console.Success("Nothing to match")
-			}
-
-			return nil
+			return processShows(showsKindTVShow)
 		},
 	}
 
 	return cmd
 }
 
-type remoteTVShowDetails struct {
+type showsKind model.Kind
+
+const (
+	showsKindAnime  showsKind = showsKind(model.KindAnime)
+	showsKindTVShow showsKind = showsKind(model.KindTVShow)
+)
+
+func (k showsKind) String() string {
+	return string(k)
+}
+
+func (k showsKind) DisplayText() string {
+	switch k {
+	case showsKindAnime:
+		return "anime"
+	case showsKindTVShow:
+		return "TV show"
+	default:
+		return "unknown"
+	}
+}
+
+func processShows(kind showsKind) error {
+	spinner, err := pterm.DefaultSpinner.Start("Loading information...")
+	if err != nil {
+		return fmt.Errorf("could not start spinner: %w", err)
+	}
+
+	shows, err := fetchPlexShows(kind)
+	if err != nil {
+		return fmt.Errorf("could not fetch %ss: %w", kind.DisplayText(), err)
+	}
+
+	eG := errgroup.Group{}
+	mu := sync.Mutex{}
+	results := make([]*remoteShow, len(shows))
+
+	for index, show := range shows {
+		eG.Go(func() error {
+			remoteShow, err := getRemoteShowDetails(show.Title, show.RatingKey)
+			if err != nil {
+				return fmt.Errorf("could not get details for %q: %w", show.Title, err)
+			}
+
+			mu.Lock()
+			results[index] = remoteShow
+			mu.Unlock()
+
+			return nil
+		})
+	}
+	if err := eG.Wait(); err != nil {
+		return fmt.Errorf("could not match %ss: %w", kind.DisplayText(), err)
+	}
+
+	sortRemoteShows(results)
+
+	remoteShows, err := getRemoteShowsDetails(kind)
+	if err != nil {
+		return fmt.Errorf("could not list remote %s folders: %w", kind.DisplayText(), err)
+	}
+
+	err = spinner.Stop()
+	if err != nil {
+		return fmt.Errorf("could not stop spinner: %w", err)
+	}
+
+	hasMatchedAny := false
+
+	for _, remoteShow := range results {
+		remoteShowDetails := remoteShows[remoteShow.FolderName]
+		if remoteShowDetails == nil {
+			return fmt.Errorf("could not find remote %s folder for %q", kind.DisplayText(), remoteShow.FolderName)
+		}
+
+		// Ignore if already fully matched.
+		if slices.EqualFunc(remoteShowDetails.DBIDs, remoteShow.DBIDs, func(a, b *dbID) bool {
+			return a.Identifier == b.Identifier && a.Value == b.Value
+		}) {
+			continue
+		}
+
+		textToDisplay := fmt.Sprintf("Match %s %s:\n",
+			pterm.Blue(remoteShow.Name),
+			pterm.Gray("["+remoteShowDetails.Path+"]"),
+		)
+		for _, dbID := range remoteShow.DBIDs {
+			textToDisplay += fmt.Sprintf(" %sid: %s\n", dbID.Identifier, dbID.Value)
+		}
+
+		shouldMatch, _ := pterm.DefaultInteractiveConfirm.
+			WithDefaultText(textToDisplay).
+			WithDefaultValue(true).
+			Show()
+		if shouldMatch {
+			if err := writeRemoteShowMatchingFile(remoteShow, remoteShowDetails.Path); err != nil {
+				return fmt.Errorf("could not write matching file for %q: %w", remoteShow.Name, err)
+			}
+			hasMatchedAny = true
+		}
+	}
+
+	if !hasMatchedAny {
+		svc.Console.Success("Nothing to match")
+	}
+
+	return nil
+}
+
+type remoteShowDetails struct {
 	Path  string
 	DBIDs []*dbID
 }
 
-func getRemoteTVShowsDetails() (folders map[string]*remoteTVShowDetails, err error) {
-	tvShowsPaths := viper.GetStringSlice(config.KeySCPDestTVShowsPaths)
-	if len(tvShowsPaths) == 0 {
+func getRemoteShowsDetails(kind showsKind) (folders map[string]*remoteShowDetails, err error) {
+	var showsPaths []string
+	switch kind {
+	case showsKindAnime:
+		showsPaths = viper.GetStringSlice(config.KeySCPDestAnimesPaths)
+	case showsKindTVShow:
+		showsPaths = viper.GetStringSlice(config.KeySCPDestTVShowsPaths)
+	default:
+		return nil, fmt.Errorf("unsupported shows kind: %s", kind)
+	}
+
+	if len(showsPaths) == 0 {
 		return nil, fmt.Errorf("%s configuration entry is missing", config.KeySCPDestTVShowsPaths)
 	}
 
-	folders = make(map[string]*remoteTVShowDetails)
+	folders = make(map[string]*remoteShowDetails)
 
-	for _, tvsPath := range tvShowsPaths {
-		entries, err := svc.SFTP.Client.ReadDir(tvsPath)
+	for _, showsPath := range showsPaths {
+		entries, err := svc.SFTP.Client.ReadDir(showsPath)
 		if err != nil {
-			return nil, fmt.Errorf("failed to read remote TV shows directory %q: %w", tvsPath, err)
+			return nil, fmt.Errorf("failed to read remote %ss directory %q: %w", kind.DisplayText(), showsPath, err)
 		}
 		for _, entry := range entries {
 			if entry.IsDir() {
-				tvShowDetails := &remoteTVShowDetails{
-					Path: filepath.Join(tvsPath, entry.Name()),
+				showDetails := &remoteShowDetails{
+					Path: filepath.Join(showsPath, entry.Name()),
 				}
-				folders[entry.Name()] = tvShowDetails
+				folders[entry.Name()] = showDetails
 
-				plexMatchFile, err := svc.SFTP.Client.Open(filepath.Join(tvShowDetails.Path, plex.ShowMatchingFileName))
+				plexMatchFile, err := svc.SFTP.Client.Open(filepath.Join(showDetails.Path, plex.ShowMatchingFileName))
 				if err != nil {
 					if os.IsNotExist(err) {
 						continue
 					}
-					return nil, fmt.Errorf("failed to open matching file in %q: %w", tvShowDetails.Path, err)
+					return nil, fmt.Errorf("failed to open matching file in %q: %w", showDetails.Path, err)
 				}
 				contentBytes, err := io.ReadAll(plexMatchFile)
 				if err != nil {
 					plexMatchFile.Close()
-					return nil, fmt.Errorf("failed to read matching file in %q: %w", tvShowDetails.Path, err)
+					return nil, fmt.Errorf("failed to read matching file in %q: %w", showDetails.Path, err)
 				}
 				_ = plexMatchFile.Close()
 
 				matches := plexMatchingFileGUIDRegex.FindAllStringSubmatch(strings.TrimSpace(string(contentBytes)), -1)
 				for _, match := range matches {
 					if len(match) != 3 {
-						return nil, fmt.Errorf("could not parse matching file GUID line %q in %q", match[0], tvShowDetails.Path)
+						return nil, fmt.Errorf("could not parse matching file GUID line %q in %q", match[0], showDetails.Path)
 					}
 					id := &dbID{
 						Identifier: match[1],
 						Value:      match[2],
 					}
-					tvShowDetails.DBIDs = append(tvShowDetails.DBIDs, id)
-					sortDBIDs(tvShowDetails.DBIDs)
+					showDetails.DBIDs = append(showDetails.DBIDs, id)
+					sortDBIDs(showDetails.DBIDs)
 				}
 			}
 		}
@@ -197,9 +232,9 @@ func getRemoteTVShowsDetails() (folders map[string]*remoteTVShowDetails, err err
 	return folders, nil
 }
 
-func writeRemoteTVShowMatchingFile(tvShow *tvShow, remotePath string) error {
+func writeRemoteShowMatchingFile(show *remoteShow, remotePath string) error {
 	content := ""
-	for _, dbID := range tvShow.DBIDs {
+	for _, dbID := range show.DBIDs {
 		content += fmt.Sprintf("%sid: %s\n", dbID.Identifier, dbID.Value)
 	}
 
@@ -230,27 +265,37 @@ func writeRemoteTVShowMatchingFile(tvShow *tvShow, remotePath string) error {
 	return nil
 }
 
-func fetchPlexShows() ([]*show, error) {
-	libID, err := plexSVC.LibraryID(plex.LibraryKindTVShows)
+func fetchPlexShows(kind showsKind) ([]*plexShow, error) {
+	var libraryKind plex.LibraryKind
+	switch kind {
+	case showsKindAnime:
+		libraryKind = plex.LibraryKindAnimes
+	case showsKindTVShow:
+		libraryKind = plex.LibraryKindTVShows
+	default:
+		return nil, fmt.Errorf("unsupported shows kind: %s", kind)
+	}
+
+	libID, err := plexSVC.LibraryID(libraryKind)
 	if err != nil {
-		return nil, fmt.Errorf("could not get TV Shows library ID: %w", err)
+		return nil, fmt.Errorf("could not get %ss library ID: %w", kind.DisplayText(), err)
 	}
 
-	var tvShowList showList
-	if err := plexSVC.Get(fmt.Sprintf("/library/sections/%d/all", libID), &tvShowList); err != nil {
-		return nil, fmt.Errorf("failed to list TV shows: %w", err)
+	var showList plexShowList
+	if err := plexSVC.Get(fmt.Sprintf("/library/sections/%d/all", libID), &showList); err != nil {
+		return nil, fmt.Errorf("failed to list %ss: %w", kind.DisplayText(), err)
 	}
 
-	return tvShowList.MediaContainer.Metadata, nil
+	return showList.MediaContainer.Metadata, nil
 }
 
-func getPlexTVShowDetails(title, ratingKey string) (*tvShow, error) {
-	var meta metadataResponse
+func getRemoteShowDetails(title, ratingKey string) (*remoteShow, error) {
+	var meta plexMetadataResponse
 	if err := plexSVC.Get("/library/metadata/"+ratingKey, &meta); err != nil {
 		return nil, fmt.Errorf("failed to get metadata for %q: %w", title, err)
 	}
 
-	tvShow := &tvShow{
+	tvShow := &remoteShow{
 		Name: title,
 	}
 
@@ -293,7 +338,7 @@ var (
 	plexMatchingFileGUIDRegex = regexp.MustCompile(`(?m)^(?<kind>.+)id:\s+(?<id>.+)$`)
 )
 
-type tvShow struct {
+type remoteShow struct {
 	Name       string
 	FolderName string
 	DBIDs      []*dbID
@@ -304,43 +349,43 @@ type dbID struct {
 	Value      string
 }
 
-type show struct {
+type plexShow struct {
 	RatingKey string `json:"ratingKey"`
 	Title     string `json:"title"`
 }
 
-type showList struct {
+type plexShowList struct {
 	MediaContainer struct {
-		Metadata []*show `json:"Metadata"`
+		Metadata []*plexShow `json:"Metadata"`
 	} `json:"MediaContainer"`
 }
 
-type guid struct {
+type plexGUID struct {
 	ID string `json:"id"`
 }
 
-type guidList []guid
+type plexGUIDList []plexGUID
 
-func (g *guidList) UnmarshalJSON(data []byte) error {
+func (g *plexGUIDList) UnmarshalJSON(data []byte) error {
 	var single string
 	if err := json.Unmarshal(data, &single); err == nil {
-		*g = guidList{{ID: single}}
+		*g = plexGUIDList{{ID: single}}
 		return nil
 	}
 
-	var arr []guid
+	var arr []plexGUID
 	if err := json.Unmarshal(data, &arr); err == nil {
 		*g = arr
 		return nil
 	}
 
-	return fmt.Errorf("guidList: unsupported format: %s", string(data))
+	return fmt.Errorf("plexGUIDList: unsupported format: %s", string(data))
 }
 
-type metadataResponse struct {
+type plexMetadataResponse struct {
 	MediaContainer struct {
 		Metadata []struct {
-			GUIDs     guidList `json:"Guid"`
+			GUIDs     plexGUIDList `json:"Guid"`
 			Locations []struct {
 				Path string `json:"path"`
 			} `json:"Location"`
@@ -362,8 +407,8 @@ func sortDBIDs(dbIDs []*dbID) {
 	})
 }
 
-func sortTVShows(tvShows []*tvShow) {
-	slices.SortFunc(tvShows, func(a, b *tvShow) int {
+func sortRemoteShows(remoteShows []*remoteShow) {
+	slices.SortFunc(remoteShows, func(a, b *remoteShow) int {
 		aName := strings.ToLower(a.Name)
 		bName := strings.ToLower(b.Name)
 		if aName < bName {
