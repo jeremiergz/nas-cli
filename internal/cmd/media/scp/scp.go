@@ -4,10 +4,12 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"maps"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -255,38 +257,7 @@ func process(ctx context.Context, out io.Writer, uploads []*upload, kind model.K
 		return filepath.Dir(u.Destination)
 	})
 
-	lw := cmdutil.NewListWriter()
-	for remoteDirName := range uploadsGroupedByDirName {
-		var rootName string
-		switch kind {
-		case model.KindAnime, model.KindTVShow:
-			rootName = toShortName(remoteDirName, 2)
-
-		case model.KindMovie:
-			rootName = toShortName(remoteDirName, 1)
-		}
-
-		lw.AppendItem(rootName)
-		lw.Indent()
-		for _, upload := range uploadsGroupedByDirName[remoteDirName] {
-			var localName string
-			switch kind {
-			case model.KindAnime, model.KindTVShow:
-				localName = toShortName(upload.File.FilePath(), 3)
-
-			case model.KindMovie:
-				localName = toShortName(upload.File.FilePath(), 2)
-			}
-
-			lw.AppendItem(fmt.Sprintf(
-				"%s  ->  %s",
-				pterm.Gray(localName),
-				upload.Destination),
-			)
-		}
-		lw.UnIndent()
-	}
-	fmt.Fprintln(out, lw.Render())
+	printUploads(out, uploadsGroupedByDirName, kind)
 
 	if !yes {
 		fmt.Fprintln(out)
@@ -342,6 +313,41 @@ func process(ctx context.Context, out io.Writer, uploads []*upload, kind model.K
 	}
 
 	return nil
+}
+
+func printUploads(out io.Writer, uploadsGroupedByDirName map[string][]*upload, kind model.Kind) {
+	lw := cmdutil.NewListWriter()
+	for _, remoteDirName := range slices.Sorted(maps.Keys(uploadsGroupedByDirName)) {
+		var rootName string
+		switch kind {
+		case model.KindAnime, model.KindTVShow:
+			rootName = toShortName(remoteDirName, 2)
+
+		case model.KindMovie:
+			rootName = toShortName(remoteDirName, 1)
+		}
+
+		lw.AppendItem(rootName)
+		lw.Indent()
+		for _, upload := range uploadsGroupedByDirName[remoteDirName] {
+			var localName string
+			switch kind {
+			case model.KindAnime, model.KindTVShow:
+				localName = toShortName(upload.File.FilePath(), 3)
+
+			case model.KindMovie:
+				localName = toShortName(upload.File.FilePath(), 2)
+			}
+
+			lw.AppendItem(fmt.Sprintf(
+				"%s  ->  %s",
+				pterm.Gray(localName),
+				upload.Destination),
+			)
+		}
+		lw.UnIndent()
+	}
+	fmt.Fprintln(out, lw.Render())
 }
 
 func toShortName(remoteDirName string, from int) string {
