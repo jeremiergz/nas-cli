@@ -84,27 +84,19 @@ func New() *cobra.Command {
 
 			fmt.Fprintln(out)
 
-			filesToProcess := []*model.File{}
-			for _, file := range files {
-				if !yes {
-					shouldProcess := svc.Console.AskConfirmation(
-						fmt.Sprintf("Process %q?", file.FullName()),
-						true,
-					)
-					if !shouldProcess {
-						continue
-					}
+			if !yes {
+				shouldProcess := svc.Console.AskConfirmation(
+					fmt.Sprintf("Process %d file(s)?", len(files)),
+					true,
+				)
+				if !shouldProcess {
+					return nil
 				}
-				filesToProcess = append(filesToProcess, file)
-			}
-
-			if len(filesToProcess) == 0 {
-				return nil
 			}
 
 			fmt.Fprintln(out)
 
-			err = process(cmd.Context(), out, filesToProcess, !delete)
+			err = process(cmd.Context(), out, files, !delete)
 			if err != nil {
 				return err
 			}
