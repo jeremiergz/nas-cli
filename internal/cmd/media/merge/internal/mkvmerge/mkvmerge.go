@@ -10,6 +10,7 @@ import (
 	"os/exec"
 	"path"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -28,17 +29,19 @@ var (
 )
 
 type process struct {
-	file         *model.File
-	keepOriginal bool
-	tracker      *progress.Tracker
-	w            io.Writer
+	file             *model.File
+	keepOriginal     bool
+	overrideLanguage bool
+	tracker          *progress.Tracker
+	w                io.Writer
 }
 
-func New(file *model.File, keepOriginal bool) svc.Runnable {
+func New(file *model.File, keepOriginal bool, overrideLanguage bool) svc.Runnable {
 	return &process{
-		file:         file,
-		keepOriginal: keepOriginal,
-		w:            os.Stdout,
+		file:             file,
+		keepOriginal:     keepOriginal,
+		overrideLanguage: overrideLanguage,
+		w:                os.Stdout,
 	}
 }
 
@@ -71,7 +74,7 @@ func (p *process) Run(ctx context.Context) error {
 		{currentPath: videoFileBackupPath, originalPath: p.file.FilePath()},
 	}
 
-	options, backups, err := computeMergeOptions(ctx, p.file.FilePath(), videoFileBackupPath, backups, subtitles)
+	options, backups, err := computeMergeOptions(ctx, p.file.FilePath(), videoFileBackupPath, backups, subtitles, p.overrideLanguage)
 	if err != nil {
 		// Restore backups.
 		wg := sync.WaitGroup{}
@@ -153,12 +156,14 @@ func computeMergeOptions(
 	videoFileBackupPath string,
 	backups []backup,
 	subtitles map[string]string,
+	overrideLanguage bool,
 ) ([]string, []backup, error) {
+	// We'll assemble input-specific args separately so we can place global flags
+	// like --track-order and --tracks before the input files.
 	options := []string{"--gui-mode", "--output", videoFilePath}
-
-	// Keep track of input files order and their language (for subtitle inputs).
 	inputFiles := []string{}
 	langByFile := map[string]string{}
+	inputArgs := []string{}
 
 	for lang, subtitle := range subtitles {
 		subtitleFilePath := path.Join(config.WD, subtitle)
@@ -168,12 +173,21 @@ func computeMergeOptions(
 		// Record the language for this input file so we can use it if MKVMerge identification doesn't include it.
 		langByFile[subtitleFileBackupPath] = lang
 		inputFiles = append(inputFiles, subtitleFileBackupPath)
-		options = append(options, "--language", fmt.Sprintf("0:%s", lang), subtitleFileBackupPath)
+		inputArgs = append(inputArgs, "--language", fmt.Sprintf("0:%s", lang), subtitleFileBackupPath)
 	}
 
 	// Video file is passed as last input.
 	inputFiles = append(inputFiles, videoFileBackupPath)
-	options = append(options, videoFileBackupPath)
+	inputArgs = append(inputArgs, videoFileBackupPath)
+
+	// Build a set of normalized incoming subtitle language codes (first 3 chars, lowercase).
+	incomingLangs := map[string]struct{}{}
+	for _, l := range langByFile {
+		norm := normalizeLanguage(l)
+		if norm != "" {
+			incomingLangs[norm] = struct{}{}
+		}
+	}
 
 	// Build track-order by identifying each input and collecting track IDs.
 	type identOut struct {
@@ -183,14 +197,17 @@ func computeMergeOptions(
 			Properties struct {
 				Language     string `json:"language,omitempty"`
 				LanguageIETF string `json:"language_ietf,omitempty"`
-			} `json:"properties,omitempty"`
+			} `json:"properties"`
 		} `json:"tracks"`
 	}
 
 	nonSubtitle := []string{}
-	french := []string{}
-	english := []string{}
-	others := []string{}
+	frenchSubs := []string{}
+	englishSubs := []string{}
+	otherSubs := []string{}
+	// Collect subtitle track IDs to keep from the video input.
+	videoSubtitleTrackIDsToKeep := []string{}
+	videoIndex := len(inputFiles) - 1
 
 	for idx, input := range inputFiles {
 		idOpts := []string{"--identification-format", "json", "--identify", input}
@@ -216,54 +233,70 @@ func computeMergeOptions(
 				continue
 			}
 
-			lang := strings.ToLower(strings.TrimSpace(t.Properties.Language))
+			// Determine the track's language.
+			lang := t.Properties.Language
 			if lang == "" {
-				lang = strings.ToLower(strings.TrimSpace(t.Properties.LanguageIETF))
+				lang = t.Properties.LanguageIETF
 			}
 			if lang == "" {
 				// Fallback to the language we recorded when renaming files.
 				if l, ok := langByFile[input]; ok {
-					lang = strings.ToLower(strings.TrimSpace(l))
+					lang = l
+				}
+			}
+			norm := normalizeLanguage(lang)
+
+			// If overrideLanguage is set and this is the video input, skip subtitle tracks
+			// whose normalized language matches an incoming subtitle language.
+			if overrideLanguage && idx == videoIndex {
+				if norm != "" {
+					if _, ok := incomingLangs[norm]; ok {
+						continue
+					}
 				}
 			}
 
-			// Normalize: prefer 3-letter codes when possible.
-			norm := ""
-			if len(lang) >= 3 {
-				norm = lang[:3]
-			} else if len(lang) == 2 {
-				switch lang {
-				case "fr":
-					norm = "fre"
-				case "en":
-					norm = "eng"
-				default:
-					norm = lang
-				}
+			// Categorize subtitle track by language.
+			if isFrench(norm) {
+				frenchSubs = append(frenchSubs, entry)
+			} else if isEnglish(norm) {
+				englishSubs = append(englishSubs, entry)
 			} else {
-				norm = lang
+				otherSubs = append(otherSubs, entry)
 			}
-
-			switch norm {
-			case "fre", "fra", "fr-":
-				french = append(french, entry)
-			case "eng", "en-":
-				english = append(english, entry)
-			default:
-				others = append(others, entry)
+			if idx == videoIndex {
+				videoSubtitleTrackIDsToKeep = append(videoSubtitleTrackIDsToKeep, strconv.Itoa(t.ID))
 			}
 		}
 	}
 
 	// Final desired order: non-subtitle tracks, French subtitles, other subtitles, English subtitles.
 	finalOrder := append([]string{}, nonSubtitle...)
-	finalOrder = append(finalOrder, french...)
-	finalOrder = append(finalOrder, others...)
-	finalOrder = append(finalOrder, english...)
+	finalOrder = append(finalOrder, frenchSubs...)
+	finalOrder = append(finalOrder, englishSubs...)
+	finalOrder = append(finalOrder, otherSubs...)
 
 	if len(finalOrder) > 0 {
 		options = append(options, "--track-order", strings.Join(finalOrder, ","))
 	}
+
+	// If --override-language is set, limit subtitle tracks for the video input to the ones we kept.
+	// This replaces only the incoming subtitle languages while preserving other subtitle tracks.
+	if overrideLanguage {
+		// We must apply input-specific options *before* the file they apply to, so we
+		// prepend them to inputArgs for the video input.
+		videoArg := videoFileBackupPath
+		inputArgs = inputArgs[:len(inputArgs)-1]
+		if len(videoSubtitleTrackIDsToKeep) == 0 {
+			inputArgs = append(inputArgs, "--no-subtitles")
+		} else {
+			inputArgs = append(inputArgs, "--subtitle-tracks", strings.Join(videoSubtitleTrackIDsToKeep, ","))
+		}
+		inputArgs = append(inputArgs, videoArg)
+	}
+
+	// Finally, append input-specific args (languages and file paths).
+	options = append(options, inputArgs...)
 
 	return options, backups, nil
 }
@@ -276,4 +309,24 @@ func (p *process) SetTracker(tracker *progress.Tracker) svc.Runnable {
 func (p *process) SetOutput(out io.Writer) svc.Runnable {
 	p.w = out
 	return p
+}
+
+// Returns a lowercase language code. If the input is 3+ chars, returns the first 3;
+// otherwise returns the input as-is (lowercased). This allows agnostic language matching.
+func normalizeLanguage(lang string) string {
+	l := strings.ToLower(strings.TrimSpace(lang))
+	if len(l) >= 3 {
+		return l[:3]
+	}
+	return l
+}
+
+// Returns true if the normalized language code represents French.
+func isFrench(norm string) bool {
+	return strings.HasPrefix(norm, "fr")
+}
+
+// Returns true if the normalized language code represents English.
+func isEnglish(norm string) bool {
+	return strings.HasPrefix(norm, "en")
 }

@@ -28,6 +28,7 @@ var (
 	delete            bool
 	dryRun            bool
 	maxParallel       int
+	overrideLanguage  bool
 	subtitleExtension string
 	subtitleLanguages []string
 	videoExtensions   []string
@@ -115,6 +116,7 @@ func New() *cobra.Command {
 	cmd.Flags().BoolVarP(&delete, "delete", "d", false, "delete original files")
 	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "print result without processing it")
 	cmd.Flags().IntVarP(&maxParallel, "max-parallel", "p", 0, "maximum number of parallel processes. 0 means no limit")
+	cmd.Flags().BoolVar(&overrideLanguage, "override-language", false, "replace existing subtitle tracks with incoming ones of the same language")
 	cmd.Flags().StringArrayVarP(&subtitleLanguages, "language", "l", []string{"eng", "fre"}, "language tracks to merge")
 	cmd.Flags().StringVar(&subtitleExtension, "sub-ext", util.AcceptedSubtitleExtension, "filter subtitles by extension")
 	cmd.Flags().StringArrayVarP(&videoExtensions, "video-ext", "e", util.AcceptedVideoExtensions, "filter video files by extension")
@@ -181,7 +183,7 @@ func process(ctx context.Context, w io.Writer, files []*model.File, keepOriginal
 		}
 		pw.AppendTracker(tracker)
 		merger := mkvmerge.
-			New(file, keepOriginal).
+			New(file, keepOriginal, overrideLanguage).
 			SetOutput(w).
 			SetTracker(tracker)
 		mergers[index] = merger
