@@ -69,6 +69,7 @@ func (p *process) Run(ctx context.Context) error {
 
 	options := []string{
 		"--append",
+		"--compress",
 		"--progress",
 		p.file.FilePath(),
 		fmt.Sprintf("%s:%q", p.remoteHost, remoteParentDir),
