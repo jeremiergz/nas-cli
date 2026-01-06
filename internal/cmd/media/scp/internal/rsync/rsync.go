@@ -68,7 +68,8 @@ func (p *process) Run(ctx context.Context) error {
 	p.tracker.SetValue(1)
 
 	options := []string{
-		"--append",
+		"--append-verify",
+		"--checksum",
 		"--progress",
 		p.file.FilePath(),
 		fmt.Sprintf("%s:%q", p.remoteHost, remoteParentDir),
