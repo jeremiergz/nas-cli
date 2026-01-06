@@ -72,7 +72,7 @@ func (p *process) Run(ctx context.Context) error {
 		"--checksum",
 		"--progress",
 		p.file.FilePath(),
-		fmt.Sprintf("%s:%q", p.remoteHost, remoteParentDir),
+		fmt.Sprintf("%s:%s", p.remoteHost, remoteParentDir),
 	}
 
 	rsync := exec.CommandContext(ctx, cmdutil.CommandRsync, options...)
