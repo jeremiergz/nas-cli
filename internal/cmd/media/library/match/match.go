@@ -14,7 +14,7 @@ import (
 )
 
 var (
-	formatDesc = "Batch media formatting depending on their type"
+	matchDesc = "Create Plex matching files to facilitate future scans"
 
 	plexSVC *plex.Plex
 )
@@ -23,8 +23,8 @@ func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "match",
 		Aliases: []string{"mt"},
-		Short:   formatDesc,
-		Long:    formatDesc + ".",
+		Short:   matchDesc,
+		Long:    matchDesc + ".",
 		Args:    cobra.MaximumNArgs(1),
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			if cmdutil.DebugMode {
