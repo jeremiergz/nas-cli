@@ -11,6 +11,7 @@ import (
 	"github.com/jeremiergz/nas-cli/internal/cmd/media/list"
 	"github.com/jeremiergz/nas-cli/internal/cmd/media/merge"
 	"github.com/jeremiergz/nas-cli/internal/cmd/media/scp"
+	"github.com/jeremiergz/nas-cli/internal/cmd/media/subclean"
 	"github.com/jeremiergz/nas-cli/internal/cmd/media/subsync"
 	"github.com/jeremiergz/nas-cli/internal/util"
 	"github.com/jeremiergz/nas-cli/internal/util/cmdutil"
@@ -52,6 +53,7 @@ func New() *cobra.Command {
 	cmd.AddCommand(list.New())
 	cmd.AddCommand(merge.New())
 	cmd.AddCommand(scp.New())
+	cmd.AddCommand(subclean.New())
 	cmd.AddCommand(subsync.New())
 
 	return cmd

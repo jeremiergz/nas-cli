@@ -39,7 +39,7 @@ var (
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "subsync <directory>",
-		Aliases: []string{"sub"},
+		Aliases: []string{"subs"},
 		Short:   subsyncDesc,
 		Long:    subsyncDesc + ".",
 		Args:    cobra.MaximumNArgs(1),

@@ -89,12 +89,12 @@ func processShows(kind showsKind) error {
 		return fmt.Errorf("could not fetch %ss: %w", kind.DisplayText(), err)
 	}
 
-	eG := errgroup.Group{}
+	eg := errgroup.Group{}
 	mu := sync.Mutex{}
 	results := make([]*remoteShow, len(shows))
 
 	for index, show := range shows {
-		eG.Go(func() error {
+		eg.Go(func() error {
 			remoteShow, err := getRemoteShowDetails(show.Title, show.RatingKey)
 			if err != nil {
 				return fmt.Errorf("could not get details for %q: %w", show.Title, err)
@@ -107,7 +107,7 @@ func processShows(kind showsKind) error {
 			return nil
 		})
 	}
-	if err := eG.Wait(); err != nil {
+	if err := eg.Wait(); err != nil {
 		return fmt.Errorf("could not match %ss: %w", kind.DisplayText(), err)
 	}
 
