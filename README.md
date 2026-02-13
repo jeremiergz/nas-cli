@@ -18,7 +18,7 @@ CLI application for managing my NAS.
 
 ## Toolchain
 
-- [golang](https://go.dev) `>=1.25` - _programming language_
+- [golang](https://go.dev) `>=1.26` - _programming language_
 - [make](https://www.gnu.org/software/make) `>=3.81` - _build tool_
 
 ## Authors
