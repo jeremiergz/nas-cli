@@ -62,6 +62,11 @@ func New() *cobra.Command {
 
 			subtitleFiles := fsutil.List(config.WD, []string{"srt"}, nil, true)
 
+			if len(subtitleFiles) == 0 {
+				svc.Console.Success("No subtitle file to process")
+				return nil
+			}
+
 			print(out, subtitleFiles)
 			if dryRun {
 				return nil
