@@ -1,4 +1,4 @@
-package scp
+package upload
 
 import (
 	"context"

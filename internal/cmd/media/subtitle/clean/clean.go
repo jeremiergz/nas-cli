@@ -1,4 +1,4 @@
-package subclean
+package clean
 
 import (
 	"context"
@@ -13,7 +13,7 @@ import (
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/jeremiergz/nas-cli/internal/cmd/media/subclean/internal/subcleaner"
+	"github.com/jeremiergz/nas-cli/internal/cmd/media/subtitle/clean/internal/subcleaner"
 	"github.com/jeremiergz/nas-cli/internal/config"
 	svc "github.com/jeremiergz/nas-cli/internal/service"
 	"github.com/jeremiergz/nas-cli/internal/service/str"
@@ -22,18 +22,18 @@ import (
 )
 
 var (
-	subcleanDesc = "Clean subtitle files"
-	delete       bool
-	dryRun       bool
-	yes          bool
+	cleanDesc = "Clean subtitle files"
+	delete    bool
+	dryRun    bool
+	yes       bool
 )
 
 func New() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "subclean <directory>",
-		Aliases: []string{"subc"},
-		Short:   subcleanDesc,
-		Long:    subcleanDesc + ".",
+		Use:     "clean <directory>",
+		Aliases: []string{"cl"},
+		Short:   cleanDesc,
+		Long:    cleanDesc + ".",
 		Args:    cobra.MaximumNArgs(1),
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			if cmdutil.DebugMode {

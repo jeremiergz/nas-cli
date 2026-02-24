@@ -1,4 +1,4 @@
-package scp
+package upload
 
 import (
 	"context"
@@ -21,7 +21,7 @@ import (
 	"github.com/spf13/viper"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/jeremiergz/nas-cli/internal/cmd/media/scp/internal/rsync"
+	"github.com/jeremiergz/nas-cli/internal/cmd/media/library/upload/internal/rsync"
 	"github.com/jeremiergz/nas-cli/internal/config"
 	"github.com/jeremiergz/nas-cli/internal/model"
 	svc "github.com/jeremiergz/nas-cli/internal/service"
@@ -31,7 +31,7 @@ import (
 )
 
 var (
-	scpDesc     = "Upload files/folders using scp command"
+	uploadDesc  = "Upload media files to library"
 	delete      bool
 	maxParallel int
 	recursive   bool
@@ -46,10 +46,10 @@ var (
 
 func New() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "scp",
-		Aliases: []string{"sc"},
-		Short:   scpDesc,
-		Long:    scpDesc + ".",
+		Use:     "upload",
+		Aliases: []string{"up"},
+		Short:   uploadDesc,
+		Long:    uploadDesc + ".",
 		Args:    cobra.MaximumNArgs(1),
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			if cmdutil.DebugMode {
@@ -72,7 +72,7 @@ func New() *cobra.Command {
 				}
 			}
 
-			if cmd.Name() == "scp" {
+			if cmd.Name() == "upload" {
 				options := []string{
 					"movies",
 					"tvshows",

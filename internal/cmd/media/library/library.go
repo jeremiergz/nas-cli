@@ -3,7 +3,9 @@ package library
 import (
 	"github.com/spf13/cobra"
 
+	"github.com/jeremiergz/nas-cli/internal/cmd/media/library/list"
 	"github.com/jeremiergz/nas-cli/internal/cmd/media/library/match"
+	"github.com/jeremiergz/nas-cli/internal/cmd/media/library/upload"
 	"github.com/jeremiergz/nas-cli/internal/util/cmdutil"
 )
 
@@ -27,7 +29,9 @@ func New() *cobra.Command {
 		},
 	}
 
+	cmd.AddCommand(list.New())
 	cmd.AddCommand(match.New())
+	cmd.AddCommand(upload.New())
 
 	return cmd
 }

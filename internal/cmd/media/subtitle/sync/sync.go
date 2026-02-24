@@ -1,4 +1,4 @@
-package subsync
+package sync
 
 import (
 	"context"
@@ -14,7 +14,7 @@ import (
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/jeremiergz/nas-cli/internal/cmd/media/subsync/internal/subsync"
+	"github.com/jeremiergz/nas-cli/internal/cmd/media/subtitle/sync/internal/subsync"
 	"github.com/jeremiergz/nas-cli/internal/config"
 	svc "github.com/jeremiergz/nas-cli/internal/service"
 	"github.com/jeremiergz/nas-cli/internal/service/str"
@@ -24,7 +24,7 @@ import (
 )
 
 var (
-	subsyncDesc       = "Synchronize subtitle using SubSync tool"
+	syncDesc          = "Synchronize subtitle using SubSync tool"
 	dryRun            bool
 	maxParallel       int
 	streamLang        string
@@ -38,10 +38,10 @@ var (
 
 func New() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "subsync <directory>",
-		Aliases: []string{"subs"},
-		Short:   subsyncDesc,
-		Long:    subsyncDesc + ".",
+		Use:     "sync <directory>",
+		Aliases: []string{"sc"},
+		Short:   syncDesc,
+		Long:    syncDesc + ".",
 		Args:    cobra.MaximumNArgs(1),
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			if cmdutil.DebugMode {
