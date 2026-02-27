@@ -2,6 +2,9 @@ package ctxutil
 
 import (
 	"context"
+	"fmt"
+
+	"github.com/pterm/pterm"
 )
 
 type ctxKey[T any] struct{}
@@ -19,4 +22,21 @@ func WithSingleton[T any](ctx context.Context, value T) context.Context {
 func Singleton[T any](ctx context.Context) T {
 	value, _ := ctx.Value(ctxKey[T]{}).(T)
 	return value
+}
+
+// Attaches a pterm spinner to the context and starts it with the given message.
+func WithLoader(ctx context.Context, message string) (context.Context, error) {
+	spinner, err := pterm.DefaultSpinner.Start(message)
+	if err != nil {
+		return nil, fmt.Errorf("could not start spinner: %w", err)
+	}
+	return context.WithValue(ctx, "spinner", spinner), nil
+}
+
+// Retrieves the pterm spinner attached to the context, if any.
+func Loader(ctx context.Context) *pterm.SpinnerPrinter {
+	if spinner, ok := ctx.Value("spinner").(*pterm.SpinnerPrinter); ok {
+		return spinner
+	}
+	return nil
 }

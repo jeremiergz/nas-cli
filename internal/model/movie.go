@@ -11,6 +11,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/pterm/pterm"
 	"golang.org/x/image/webp"
 
 	"github.com/jeremiergz/nas-cli/internal/model/internal/parser"
@@ -117,46 +118,62 @@ func (m *Movie) PosterImageFilePath() *string {
 	return m.posterImagePath
 }
 
+type imageFileToProcess struct {
+	path string
+	kind imgutil.ImageKind
+}
+
+var validImageFileExtensions = []string{"jpg", "jpeg", "png", "webp"}
+
 func listMovieImageFiles(movieFilePath string) (background, poster *string, err error) {
 	files, err := os.ReadDir(filepath.Dir(movieFilePath))
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to read directory: %w", err)
 	}
 
-	validFileExtensions := []string{"jpg", "jpeg", "png", "webp"}
-
 	movieName := strings.TrimSuffix(filepath.Base(movieFilePath), filepath.Ext(movieFilePath))
+	var imageFilesToProcess []imageFileToProcess
 
 	for _, file := range files {
 		filePath := filepath.Join(".", file.Name())
 		fileName := strings.TrimSuffix(file.Name(), filepath.Ext(file.Name()))
 		fileExtension := strings.ToLower(strings.TrimPrefix(filepath.Ext(file.Name()), "."))
 
-		hasValidExtension := slices.Contains(validFileExtensions, fileExtension)
+		hasValidExtension := slices.Contains(validImageFileExtensions, fileExtension)
 		hasMovieName := strings.HasPrefix(fileName, movieName)
 
 		if hasValidExtension && hasMovieName {
 			isBackgroundImage := strings.HasSuffix(fileName, ".background") || strings.HasSuffix(fileName, ".bg")
 			if isBackgroundImage {
 				background = &filePath
-				err = processMovieImageFile(filePath, imgutil.ImageKindBackground)
-				if err != nil {
-					return nil, nil, fmt.Errorf("failed to process background image file %s: %w", filePath, err)
-				}
+				imageFilesToProcess = append(imageFilesToProcess, imageFileToProcess{path: filePath, kind: imgutil.ImageKindBackground})
 			}
 
 			isPosterImage := strings.HasSuffix(fileName, ".poster") || strings.HasSuffix(fileName, ".pt")
 			if isPosterImage {
 				poster = &filePath
-				err = processMovieImageFile(filePath, imgutil.ImageKindPoster)
-				if err != nil {
-					return nil, nil, fmt.Errorf("failed to process poster image file %s: %w", filePath, err)
-				}
+				imageFilesToProcess = append(imageFilesToProcess, imageFileToProcess{path: filePath, kind: imgutil.ImageKindPoster})
 			}
 		}
 
 		if background != nil && poster != nil {
 			break
+		}
+	}
+
+	if len(imageFilesToProcess) > 0 {
+		spinner, err := pterm.DefaultSpinner.Start("Processing images...")
+		if err != nil {
+			return nil, nil, fmt.Errorf("could not start spinner: %w", err)
+		}
+		for _, img := range imageFilesToProcess {
+			err = processMovieImageFile(img.path, img.kind)
+			if err != nil {
+				return nil, nil, fmt.Errorf("failed to process %s image file %s: %w", img.kind, img.path, err)
+			}
+		}
+		if err := spinner.Stop(); err != nil {
+			return nil, nil, fmt.Errorf("could not stop spinner: %w", err)
 		}
 	}
 

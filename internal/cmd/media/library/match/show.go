@@ -1,6 +1,7 @@
 package match
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -20,6 +21,7 @@ import (
 	"github.com/jeremiergz/nas-cli/internal/model"
 	svc "github.com/jeremiergz/nas-cli/internal/service"
 	"github.com/jeremiergz/nas-cli/internal/service/plex"
+	"github.com/jeremiergz/nas-cli/internal/util/ctxutil"
 )
 
 var (
@@ -35,7 +37,7 @@ func newAnimeCmd() *cobra.Command {
 		Long:    animeDesc + ".",
 		Args:    cobra.MaximumNArgs(0),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return processShows(showsKindAnime)
+			return processShows(cmd.Context(), showsKindAnime)
 		},
 	}
 	return cmd
@@ -49,7 +51,7 @@ func newTVShowCmd() *cobra.Command {
 		Long:    tvShowDesc + ".",
 		Args:    cobra.MaximumNArgs(0),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return processShows(showsKindTVShow)
+			return processShows(cmd.Context(), showsKindTVShow)
 		},
 	}
 
@@ -78,12 +80,7 @@ func (k showsKind) DisplayText() string {
 	}
 }
 
-func processShows(kind showsKind) error {
-	spinner, err := pterm.DefaultSpinner.Start("Loading information...")
-	if err != nil {
-		return fmt.Errorf("could not start spinner: %w", err)
-	}
-
+func processShows(ctx context.Context, kind showsKind) error {
 	shows, err := fetchPlexShows(kind)
 	if err != nil {
 		return fmt.Errorf("could not fetch %ss: %w", kind.DisplayText(), err)
@@ -118,9 +115,11 @@ func processShows(kind showsKind) error {
 		return fmt.Errorf("could not list remote %s folders: %w", kind.DisplayText(), err)
 	}
 
-	err = spinner.Stop()
-	if err != nil {
-		return fmt.Errorf("could not stop spinner: %w", err)
+	spinner := ctxutil.Loader(ctx)
+	if spinner != nil {
+		if err := spinner.Stop(); err != nil {
+			return fmt.Errorf("could not stop spinner: %w", err)
+		}
 	}
 
 	hasMatchedAny := false

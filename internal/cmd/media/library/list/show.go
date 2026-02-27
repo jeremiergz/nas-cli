@@ -23,6 +23,7 @@ import (
 	svc "github.com/jeremiergz/nas-cli/internal/service"
 	"github.com/jeremiergz/nas-cli/internal/util"
 	"github.com/jeremiergz/nas-cli/internal/util/cmdutil"
+	"github.com/jeremiergz/nas-cli/internal/util/ctxutil"
 )
 
 var (
@@ -171,6 +172,13 @@ func processShows(
 				return filterFlags[s.State]
 			})
 			showsGroupedByFolder[folder] = filteredGroup
+		}
+	}
+
+	spinner := ctxutil.Loader(ctx)
+	if spinner != nil {
+		if err := spinner.Stop(); err != nil {
+			return fmt.Errorf("could not stop spinner: %w", err)
 		}
 	}
 
