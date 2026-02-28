@@ -1,4 +1,4 @@
-package imgutil
+package image
 
 import (
 	"bytes"
@@ -12,38 +12,51 @@ import (
 	"github.com/jeremiergz/nas-cli/internal/util/cmdutil"
 )
 
+type Image struct {
+	FilePath string
+	Name     string
+	Kind     Kind
+}
+
+// Creates a new Image instance with the given name, file path, and kind (background or poster).
+func New(name, filePath string, kind Kind) *Image {
+	return &Image{
+		FilePath: filePath,
+		Name:     name,
+		Kind:     kind,
+	}
+}
+
+type Kind string
+
 const (
 	DefaultDPIX int = 72
 	DefaultDPIY int = 72
+
+	KindBackground Kind = "background"
+	KindPoster     Kind = "poster"
+
+	KindBackgroundWidth  int = 3840
+	KindBackgroundHeight int = 2160
+	KindPosterWidth      int = 1000
+	KindPosterHeight     int = 1500
 )
 
-type ImageKind string
-
-const (
-	ImageKindBackground ImageKind = "background"
-	ImageKindPoster     ImageKind = "poster"
-
-	ImageKindBackgroundWidth  int = 3840
-	ImageKindBackgroundHeight int = 2160
-	ImageKindPosterWidth      int = 1000
-	ImageKindPosterHeight     int = 1500
-)
-
-func (ik ImageKind) String() string {
+func (ik Kind) String() string {
 	return string(ik)
 }
 
 // Scales given JPG image to specific dimensions depending on the image kind (background or poster).
-func Scale(src image.Image, kind ImageKind) image.Image {
+func Scale(src image.Image, kind Kind) image.Image {
 	var width, height int
 
 	switch kind {
-	case ImageKindBackground:
-		width = ImageKindBackgroundWidth
-		height = ImageKindBackgroundHeight
-	case ImageKindPoster:
-		width = ImageKindPosterWidth
-		height = ImageKindPosterHeight
+	case KindBackground:
+		width = KindBackgroundWidth
+		height = KindBackgroundHeight
+	case KindPoster:
+		width = KindPosterWidth
+		height = KindPosterHeight
 	}
 
 	dst := image.NewRGBA(image.Rect(0, 0, width, height))

@@ -120,28 +120,17 @@ func (p *process) Run(ctx context.Context) error {
 	}
 	entriesToChangePermsFor[p.destination] = config.FileMode
 
-	imageFiles := []struct {
-		name string
-		path *string
-	}{
-		{"background", p.file.BackgroundImageFilePath()},
-		{"poster", p.file.PosterImageFilePath()},
-	}
+	for _, imageFile := range p.file.Images() {
+		imageDestFileName := imageFile.Name + filepath.Ext(imageFile.FilePath)
+		imageDestFilePath := filepath.Join(remoteParentDir, imageDestFileName)
 
-	for _, imageFile := range imageFiles {
-		if imageFile.path != nil {
-			imageSrcFilePath := *imageFile.path
-			imageDestFileName := imageFile.name + filepath.Ext(imageSrcFilePath)
-			imageDestFilePath := filepath.Join(remoteParentDir, imageDestFileName)
-
-			err := p.uploadImageFile(ctx, imageSrcFilePath, imageDestFilePath)
-			if err != nil {
-				p.tracker.MarkAsErrored()
-				return fmt.Errorf("failed to upload %s image file: %w", imageFile.name, err)
-			}
-
-			entriesToChangePermsFor[imageDestFilePath] = config.FileMode
+		err := p.uploadImageFile(ctx, imageFile.FilePath, imageDestFilePath)
+		if err != nil {
+			p.tracker.MarkAsErrored()
+			return fmt.Errorf("failed to upload %s image file: %w", imageFile.Name, err)
 		}
+
+		entriesToChangePermsFor[imageDestFilePath] = config.FileMode
 	}
 
 	eg, _ := errgroup.WithContext(ctx)
@@ -169,11 +158,8 @@ func (p *process) Run(ctx context.Context) error {
 	}
 
 	if !p.keepOriginal {
-		if p.file.BackgroundImageFilePath() != nil {
-			_ = os.Remove(*p.file.BackgroundImageFilePath())
-		}
-		if p.file.PosterImageFilePath() != nil {
-			_ = os.Remove(*p.file.PosterImageFilePath())
+		for _, imageFile := range p.file.Images() {
+			_ = os.Remove(imageFile.FilePath)
 		}
 		_ = os.Remove(p.file.FilePath())
 	}

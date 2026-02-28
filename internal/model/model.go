@@ -10,6 +10,7 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/jeremiergz/nas-cli/internal/model/image"
 	"github.com/jeremiergz/nas-cli/internal/util"
 	"github.com/jeremiergz/nas-cli/internal/util/fsutil"
 )
@@ -36,11 +37,10 @@ type MediaFile interface {
 	FilePath() string
 	FullName() string
 	ID() uuid.UUID
+	Images() []*image.Image
 	Name() string
 	SetFilePath(path string)
 	Subtitles(languages ...string) map[string]string
-	BackgroundImageFilePath() *string
-	PosterImageFilePath() *string
 }
 
 type file struct {
@@ -48,6 +48,7 @@ type file struct {
 	extension string
 	filePath  string
 	id        uuid.UUID
+	images    []*image.Image
 	subtitles map[string]string
 }
 
@@ -81,6 +82,10 @@ func (f *file) FullName() string {
 
 func (f *file) ID() uuid.UUID {
 	return f.id
+}
+
+func (f *file) Images() []*image.Image {
+	return nil
 }
 
 func (f *file) Name() string {
@@ -137,14 +142,6 @@ func (f *file) Subtitles(languages ...string) map[string]string {
 	}
 
 	return f.subtitles
-}
-
-func (f *file) BackgroundImageFilePath() *string {
-	return nil
-}
-
-func (f *file) PosterImageFilePath() *string {
-	return nil
 }
 
 var (

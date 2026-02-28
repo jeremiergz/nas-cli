@@ -7,11 +7,13 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/pterm/pterm"
 	"github.com/spf13/cobra"
 	"github.com/thediveo/enumflag/v2"
 
 	"github.com/jeremiergz/nas-cli/internal/config"
 	"github.com/jeremiergz/nas-cli/internal/model"
+	"github.com/jeremiergz/nas-cli/internal/model/image"
 	svc "github.com/jeremiergz/nas-cli/internal/service"
 	"github.com/jeremiergz/nas-cli/internal/util"
 	"github.com/jeremiergz/nas-cli/internal/util/cmdutil"
@@ -92,6 +94,8 @@ func processMovies(ctx context.Context, out io.Writer) error {
 		model.SortMoviesByName(movies)
 	}
 
+	var imageFilesToConvert []*image.Image
+
 	uploads := make([]*upload, len(movies))
 	for i, movie := range movies {
 		movieDirname := strings.TrimSuffix(movie.FullName(), fmt.Sprintf(".%s", movie.Extension()))
@@ -99,6 +103,25 @@ func processMovies(ctx context.Context, out io.Writer) error {
 			File:        movie,
 			Destination: filepath.Join(remoteDirWithLowestUsage, movieDirname, movie.Basename()),
 			DisplayName: movie.FullName(),
+		}
+		if len(movie.Images()) > 0 {
+			imageFilesToConvert = append(imageFilesToConvert, movie.Images()...)
+		}
+	}
+
+	if len(imageFilesToConvert) > 0 {
+		spinner, err := pterm.DefaultSpinner.Start("Processing images...")
+		if err != nil {
+			return fmt.Errorf("could not start spinner: %w", err)
+		}
+		for _, img := range imageFilesToConvert {
+			err = convertImageFileToRequirements(img.FilePath, img.Kind)
+			if err != nil {
+				return fmt.Errorf("failed to process %s image file %s: %w", img.Kind, img.FilePath, err)
+			}
+		}
+		if err := spinner.Stop(); err != nil {
+			return fmt.Errorf("could not stop spinner: %w", err)
 		}
 	}
 

@@ -20,11 +20,12 @@ This project is a Go-based CLI that manages a personal NAS. The notes below capt
   - Read a config value: `viper.GetString(internal/config.KeySSHClientPrivateKey)` — keys are constants in [internal/config/config.go](../internal/config/config.go).
 
 If you want changes merged differently, or need more examples (e.g. how to implement a new SFTP-backed command), say which area you'd like expanded and I will iterate.
+
 ## Copilot instructions for contributors
 
 This project is a Go-based CLI that manages a personal NAS. The notes below capture project-specific architecture, developer workflows, and conventions an AI code assistant should follow to be productive.
 
-- **Big picture**: The binary is a Cobra-based CLI. The command graph is built in `main.go` (commands are registered with `rootCmd.AddCommand(...)`). See [main.go](main.go) and the central command helper in [internal/cmd/cmd.go].
+- **Big picture**: The binary is a Cobra-based CLI. The command graph is built in `main.go` (commands are registered with `rootCmd.AddCommand(...)`). See [main.go](../main.go) and the central command helper in [internal/cmd/cmd.go].
 - **Service singletons**: Shared services (console, SFTP, SSH) are global variables in `internal/service/service.go` and are initialized in `init()`. Use `svc.Console`, `svc.SFTP`, `svc.SSH` to access these singletons. Never re-initialize them; treat them as global resources.
 - **Command pattern**: Each CLI feature lives under `internal/cmd/<name>` and exposes `New() *cobra.Command`. Example: `internal/cmd/backup/backup.go` implements flags, subcommands, and helpers. Follow the same `New()` factory signature and register with `main.go`.
 - **Configuration**: App settings use `sp13/viper`. Keys are defined in `internal/config/config.go`. The configuration file is saved to `~/.nascliconfig` (YAML). Respect the viper keys (e.g. `nas.fqdn`, `ssh.client.privatekey`) when reading/writing config.
