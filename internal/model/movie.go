@@ -2,7 +2,6 @@ package model
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -21,8 +20,9 @@ var (
 type Movie struct {
 	*file
 
-	title string
-	year  int
+	images []*image.Image
+	title  string
+	year   int
 }
 
 // Sorts movies by name in ascending order.
@@ -57,28 +57,38 @@ func Movies(wd string, extensions []string, recursive bool) ([]*Movie, error) {
 				return nil, err
 			}
 
-			backgroundImgPath, posterImgPath, err := listMovieImageFiles(filePath)
+			referenceName := strings.TrimSuffix(basename, filepath.Ext(basename))
+			baseImages, err := listBaseImageFiles(wd, referenceName)
 			if err != nil {
-				return nil, fmt.Errorf("failed to list movie images for %s: %w", filePath, err)
-			}
-
-			if backgroundImgPath != nil {
-				f.images = append(f.images, image.New("background", *backgroundImgPath, image.KindBackground))
-			}
-			if posterImgPath != nil {
-				f.images = append(f.images, image.New("poster", *posterImgPath, image.KindPoster))
+				return nil, fmt.Errorf("failed to list movie images for %s: %w", referenceName, err)
 			}
 
 			movies = append(movies, &Movie{
-				file:  f,
-				title: m.Title,
-				year:  m.Year,
+				file:   f,
+				images: baseImages,
+				title:  m.Title,
+				year:   m.Year,
 			})
 		} else {
 			return nil, err
 		}
 	}
 	return movies, nil
+}
+
+func (m *Movie) Images() []*image.Image {
+	return m.images
+}
+
+func (m *Movie) ConvertImagesToRequirements() error {
+	for i, img := range m.images {
+		newPath, err := convertImageFileToRequirements(img.FilePath, img.Kind)
+		if err != nil {
+			return fmt.Errorf("failed to convert movie %s image file %s: %w", img.Kind, img.FilePath, err)
+		}
+		m.images[i].FilePath = newPath
+	}
+	return nil
 }
 
 func (m *Movie) Name() string {
@@ -104,46 +114,4 @@ func (m *Movie) Year() int {
 
 func (m *Movie) SetYear(year int) {
 	m.year = year
-}
-
-func (m *Movie) Images() []*image.Image {
-	return m.images
-}
-
-var validImageFileExtensions = []string{"jpg", "jpeg", "png", "webp"}
-
-func listMovieImageFiles(movieFilePath string) (background, poster *string, err error) {
-	files, err := os.ReadDir(filepath.Dir(movieFilePath))
-	if err != nil {
-		return nil, nil, fmt.Errorf("failed to read directory: %w", err)
-	}
-
-	movieName := strings.TrimSuffix(filepath.Base(movieFilePath), filepath.Ext(movieFilePath))
-
-	for _, file := range files {
-		filePath := filepath.Join(".", file.Name())
-		fileName := strings.TrimSuffix(file.Name(), filepath.Ext(file.Name()))
-		fileExtension := strings.ToLower(strings.TrimPrefix(filepath.Ext(file.Name()), "."))
-
-		hasValidExtension := slices.Contains(validImageFileExtensions, fileExtension)
-		hasMovieName := strings.HasPrefix(fileName, movieName)
-
-		if hasValidExtension && hasMovieName {
-			isBackgroundImage := strings.HasSuffix(fileName, ".background") || strings.HasSuffix(fileName, ".bg")
-			if isBackgroundImage {
-				background = &filePath
-			}
-
-			isPosterImage := strings.HasSuffix(fileName, ".poster") || strings.HasSuffix(fileName, ".pt")
-			if isPosterImage {
-				poster = &filePath
-			}
-		}
-
-		if background != nil && poster != nil {
-			break
-		}
-	}
-
-	return background, poster, nil
 }

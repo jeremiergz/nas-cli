@@ -42,6 +42,10 @@ const (
 	KindPosterHeight     int = 1500
 )
 
+var (
+	ValidExtensions = []string{"jpg", "jpeg", "png", "webp"}
+)
+
 func (ik Kind) String() string {
 	return string(ik)
 }

@@ -3,10 +3,16 @@ package model
 import (
 	"cmp"
 	"fmt"
+	"os"
 	"path/filepath"
 	"regexp"
 	"slices"
+	"strconv"
+	"strings"
 
+	"github.com/samber/lo"
+
+	"github.com/jeremiergz/nas-cli/internal/model/image"
 	"github.com/jeremiergz/nas-cli/internal/model/internal/parser"
 	"github.com/jeremiergz/nas-cli/internal/util"
 	"github.com/jeremiergz/nas-cli/internal/util/fsutil"
@@ -20,6 +26,7 @@ var (
 
 // Holds information about a show such as its name and seasons.
 type Show struct {
+	images        []*image.Image
 	name          string
 	seasons       []*Season
 	seasonsCount  int
@@ -43,7 +50,18 @@ func Shows(wd string, extensions []string, recursive bool, subtitleExtension str
 			var show *Show
 			showIndex := findShowIndex(e.Title, shows)
 			if showIndex == -1 {
+				baseImages, err := listBaseImageFiles(wd, e.Title)
+				if err != nil {
+					return nil, fmt.Errorf("failed to list show images for %s: %w", e.Title, err)
+				}
+
+				seasonImages, err := listSeasonImageFiles(wd, e.Title)
+				if err != nil {
+					return nil, fmt.Errorf("failed to list show season images for %s: %w", e.Title, err)
+				}
+
 				show = &Show{
+					images:  slices.Concat(baseImages, seasonImages),
 					name:    e.Title,
 					seasons: []*Season{},
 				}
@@ -105,6 +123,21 @@ func Shows(wd string, extensions []string, recursive bool, subtitleExtension str
 	}
 
 	return shows, nil
+}
+
+func (s *Show) Images() []*image.Image {
+	return s.images
+}
+
+func (s *Show) ConvertImagesToRequirements() error {
+	for i, img := range s.images {
+		newPath, err := convertImageFileToRequirements(img.FilePath, img.Kind)
+		if err != nil {
+			return fmt.Errorf("failed to convert show %s image file %s: %w", img.Kind, img.FilePath, err)
+		}
+		s.images[i].FilePath = newPath
+	}
+	return nil
 }
 
 func (s *Show) Name() string {
@@ -182,10 +215,6 @@ func (e *Episode) Season() *Season {
 	return e.season
 }
 
-func (e *Episode) BackgroundImageFilePath() *string {
-	return nil
-}
-
 func (e *Episode) PosterImageFilePath() *string {
 	return nil
 }
@@ -214,4 +243,49 @@ func findShowIndex(name string, shows []*Show) int {
 	}
 
 	return showIndex
+}
+
+var imageFileSeasonNumberRegexp = regexp.MustCompile(`\.S\d{2,}$`)
+
+func listSeasonImageFiles(dir, referenceName string) (imageFiles []*image.Image, err error) {
+	files, err := os.ReadDir(dir)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read directory: %w", err)
+	}
+
+	// Keep only image files to reduce the number of iterations later on.
+	files = slices.DeleteFunc(files, func(file os.DirEntry) bool {
+		fileExtension := strings.ToLower(strings.TrimPrefix(filepath.Ext(file.Name()), "."))
+		return !slices.Contains(image.ValidExtensions, fileExtension)
+	})
+
+	// Now, keep only files that end with .01, .02, etc. as they are the ones that can be associated with a season.
+	files = slices.DeleteFunc(files, func(file os.DirEntry) bool {
+		seasonNumberPart := strings.TrimSuffix(file.Name(), filepath.Ext(file.Name()))
+		return !imageFileSeasonNumberRegexp.MatchString(seasonNumberPart)
+	})
+
+	for _, file := range files {
+		filePath := filepath.Join(".", file.Name())
+		fileName := strings.TrimSuffix(file.Name(), filepath.Ext(file.Name()))
+		hasReferenceName := strings.HasPrefix(fileName, referenceName)
+
+		seasonNumberStr := strings.TrimPrefix(fileName, fmt.Sprintf("%s.", referenceName))
+		seasonNumber, err := strconv.Atoi(strings.TrimPrefix(seasonNumberStr, "S"))
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse season number for %s: %w", fileName, err)
+		}
+
+		if hasReferenceName {
+			imageFileNamePrefix := lo.Ternary(
+				seasonNumber == 0,
+				"season-specials-poster",
+				fmt.Sprintf("Season%02d", seasonNumber),
+			)
+			imageFileName := fmt.Sprintf("Season %d/%s", seasonNumber, imageFileNamePrefix)
+			imageFiles = append(imageFiles, image.New(imageFileName, filePath, image.KindPoster))
+		}
+	}
+
+	return imageFiles, nil
 }

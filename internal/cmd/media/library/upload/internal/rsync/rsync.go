@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/jedib0t/go-pretty/v6/progress"
@@ -17,6 +18,7 @@ import (
 
 	"github.com/jeremiergz/nas-cli/internal/config"
 	"github.com/jeremiergz/nas-cli/internal/model"
+	"github.com/jeremiergz/nas-cli/internal/model/image"
 	svc "github.com/jeremiergz/nas-cli/internal/service"
 	"github.com/jeremiergz/nas-cli/internal/util"
 	"github.com/jeremiergz/nas-cli/internal/util/cmdutil"
@@ -29,7 +31,9 @@ var (
 type process struct {
 	destination      string
 	file             model.MediaFile
+	imageFiles       []*image.Image
 	keepOriginal     bool
+	kind             model.Kind
 	ownerUID         int
 	ownerGID         int
 	permissionsDepth uint
@@ -38,11 +42,20 @@ type process struct {
 	w                io.Writer
 }
 
-func New(file model.MediaFile, destDir string, keepOriginal bool, permissionsDepth uint) svc.Runnable {
+func New(
+	kind model.Kind,
+	file model.MediaFile,
+	imageFiles []*image.Image,
+	destDir string,
+	keepOriginal bool,
+	permissionsDepth uint,
+) svc.Runnable {
 	return &process{
 		destination:      destDir,
 		file:             file,
+		imageFiles:       imageFiles,
 		keepOriginal:     keepOriginal,
+		kind:             kind,
 		ownerUID:         viper.GetInt(config.KeySCPChownUID),
 		ownerGID:         viper.GetInt(config.KeySCPChownGID),
 		permissionsDepth: permissionsDepth,
@@ -120,9 +133,27 @@ func (p *process) Run(ctx context.Context) error {
 	}
 	entriesToChangePermsFor[p.destination] = config.FileMode
 
-	for _, imageFile := range p.file.Images() {
+	for _, imageFile := range p.imageFiles {
 		imageDestFileName := imageFile.Name + filepath.Ext(imageFile.FilePath)
-		imageDestFilePath := filepath.Join(remoteParentDir, imageDestFileName)
+
+		// NOTE: Not sure this is easily understandable, but if the image file has a subdirectory
+		// in its name, we need to create that subdirectory in the remote destination and change
+		// permissions for it as well.
+		if strings.Contains(imageFile.Name, "/") {
+			dir := filepath.Dir(imageFile.Name)
+			additionalDir := filepath.Join(filepath.Dir(remoteParentDir), dir)
+			entriesToChangePermsFor[additionalDir] = config.DirectoryMode
+		}
+
+		var imageDestDir string
+		switch p.kind {
+		case model.KindMovie:
+			imageDestDir = remoteParentDir
+		case model.KindTVShow, model.KindAnime:
+			imageDestDir = filepath.Dir(remoteParentDir)
+		}
+
+		imageDestFilePath := filepath.Join(imageDestDir, imageDestFileName)
 
 		err := p.uploadImageFile(ctx, imageFile.FilePath, imageDestFilePath)
 		if err != nil {
@@ -158,7 +189,7 @@ func (p *process) Run(ctx context.Context) error {
 	}
 
 	if !p.keepOriginal {
-		for _, imageFile := range p.file.Images() {
+		for _, imageFile := range p.imageFiles {
 			_ = os.Remove(imageFile.FilePath)
 		}
 		_ = os.Remove(p.file.FilePath())
@@ -169,6 +200,15 @@ func (p *process) Run(ctx context.Context) error {
 }
 
 func (p *process) uploadImageFile(ctx context.Context, imageFilePath, targetFilePath string) error {
+	remoteDir := filepath.Dir(targetFilePath)
+	if remoteDir != "." {
+		err := svc.SFTP.Client.MkdirAll(remoteDir)
+		if err != nil {
+			p.tracker.MarkAsErrored()
+			return fmt.Errorf("failed to create remote directory: %w", err)
+		}
+	}
+
 	options := []string{
 		"--append",
 		imageFilePath,

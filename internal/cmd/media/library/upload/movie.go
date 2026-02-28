@@ -13,7 +13,6 @@ import (
 
 	"github.com/jeremiergz/nas-cli/internal/config"
 	"github.com/jeremiergz/nas-cli/internal/model"
-	"github.com/jeremiergz/nas-cli/internal/model/image"
 	svc "github.com/jeremiergz/nas-cli/internal/service"
 	"github.com/jeremiergz/nas-cli/internal/util"
 	"github.com/jeremiergz/nas-cli/internal/util/cmdutil"
@@ -94,7 +93,7 @@ func processMovies(ctx context.Context, out io.Writer) error {
 		model.SortMoviesByName(movies)
 	}
 
-	var imageFilesToConvert []*image.Image
+	var spinner *pterm.SpinnerPrinter
 
 	uploads := make([]*upload, len(movies))
 	for i, movie := range movies {
@@ -105,21 +104,21 @@ func processMovies(ctx context.Context, out io.Writer) error {
 			DisplayName: movie.FullName(),
 		}
 		if len(movie.Images()) > 0 {
-			imageFilesToConvert = append(imageFilesToConvert, movie.Images()...)
+			// Start spinner if not already started.
+			if spinner == nil {
+				if spinner, err = pterm.DefaultSpinner.Start("Processing images..."); err != nil {
+					return fmt.Errorf("could not start spinner: %w", err)
+				}
+			}
+			if err := movie.ConvertImagesToRequirements(); err != nil {
+				return fmt.Errorf("failed to convert %s image files: %w", movie.FullName(), err)
+			}
+			uploads[i].ImageFiles = movie.Images()
 		}
 	}
 
-	if len(imageFilesToConvert) > 0 {
-		spinner, err := pterm.DefaultSpinner.Start("Processing images...")
-		if err != nil {
-			return fmt.Errorf("could not start spinner: %w", err)
-		}
-		for _, img := range imageFilesToConvert {
-			err = convertImageFileToRequirements(img.FilePath, img.Kind)
-			if err != nil {
-				return fmt.Errorf("failed to process %s image file %s: %w", img.Kind, img.FilePath, err)
-			}
-		}
+	// Stop spinner if it was started to convert images.
+	if spinner != nil {
 		if err := spinner.Stop(); err != nil {
 			return fmt.Errorf("could not stop spinner: %w", err)
 		}

@@ -3,9 +3,6 @@ package upload
 import (
 	"context"
 	"fmt"
-	goimage "image"
-	"image/jpeg"
-	"image/png"
 	"io"
 	"maps"
 	"os"
@@ -22,7 +19,6 @@ import (
 	"github.com/samber/lo"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"golang.org/x/image/webp"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/jeremiergz/nas-cli/internal/cmd/media/library/upload/internal/rsync"
@@ -242,9 +238,10 @@ func getDiskUsage(str, path string) (percentage int, err error) {
 }
 
 type upload struct {
-	File        model.MediaFile
 	Destination string
 	DisplayName string
+	File        model.MediaFile
+	ImageFiles  []*image.Image
 }
 
 func process(ctx context.Context, out io.Writer, uploads []*upload, kind model.Kind) error {
@@ -296,7 +293,7 @@ func process(ctx context.Context, out io.Writer, uploads []*upload, kind model.K
 		pw.AppendTracker(tracker)
 
 		uploader := rsync.
-			New(upload.File, upload.Destination, !delete, permissionsDepth).
+			New(kind, upload.File, upload.ImageFiles, upload.Destination, !delete, permissionsDepth).
 			SetOutput(out).
 			SetTracker(tracker)
 		uploaders[index] = uploader
@@ -358,101 +355,4 @@ func printUploads(out io.Writer, uploadsGroupedByDirName map[string][]*upload, k
 func toShortName(remoteDirName string, from int) string {
 	parts := strings.Split(remoteDirName, string(filepath.Separator))
 	return strings.Join(parts[len(parts)-from:], string(filepath.Separator))
-}
-
-// Converts the image file to meet the requirements of the media server (dimensions, format, DPI) depending on the kind
-// of image (background or poster).
-func convertImageFileToRequirements(src string, kind image.Kind) error {
-	imgName := strings.TrimSuffix(filepath.Base(src), filepath.Ext(src))
-	imgExtension := strings.ToLower(strings.TrimPrefix(filepath.Ext(src), "."))
-
-	srcFile, err := os.Open(src)
-	if err != nil {
-		return fmt.Errorf("failed to open image file: %w", err)
-	}
-	defer srcFile.Close()
-
-	var decoded goimage.Image
-	shouldEncode := false
-	shouldDeleteSourceFile := false
-
-	switch imgExtension {
-	case "jpg", "jpeg":
-		decoded, err = jpeg.Decode(srcFile)
-		if err != nil {
-			return fmt.Errorf("failed to decode jpeg image file: %w", err)
-		}
-		if imgExtension == "jpeg" {
-			err = os.Rename(src, imgName+".jpg")
-			if err != nil {
-				return fmt.Errorf("failed to rename jpeg image file: %w", err)
-			}
-		}
-
-	case "png":
-		decoded, err = png.Decode(srcFile)
-		if err != nil {
-			return fmt.Errorf("failed to decode png image file: %w", err)
-		}
-		shouldEncode = true
-		shouldDeleteSourceFile = true
-
-	case "webp":
-		decoded, err = webp.Decode(srcFile)
-		if err != nil {
-			return fmt.Errorf("failed to decode webp image file: %w", err)
-		}
-		shouldEncode = true
-		shouldDeleteSourceFile = true
-
-	default:
-		return fmt.Errorf("unsupported image file format: %s", imgExtension)
-	}
-
-	// Check if the image has the desired dimensions.
-	var expectedX, expectedY int
-	switch kind {
-	case image.KindBackground:
-		expectedX = image.KindBackgroundWidth
-		expectedY = image.KindBackgroundHeight
-	case image.KindPoster:
-		expectedX = image.KindPosterWidth
-		expectedY = image.KindPosterHeight
-	}
-	currentX := decoded.Bounds().Dx()
-	currentY := decoded.Bounds().Dy()
-	if currentX != expectedX || currentY != expectedY {
-		shouldEncode = true
-	}
-
-	outputFilePath := imgName + ".jpg"
-
-	if shouldEncode {
-		decoded = image.Scale(decoded, kind)
-
-		outputFile, err := os.Create(outputFilePath)
-		if err != nil {
-			return fmt.Errorf("failed to create output image file: %w", err)
-		}
-		defer outputFile.Close()
-
-		err = jpeg.Encode(outputFile, decoded, &jpeg.Options{Quality: 90})
-		if err != nil {
-			return fmt.Errorf("failed to encode jpeg image file: %w", err)
-		}
-	}
-
-	if shouldDeleteSourceFile {
-		err = os.Remove(src)
-		if err != nil {
-			return fmt.Errorf("failed to remove original image file: %w", err)
-		}
-	}
-
-	err = image.SetDPI(context.Background(), outputFilePath)
-	if err != nil {
-		return fmt.Errorf("failed to set DPI for image file: %w", err)
-	}
-
-	return nil
 }
