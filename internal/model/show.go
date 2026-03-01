@@ -270,13 +270,13 @@ func listSeasonImageFiles(dir, referenceName string) (imageFiles []*image.Image,
 		fileName := strings.TrimSuffix(file.Name(), filepath.Ext(file.Name()))
 		hasReferenceName := strings.HasPrefix(fileName, referenceName)
 
-		seasonNumberStr := strings.TrimPrefix(fileName, fmt.Sprintf("%s.", referenceName))
-		seasonNumber, err := strconv.Atoi(seasonNumberStr[1:])
-		if err != nil {
-			return nil, fmt.Errorf("failed to parse season number for %s: %w", fileName, err)
-		}
-
 		if hasReferenceName {
+			seasonNumberStr := strings.TrimPrefix(fileName, fmt.Sprintf("%s.", referenceName))
+			seasonNumber, err := strconv.Atoi(seasonNumberStr[1:])
+			if err != nil {
+				return nil, fmt.Errorf("failed to parse season number for %s: %w", fileName, err)
+			}
+
 			imageFileNamePrefix := lo.Ternary(
 				seasonNumber == 0,
 				"season-specials-poster",
