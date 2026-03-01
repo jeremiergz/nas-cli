@@ -45,8 +45,6 @@ const (
 	// FileMode is the default mode to apply to files.
 	FileMode os.FileMode = 0644
 
-	KeyBackupPlexDest      string = "backup.plex.dest"
-	KeyBackupPlexSrc       string = "backup.plex.src"
 	KeyNASFQDN             string = "nas.fqdn"
 	KeyPlexAPIURL          string = "plex.api.url"
 	KeyPlexAPIToken        string = "plex.api.token"
@@ -78,8 +76,6 @@ var (
 	// Configuration keys in INI file order.
 	OrderedKeys = []string{
 		KeyNASFQDN,
-		KeyBackupPlexSrc,
-		KeyBackupPlexDest,
 		KeyPlexAPIURL,
 		KeyPlexAPIToken,
 		KeySCPChownGID,
@@ -119,25 +115,6 @@ func init() {
 
 		nasDomain := viper.GetString(KeyNASFQDN)
 		viper.SetDefault(KeyNASFQDN, "localhost")
-
-		backupPlexSrc := viper.GetString(KeyBackupPlexSrc)
-		if backupPlexSrc != "" {
-			backupPlexSrcPath, err := filepath.Abs(backupPlexSrc)
-			if err != nil {
-				fmt.Println(pterm.Red("✗"), err.Error())
-				os.Exit(1)
-			}
-			viper.Set(KeyBackupPlexSrc, backupPlexSrcPath)
-		}
-		backupPlexDest := viper.GetString(KeyBackupPlexDest)
-		if backupPlexDest != "" {
-			backupPlexDestPath, err := filepath.Abs(backupPlexDest)
-			if err != nil {
-				fmt.Println(pterm.Red("✗"), err.Error())
-				os.Exit(1)
-			}
-			viper.Set(KeyBackupPlexDest, backupPlexDestPath)
-		}
 
 		viper.SetDefault(KeyPlexAPIURL, "https://localhost:32400")
 		viper.SetDefault(KeyPlexAPIToken, "")
@@ -203,7 +180,6 @@ func init() {
 type (
 	Config struct {
 		NAS     NAS     `yaml:"nas"`
-		Backup  Backup  `yaml:"backup"`
 		Plex    Plex    `yaml:"plex"`
 		SCP     SCP     `yaml:"scp"`
 		SSH     SSH     `yaml:"ssh"`
@@ -211,13 +187,6 @@ type (
 	}
 	NAS struct {
 		FQDN string `yaml:"fqdn"`
-	}
-	Backup struct {
-		Plex BackupPlex `yaml:"plex"`
-	}
-	BackupPlex struct {
-		Src  string `yaml:"src"`
-		Dest string `yaml:"dest"`
 	}
 	Plex struct {
 		API PlexAPI `yaml:"api"`
@@ -260,12 +229,6 @@ func Save() error {
 	cfg := Config{
 		NAS: NAS{
 			FQDN: viper.GetString(KeyNASFQDN),
-		},
-		Backup: Backup{
-			Plex: BackupPlex{
-				Src:  viper.GetString(KeyBackupPlexSrc),
-				Dest: viper.GetString(KeyBackupPlexDest),
-			},
 		},
 		Plex: Plex{
 			API: PlexAPI{
