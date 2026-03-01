@@ -21,7 +21,6 @@ import (
 	"github.com/jeremiergz/nas-cli/internal/model"
 	svc "github.com/jeremiergz/nas-cli/internal/service"
 	"github.com/jeremiergz/nas-cli/internal/service/plex"
-	"github.com/jeremiergz/nas-cli/internal/util/ctxutil"
 )
 
 var (
@@ -81,6 +80,11 @@ func (k showsKind) DisplayText() string {
 }
 
 func processShows(ctx context.Context, kind showsKind) error {
+	spinner, err := pterm.DefaultSpinner.Start("Loading information...")
+	if err != nil {
+		return fmt.Errorf("could not start spinner: %w", err)
+	}
+
 	shows, err := fetchPlexShows(kind)
 	if err != nil {
 		return fmt.Errorf("could not fetch %ss: %w", kind.DisplayText(), err)
@@ -115,11 +119,8 @@ func processShows(ctx context.Context, kind showsKind) error {
 		return fmt.Errorf("could not list remote %s folders: %w", kind.DisplayText(), err)
 	}
 
-	spinner := ctxutil.Loader(ctx)
-	if spinner != nil {
-		if err := spinner.Stop(); err != nil {
-			return fmt.Errorf("could not stop spinner: %w", err)
-		}
+	if err := spinner.Stop(); err != nil {
+		return fmt.Errorf("could not stop spinner: %w", err)
 	}
 
 	hasMatchedAny := false

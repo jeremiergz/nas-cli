@@ -11,7 +11,6 @@ import (
 	svc "github.com/jeremiergz/nas-cli/internal/service"
 	"github.com/jeremiergz/nas-cli/internal/service/plex"
 	"github.com/jeremiergz/nas-cli/internal/util/cmdutil"
-	"github.com/jeremiergz/nas-cli/internal/util/ctxutil"
 )
 
 var (
@@ -76,12 +75,6 @@ func New() *cobra.Command {
 			}
 
 			fmt.Fprintln(out)
-
-			ctx, err := ctxutil.WithLoader(cmd.Context(), "Loading information...")
-			if err != nil {
-				return fmt.Errorf("failed to add loader to context: %w", err)
-			}
-			cmd.SetContext(ctx)
 
 			if err := subCmd.RunE(cmd, args); err != nil {
 				return err
