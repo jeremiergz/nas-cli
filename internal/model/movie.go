@@ -80,17 +80,6 @@ func (m *Movie) Images() []*image.Image {
 	return m.images
 }
 
-func (m *Movie) ConvertImagesToRequirements() error {
-	for i, img := range m.images {
-		newPath, err := convertImageFileToRequirements(img.FilePath, img.Kind)
-		if err != nil {
-			return fmt.Errorf("failed to convert movie %s image file %s: %w", img.Kind, img.FilePath, err)
-		}
-		m.images[i].FilePath = newPath
-	}
-	return nil
-}
-
 func (m *Movie) Name() string {
 	return m.title
 }

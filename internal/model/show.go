@@ -129,17 +129,6 @@ func (s *Show) Images() []*image.Image {
 	return s.images
 }
 
-func (s *Show) ConvertImagesToRequirements() error {
-	for i, img := range s.images {
-		newPath, err := convertImageFileToRequirements(img.FilePath, img.Kind)
-		if err != nil {
-			return fmt.Errorf("failed to convert show %s image file %s: %w", img.Kind, img.FilePath, err)
-		}
-		s.images[i].FilePath = newPath
-	}
-	return nil
-}
-
 func (s *Show) Name() string {
 	return s.name
 }

@@ -271,6 +271,28 @@ func process(ctx context.Context, out io.Writer, uploads []*upload, kind model.K
 
 	fmt.Fprintln(out)
 
+	var imagesToConvert []*image.Image
+	for _, upload := range uploads {
+		if len(upload.ImageFiles) > 0 {
+			imagesToConvert = append(imagesToConvert, upload.ImageFiles...)
+		}
+	}
+
+	if len(imagesToConvert) > 0 {
+		spinner, err := pterm.DefaultSpinner.Start("Processing images...")
+		if err != nil {
+			return fmt.Errorf("could not start spinner: %w", err)
+		}
+
+		if err := image.ConvertToRequirements(imagesToConvert); err != nil {
+			return err
+		}
+
+		if err := spinner.Stop(); err != nil {
+			return fmt.Errorf("could not stop spinner: %w", err)
+		}
+	}
+
 	padder := str.NewPadder(lo.Map(uploads, func(u *upload, _ int) string { return u.DisplayName }))
 
 	var permissionsDepth uint

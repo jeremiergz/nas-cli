@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/pterm/pterm"
 	"github.com/spf13/cobra"
 	"github.com/thediveo/enumflag/v2"
 
@@ -93,8 +92,6 @@ func processMovies(ctx context.Context, out io.Writer) error {
 		model.SortMoviesByName(movies)
 	}
 
-	var spinner *pterm.SpinnerPrinter
-
 	uploads := make([]*upload, len(movies))
 	for i, movie := range movies {
 		movieDirname := strings.TrimSuffix(movie.FullName(), fmt.Sprintf(".%s", movie.Extension()))
@@ -104,23 +101,7 @@ func processMovies(ctx context.Context, out io.Writer) error {
 			DisplayName: movie.FullName(),
 		}
 		if len(movie.Images()) > 0 {
-			// Start spinner if not already started.
-			if spinner == nil {
-				if spinner, err = pterm.DefaultSpinner.Start("Processing images..."); err != nil {
-					return fmt.Errorf("could not start spinner: %w", err)
-				}
-			}
-			if err := movie.ConvertImagesToRequirements(); err != nil {
-				return fmt.Errorf("failed to convert %s image files: %w", movie.FullName(), err)
-			}
 			uploads[i].ImageFiles = movie.Images()
-		}
-	}
-
-	// Stop spinner if it was started to convert images.
-	if spinner != nil {
-		if err := spinner.Stop(); err != nil {
-			return fmt.Errorf("could not stop spinner: %w", err)
 		}
 	}
 

@@ -6,7 +6,6 @@ import (
 	"io"
 	"path/filepath"
 
-	"github.com/pterm/pterm"
 	"github.com/samber/lo"
 	"github.com/spf13/cobra"
 
@@ -99,21 +98,10 @@ func processShows(ctx context.Context, out io.Writer, kind model.Kind) error {
 		return err
 	}
 
-	var spinner *pterm.SpinnerPrinter
-
 	uploads := []*upload{}
 	for _, show := range shows {
 		var imagesToUpload []*image.Image
 		if len(show.Images()) > 0 {
-			// Start spinner if not already started.
-			if spinner == nil {
-				if spinner, err = pterm.DefaultSpinner.Start("Processing images..."); err != nil {
-					return fmt.Errorf("could not start spinner: %w", err)
-				}
-			}
-			if err := show.ConvertImagesToRequirements(); err != nil {
-				return fmt.Errorf("failed to convert %s image files: %w", show.Name(), err)
-			}
 			imagesToUpload = show.Images()
 		}
 		remoteShowPath, exists := remoteShows[show.Name()]
@@ -146,13 +134,6 @@ func processShows(ctx context.Context, out io.Writer, kind model.Kind) error {
 					hasAddedImagesToUpload = true
 				}
 			}
-		}
-	}
-
-	// Stop spinner if it was started to convert images.
-	if spinner != nil {
-		if err := spinner.Stop(); err != nil {
-			return fmt.Errorf("could not stop spinner: %w", err)
 		}
 	}
 
