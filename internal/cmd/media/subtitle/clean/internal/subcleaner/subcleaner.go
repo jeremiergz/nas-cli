@@ -133,6 +133,9 @@ var (
 	// Matches speaker labels like "SPEAKER:" at the start of text.
 	colonPrefixPattern = regexp.MustCompile(`(?i)^[A-Z][A-Z0-9 ]*:\s*`)
 
+	// Matches two or more consecutive spaces.
+	multiSpacePattern = regexp.MustCompile(`  +`)
+
 	// Matches HTML tags except <i> and </i>.
 	htmlTagPattern = regexp.MustCompile(`</?(?:b|u|s|font|span|div|p)\b[^>]*>`)
 )
@@ -162,6 +165,9 @@ func removeSDH(items []*astisub.Item) []*astisub.Item {
 
 				// Remove speaker labels (e.g. "NARRATOR:", "MAN 1:").
 				text = colonPrefixPattern.ReplaceAllString(text, "")
+
+				// Collapse multiple consecutive spaces left after removals.
+				text = multiSpacePattern.ReplaceAllString(text, " ")
 
 				if strings.TrimSpace(text) == "" {
 					continue

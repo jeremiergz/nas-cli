@@ -264,73 +264,39 @@ func TestRun_IntegrationWithSRTFile(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to read result: %v", err)
 	}
-	result := string(resultBytes)
 
-	// Should be cleaned.
-	shouldNotContain := []struct {
-		text   string
-		reason string
-	}{
-		{"[thunder rumbling]", "SDH bracket annotation should have been removed"},
-		{"(dramatic music intensifies)", "SDH parenthesized annotation should have been removed"},
-		{"[door creaks open]", "SDH bracket annotation should have been removed"},
-		{"[shouts]", "SDH bracket annotation should have been removed"},
-		{"NARRATOR:", "uppercase speaker label should have been removed"},
-		{"Narrator:", "mixed-case speaker label should have been removed"},
-		{"MAN 1:", "speaker label with number should have been removed"},
-		{"WOMAN:", "speaker label should have been removed"},
-		{"♪", "music symbols should have been removed"},
-		{"♫", "music symbols should have been removed"},
-		{"<font", "<font> tag should have been removed"},
-		{"<b>", "<b> tag should have been removed"},
-		{"</b>", "</b> tag should have been removed"},
-		{"<u>", "<u> tag should have been removed"},
-		{"</u>", "</u> tag should have been removed"},
-		{"<span", "<span> tag should have been removed"},
+	goldenBytes, err := os.ReadFile("testdata/clean.srt")
+	if err != nil {
+		t.Fatalf("failed to read golden file testdata/clean.srt: %v", err)
 	}
-	for _, tc := range shouldNotContain {
-		if strings.Contains(result, tc.text) {
-			t.Errorf("%s (found %q in output)", tc.reason, tc.text)
+
+	if !bytes.Equal(resultBytes, goldenBytes) {
+		result := string(resultBytes)
+		golden := string(goldenBytes)
+
+		resultLines := strings.Split(result, "\n")
+		goldenLines := strings.Split(golden, "\n")
+
+		maxLines := len(resultLines)
+		if len(goldenLines) > maxLines {
+			maxLines = len(goldenLines)
 		}
-	}
 
-	// Should be kept.
-	shouldContain := []struct {
-		text   string
-		reason string
-	}{
-		{"It was a dark and stormy night.", "dialogue after speaker label removal should be preserved"},
-		{"The wind howled through the trees.", "dialogue after speaker label removal should be preserved"},
-		{"Did you hear that?", "dialogue after speaker label removal should be preserved"},
-		{"What was that?", "dialogue after SDH + speaker label removal should be preserved"},
-		{"This is yellow text", "text inside <font> should be preserved"},
-		{"Bold text here", "text inside <b> should be preserved"},
-		{"Underlined text", "text inside <u> should be preserved"},
-		{"<i>Styled italic text</i>", "<i> tags should be preserved"},
-		{"<i>Regular italic text</i>", "<i> tags should be preserved"},
-		{"Text with positioning tag", "text with {\\an8} prefix should be preserved"},
-		{"Be very quiet.", "dialogue after SDH removal should be preserved"},
-		{"Normal dialogue line.", "normal dialogue should be preserved"},
-		{"Duplicate timestamp line.", "duplicate timestamp text should be preserved (merged)"},
-		{"I can't believe it.", "dialogue after SDH removal should be preserved"},
-		{"Span styled text", "text inside <span> should be preserved"},
-		{"Run!", "dialogue after combined SDH removal should be preserved"},
-		{"Big bold text", "text inside nested HTML tags should be preserved"},
-		{"There's <i>absolutely</i> no way!", "dialogue after SDH removal should preserve italic tags"},
-	}
-	for _, tc := range shouldContain {
-		if !strings.Contains(result, tc.text) {
-			t.Errorf("%s (expected %q in output)", tc.reason, tc.text)
+		for i := range maxLines {
+			var rLine, gLine string
+			if i < len(resultLines) {
+				rLine = resultLines[i]
+			}
+			if i < len(goldenLines) {
+				gLine = goldenLines[i]
+			}
+			if rLine != gLine {
+				t.Errorf("line %d: got %q, want %q", i+1, rLine, gLine)
+			}
 		}
-	}
 
-	// Empty items should be gone: {\an8} alone, whitespace-only, music-only.
-	// Verify no empty subtitle lines remain.
-	lines := strings.Split(result, "\n")
-	for i, line := range lines {
-		trimmed := strings.TrimSpace(line)
-		if trimmed == `{\an8}` {
-			t.Errorf("line %d: empty {\\an8} item should have been removed", i+1)
+		if len(resultLines) != len(goldenLines) {
+			t.Errorf("line count: got %d, want %d", len(resultLines), len(goldenLines))
 		}
 	}
 
