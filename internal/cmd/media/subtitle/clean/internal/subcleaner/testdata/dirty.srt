@@ -1,0 +1,99 @@
+1
+00:00:01,000 --> 00:00:03,000
+[thunder rumbling]
+
+2
+00:00:03,500 --> 00:00:05,500
+(dramatic music intensifies)
+
+3
+00:00:06,000 --> 00:00:08,000
+NARRATOR: It was a dark and stormy night.
+
+4
+00:00:08,500 --> 00:00:10,500
+Narrator: The wind howled through the trees.
+
+5
+00:00:11,000 --> 00:00:13,000
+MAN 1: Did you hear that?
+
+6
+00:00:13,500 --> 00:00:15,500
+WOMAN: [gasps] What was that?
+
+7
+00:00:16,000 --> 00:00:18,000
+♪ La la la ♪
+
+8
+00:00:18,500 --> 00:00:20,500
+♫♫
+
+9
+00:00:21,000 --> 00:00:23,000
+<font color="#ffff00">This is yellow text</font>
+
+10
+00:00:23,500 --> 00:00:25,500
+<b>Bold text here</b>
+
+11
+00:00:26,000 --> 00:00:28,000
+<u>Underlined text</u>
+
+12
+00:00:28,500 --> 00:00:30,500
+<font color="red"><i>Styled italic text</i></font>
+
+13
+00:00:31,000 --> 00:00:33,000
+<i>Regular italic text</i>
+
+14
+00:00:33,500 --> 00:00:35,500
+{\an8}
+
+15
+00:00:36,000 --> 00:00:38,000
+{\an8}Text with positioning tag
+
+16
+00:00:38,500 --> 00:00:40,500
+(whispering) Be very quiet.
+
+17
+00:00:41,000 --> 00:00:43,000
+[door creaks open]
+
+18
+00:00:43,500 --> 00:00:45,500
+Normal dialogue line.
+
+19
+00:00:43,500 --> 00:00:45,500
+Duplicate timestamp line.
+
+20
+00:00:46,000 --> 00:00:48,000
+[sighs] I can't believe it.
+
+21
+00:00:48,500 --> 00:00:50,500
+<font color="#00ff00">♪ Another song ♪</font>
+
+22
+00:00:51,000 --> 00:00:53,000
+<span class="highlight">Span styled text</span>
+
+23
+00:00:53,500 --> 00:00:55,500
+
+
+24
+00:00:56,000 --> 00:00:58,000
+(explosion) [debris falling] Run!
+
+25
+00:00:58,500 --> 00:01:00,500
+<font size="20"><b>Big bold text</b></font>

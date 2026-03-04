@@ -6,6 +6,8 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"regexp"
+	"strings"
 	"sync"
 
 	"github.com/asticode/go-astisub"
@@ -38,6 +40,13 @@ type backup struct {
 	originalPath string
 }
 
+var cleanupPipeline = []func([]*astisub.Item) []*astisub.Item{
+	mergeDuplicateTimestamps,
+	removeSDH,
+	removeHTMLTags,
+	removeEmptyItems,
+}
+
 func (p *process) Run(ctx context.Context) error {
 	if p.tracker == nil {
 		return fmt.Errorf("required tracker is not set")
@@ -58,12 +67,15 @@ func (p *process) Run(ctx context.Context) error {
 		return err
 	}
 
-	cleanedItems := mergeDuplicateTimestamps(currentSubs.Items)
+	cleanedItems := currentSubs.Items
+	for _, cleanup := range cleanupPipeline {
+		cleanedItems = cleanup(cleanedItems)
+	}
 
 	subs := astisub.NewSubtitles()
 	subs.Items = cleanedItems
 
-	backups, err := writeToSRTFile(subs, p.filePath, p.keepOriginal)
+	backups, err := writeToSRTFile(subs, p.filePath)
 	if err != nil {
 		p.tracker.MarkAsErrored()
 		return err
@@ -108,7 +120,169 @@ func mergeDuplicateTimestamps(items []*astisub.Item) []*astisub.Item {
 	return result
 }
 
-func writeToSRTFile(subs *astisub.Subtitles, path string, keepOriginal bool) ([]backup, error) {
+var (
+	// Matches SDH content: text in brackets [like this] or parentheses (like this).
+	sdhPattern = regexp.MustCompile(`\[.*?\]|\(.*?\)`)
+
+	// Matches ASS/SSA override tags such as {\an8}.
+	stylingTagPattern = regexp.MustCompile(`\{\\[^}]*\}`)
+
+	// Matches music symbols (♪, ♫) and surrounding whitespace.
+	musicPattern = regexp.MustCompile(`[♪♫]+`)
+
+	// Matches speaker labels like "SPEAKER:" at the start of text.
+	colonPrefixPattern = regexp.MustCompile(`(?i)^[A-Z][A-Z0-9 ]*:\s*`)
+
+	// Matches HTML tags except <i> and </i>.
+	htmlTagPattern = regexp.MustCompile(`</?(?:b|u|s|font|span|div|p)\b[^>]*>`)
+)
+
+// Strips SDH (Subtitles for the Deaf and Hard of Hearing) content
+// from subtitle items.
+//
+// It removes bracketed/parenthesized annotations, music symbols, ASS/SSA styling tags, and uppercase speaker labels.
+// Lines and items that become empty after stripping are discarded.
+func removeSDH(items []*astisub.Item) []*astisub.Item {
+	result := []*astisub.Item{}
+
+	for _, item := range items {
+		var cleanedLines []astisub.Line
+
+		for _, line := range item.Lines {
+			var cleanedLineItems []astisub.LineItem
+
+			for _, lineItem := range line.Items {
+				text := lineItem.Text
+
+				// Remove bracketed and parenthesized SDH annotations.
+				text = sdhPattern.ReplaceAllString(text, "")
+
+				// Remove music symbols.
+				text = musicPattern.ReplaceAllString(text, "")
+
+				// Remove speaker labels (e.g. "NARRATOR:", "MAN 1:").
+				text = colonPrefixPattern.ReplaceAllString(text, "")
+
+				text = strings.TrimSpace(text)
+
+				if text == "" {
+					continue
+				}
+
+				cleanedLineItem := lineItem
+				cleanedLineItem.Text = text
+				cleanedLineItems = append(cleanedLineItems, cleanedLineItem)
+			}
+
+			if len(cleanedLineItems) == 0 {
+				continue
+			}
+
+			cleanedLines = append(cleanedLines, astisub.Line{
+				Items:     cleanedLineItems,
+				VoiceName: line.VoiceName,
+			})
+		}
+
+		if len(cleanedLines) == 0 {
+			continue
+		}
+
+		cleanedItem := *item
+		cleanedItem.Lines = cleanedLines
+		result = append(result, &cleanedItem)
+	}
+
+	return result
+}
+
+// Strips HTML styling tags (e.g. <font>, <b>, <u>) from subtitle
+// items while preserving <i> and </i> tags.
+//
+// Lines that become empty after stripping are discarded.
+func removeHTMLTags(items []*astisub.Item) []*astisub.Item {
+	result := []*astisub.Item{}
+
+	for _, item := range items {
+		var cleanedLines []astisub.Line
+
+		for _, line := range item.Lines {
+			var cleanedLineItems []astisub.LineItem
+
+			for _, lineItem := range line.Items {
+				text := htmlTagPattern.ReplaceAllString(lineItem.Text, "")
+
+				text = strings.TrimSpace(text)
+
+				if text == "" {
+					continue
+				}
+
+				cleanedLineItem := lineItem
+				cleanedLineItem.Text = text
+				if cleanedLineItem.InlineStyle != nil {
+					// Preserve italic styling while stripping other HTML styles.
+					preserved := &astisub.StyleAttributes{
+						SRTItalics: cleanedLineItem.InlineStyle.SRTItalics,
+					}
+					if !preserved.SRTItalics {
+						preserved = nil
+					}
+					cleanedLineItem.InlineStyle = preserved
+				}
+				cleanedLineItems = append(cleanedLineItems, cleanedLineItem)
+			}
+
+			if len(cleanedLineItems) == 0 {
+				continue
+			}
+
+			cleanedLines = append(cleanedLines, astisub.Line{
+				Items:     cleanedLineItems,
+				VoiceName: line.VoiceName,
+			})
+		}
+
+		if len(cleanedLines) == 0 {
+			continue
+		}
+
+		cleanedItem := *item
+		cleanedItem.Lines = cleanedLines
+		result = append(result, &cleanedItem)
+	}
+
+	return result
+}
+
+// Discards subtitle items whose lines contain no visible text (e.g. items left with only styling tags or
+// whitespace after prior cleaning).
+func removeEmptyItems(items []*astisub.Item) []*astisub.Item {
+	result := []*astisub.Item{}
+
+	for _, item := range items {
+		hasText := false
+		for _, line := range item.Lines {
+			for _, lineItem := range line.Items {
+				text := stylingTagPattern.ReplaceAllString(lineItem.Text, "")
+				if strings.TrimSpace(text) != "" {
+					hasText = true
+					break
+				}
+			}
+			if hasText {
+				break
+			}
+		}
+		if hasText {
+			result = append(result, item)
+		}
+	}
+
+	return result
+}
+
+func writeToSRTFile(subs *astisub.Subtitles, path string) ([]backup, error) {
 	backupFilePath, err := backupSubtitleFile(path)
 	if err != nil {
 		return nil, err
