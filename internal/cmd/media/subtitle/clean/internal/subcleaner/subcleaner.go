@@ -163,9 +163,7 @@ func removeSDH(items []*astisub.Item) []*astisub.Item {
 				// Remove speaker labels (e.g. "NARRATOR:", "MAN 1:").
 				text = colonPrefixPattern.ReplaceAllString(text, "")
 
-				text = strings.TrimSpace(text)
-
-				if text == "" {
+				if strings.TrimSpace(text) == "" {
 					continue
 				}
 
@@ -177,6 +175,13 @@ func removeSDH(items []*astisub.Item) []*astisub.Item {
 			if len(cleanedLineItems) == 0 {
 				continue
 			}
+
+			// Trim leading whitespace on the first item and trailing whitespace on the last item
+			// while preserving inter-item spacing so that adjacent styled spans (e.g. italic)
+			// keep their surrounding spaces.
+			cleanedLineItems[0].Text = strings.TrimLeft(cleanedLineItems[0].Text, " \t")
+			last := len(cleanedLineItems) - 1
+			cleanedLineItems[last].Text = strings.TrimRight(cleanedLineItems[last].Text, " \t")
 
 			cleanedLines = append(cleanedLines, astisub.Line{
 				Items:     cleanedLineItems,
@@ -212,9 +217,7 @@ func removeHTMLTags(items []*astisub.Item) []*astisub.Item {
 			for _, lineItem := range line.Items {
 				text := htmlTagPattern.ReplaceAllString(lineItem.Text, "")
 
-				text = strings.TrimSpace(text)
-
-				if text == "" {
+				if strings.TrimSpace(text) == "" {
 					continue
 				}
 
@@ -236,6 +239,12 @@ func removeHTMLTags(items []*astisub.Item) []*astisub.Item {
 			if len(cleanedLineItems) == 0 {
 				continue
 			}
+
+			// Trim leading/trailing whitespace only at line boundaries to preserve inter-item
+			// spacing for adjacent styled spans.
+			cleanedLineItems[0].Text = strings.TrimLeft(cleanedLineItems[0].Text, " \t")
+			last := len(cleanedLineItems) - 1
+			cleanedLineItems[last].Text = strings.TrimRight(cleanedLineItems[last].Text, " \t")
 
 			cleanedLines = append(cleanedLines, astisub.Line{
 				Items:     cleanedLineItems,

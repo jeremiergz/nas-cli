@@ -97,3 +97,7 @@ Duplicate timestamp line.
 25
 00:00:58,500 --> 00:01:00,500
 <font size="20"><b>Big bold text</b></font>
+
+26
+00:01:02,000 --> 00:01:03,500
+[shouts] There's <i>absolutely</i> no way!

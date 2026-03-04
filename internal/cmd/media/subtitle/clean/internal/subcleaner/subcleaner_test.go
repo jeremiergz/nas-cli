@@ -274,6 +274,7 @@ func TestRun_IntegrationWithSRTFile(t *testing.T) {
 		{"[thunder rumbling]", "SDH bracket annotation should have been removed"},
 		{"(dramatic music intensifies)", "SDH parenthesized annotation should have been removed"},
 		{"[door creaks open]", "SDH bracket annotation should have been removed"},
+		{"[shouts]", "SDH bracket annotation should have been removed"},
 		{"NARRATOR:", "uppercase speaker label should have been removed"},
 		{"Narrator:", "mixed-case speaker label should have been removed"},
 		{"MAN 1:", "speaker label with number should have been removed"},
@@ -315,6 +316,7 @@ func TestRun_IntegrationWithSRTFile(t *testing.T) {
 		{"Span styled text", "text inside <span> should be preserved"},
 		{"Run!", "dialogue after combined SDH removal should be preserved"},
 		{"Big bold text", "text inside nested HTML tags should be preserved"},
+		{"There's <i>absolutely</i> no way!", "dialogue after SDH removal should preserve italic tags"},
 	}
 	for _, tc := range shouldContain {
 		if !strings.Contains(result, tc.text) {
