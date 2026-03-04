@@ -4,6 +4,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/jeremiergz/nas-cli/internal/cmd/media/subtitle/clean"
+	"github.com/jeremiergz/nas-cli/internal/cmd/media/subtitle/merge"
 	"github.com/jeremiergz/nas-cli/internal/cmd/media/subtitle/sync"
 	"github.com/jeremiergz/nas-cli/internal/util/cmdutil"
 )
@@ -29,6 +30,7 @@ func New() *cobra.Command {
 	}
 
 	cmd.AddCommand(clean.New())
+	cmd.AddCommand(merge.New())
 	cmd.AddCommand(sync.New())
 
 	return cmd

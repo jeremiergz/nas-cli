@@ -5,7 +5,6 @@ import (
 
 	"github.com/jeremiergz/nas-cli/internal/cmd/media/file/clean"
 	"github.com/jeremiergz/nas-cli/internal/cmd/media/file/format"
-	"github.com/jeremiergz/nas-cli/internal/cmd/media/file/merge"
 	"github.com/jeremiergz/nas-cli/internal/util/cmdutil"
 )
 
@@ -31,7 +30,6 @@ func New() *cobra.Command {
 
 	cmd.AddCommand(clean.New())
 	cmd.AddCommand(format.New())
-	cmd.AddCommand(merge.New())
 
 	return cmd
 }
