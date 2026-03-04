@@ -149,6 +149,12 @@ func (p *process) Run(ctx context.Context) error {
 	return nil
 }
 
+// Holds forced and full subtitle track entries for a single language.
+type subtitleGroup struct {
+	forced []string
+	full   []string
+}
+
 // Builds mkvmerge options and identifies tracks to compute --track-order.
 func computeMergeOptions(
 	ctx context.Context,
@@ -195,6 +201,7 @@ func computeMergeOptions(
 			ID         int `json:"id"`
 			Type       string
 			Properties struct {
+				ForcedTrack  bool   `json:"forced_track"`
 				Language     string `json:"language,omitempty"`
 				LanguageIETF string `json:"language_ietf,omitempty"`
 			} `json:"properties"`
@@ -202,9 +209,9 @@ func computeMergeOptions(
 	}
 
 	nonSubtitle := []string{}
-	frenchSubs := []string{}
-	englishSubs := []string{}
-	otherSubs := []string{}
+	frenchSubs := subtitleGroup{}
+	englishSubs := subtitleGroup{}
+	otherSubs := subtitleGroup{}
 	// Collect subtitle track IDs to keep from the video input.
 	videoSubtitleTrackIDsToKeep := []string{}
 	videoIndex := len(inputFiles) - 1
@@ -246,9 +253,9 @@ func computeMergeOptions(
 			}
 			norm := normalizeLanguage(lang)
 
-			// If overrideLanguage is set and this is the video input, skip subtitle tracks
-			// whose normalized language matches an incoming subtitle language.
-			if overrideLanguage && idx == videoIndex {
+			// If overrideLanguage is set and this is the video input, skip non-forced subtitle tracks whose
+			// normalized language matches an incoming subtitle language. Forced tracks are always preserved.
+			if overrideLanguage && idx == videoIndex && !t.Properties.ForcedTrack {
 				if norm != "" {
 					if _, ok := incomingLangs[norm]; ok {
 						continue
@@ -256,13 +263,17 @@ func computeMergeOptions(
 				}
 			}
 
-			// Categorize subtitle track by language.
+			// Categorize subtitle track by language, separating forced from full.
+			group := &otherSubs
 			if isFrench(norm) {
-				frenchSubs = append(frenchSubs, entry)
+				group = &frenchSubs
 			} else if isEnglish(norm) {
-				englishSubs = append(englishSubs, entry)
+				group = &englishSubs
+			}
+			if t.Properties.ForcedTrack {
+				group.forced = append(group.forced, entry)
 			} else {
-				otherSubs = append(otherSubs, entry)
+				group.full = append(group.full, entry)
 			}
 			if idx == videoIndex {
 				videoSubtitleTrackIDsToKeep = append(videoSubtitleTrackIDsToKeep, strconv.Itoa(t.ID))
@@ -270,11 +281,20 @@ func computeMergeOptions(
 		}
 	}
 
-	// Final desired order: non-subtitle tracks, French subtitles, other subtitles, English subtitles.
+	// Final desired order: non-subtitle tracks, then subtitle groups by language
+	// (French, English, other). Within each language group: forced tracks first, then full.
 	finalOrder := append([]string{}, nonSubtitle...)
-	finalOrder = append(finalOrder, frenchSubs...)
-	finalOrder = append(finalOrder, englishSubs...)
-	finalOrder = append(finalOrder, otherSubs...)
+	finalOrder = append(finalOrder, frenchSubs.forced...)
+	finalOrder = append(finalOrder, frenchSubs.full...)
+	finalOrder = append(finalOrder, englishSubs.forced...)
+	finalOrder = append(finalOrder, englishSubs.full...)
+	// FIXME: other subtitles are currently all lumped together with no guaranteed order, which could lead to issues if
+	// there are multiple "other" subtitle tracks. A more robust solution would be to preserve the original order of
+	// "other" subtitle tracks while still grouping them after French and English. This would require a more complex data
+	// structure to hold "other" subtitle tracks while still allowing us to place them after the French and English groups
+	// in the final order.
+	finalOrder = append(finalOrder, otherSubs.forced...)
+	finalOrder = append(finalOrder, otherSubs.full...)
 
 	if len(finalOrder) > 0 {
 		options = append(options, "--track-order", strings.Join(finalOrder, ","))
