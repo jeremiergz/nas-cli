@@ -7,11 +7,11 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
 
 	"github.com/jeremiergz/nas-cli/internal/config"
 	"github.com/jeremiergz/nas-cli/internal/model"
+	"github.com/jeremiergz/nas-cli/internal/prompt"
 	svc "github.com/jeremiergz/nas-cli/internal/service"
 )
 
@@ -50,7 +50,13 @@ func newShowCmd() *cobra.Command {
 			svc.Console.PrintShows(config.WD, shows)
 
 			if !dryRun {
-				processShows(cmd.Context(), cmd.OutOrStdout(), config.WD, shows, config.UID, config.GID, !yes)
+				var p prompt.Prompter
+				if yes {
+					p = prompt.NewAuto()
+				} else {
+					p = prompt.NewInteractive()
+				}
+				processShows(cmd.Context(), cmd.OutOrStdout(), config.WD, shows, config.UID, config.GID, p)
 			}
 
 			return nil
@@ -63,38 +69,26 @@ func newShowCmd() *cobra.Command {
 	return cmd
 }
 
-// Processes listed shows by prompting user.
-func processShows(_ context.Context, w io.Writer, wd string, shows []*model.Show, owner, group int, ask bool) error {
+// Processes listed shows using the given prompter for user interaction.
+func processShows(_ context.Context, w io.Writer, wd string, shows []*model.Show, owner, group int, p prompt.Prompter) error {
 	for _, show := range shows {
 		fmt.Fprintln(w)
 
-		if ask {
-			prompt := promptui.Prompt{
-				Label:     fmt.Sprintf("Process %s", show.Name()),
-				IsConfirm: true,
-				Default:   "y",
-			}
-			if _, err := prompt.Run(); err != nil {
-				if err.Error() == "^C" {
-					return nil
-				}
-				continue
-			}
+		confirmed, err := p.Confirm(fmt.Sprintf("Process %s", show.Name()))
+		if err != nil {
+			return nil
+		}
+		if !confirmed {
+			continue
 		}
 
 		for _, season := range show.Seasons() {
-			if ask {
-				prompt := promptui.Prompt{
-					Label:     season.Name(),
-					IsConfirm: true,
-					Default:   "y",
-				}
-				if _, err := prompt.Run(); err != nil {
-					if err.Error() == "^C" {
-						return nil
-					}
-					continue
-				}
+			confirmed, err := p.Confirm(season.Name())
+			if err != nil {
+				return nil
+			}
+			if !confirmed {
+				continue
 			}
 
 			for _, episode := range season.Episodes() {

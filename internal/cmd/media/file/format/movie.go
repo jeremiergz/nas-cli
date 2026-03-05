@@ -8,11 +8,11 @@ import (
 	"path/filepath"
 	"strconv"
 
-	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
 
 	"github.com/jeremiergz/nas-cli/internal/config"
 	"github.com/jeremiergz/nas-cli/internal/model"
+	"github.com/jeremiergz/nas-cli/internal/prompt"
 	svc "github.com/jeremiergz/nas-cli/internal/service"
 )
 
@@ -41,7 +41,13 @@ func newMovieCmd() *cobra.Command {
 			svc.Console.PrintMovies(config.WD, movies)
 
 			if !dryRun {
-				err := processMovies(cmd.Context(), cmd.OutOrStdout(), config.WD, movies, config.UID, config.GID, !yes)
+				var p prompt.Prompter
+				if yes {
+					p = prompt.NewAuto()
+				} else {
+					p = prompt.NewInteractive()
+				}
+				err := processMovies(cmd.Context(), cmd.OutOrStdout(), config.WD, movies, config.UID, config.GID, p)
 				if err != nil {
 					return err
 				}
@@ -57,55 +63,37 @@ func newMovieCmd() *cobra.Command {
 	return cmd
 }
 
-// Processes listed movies by prompting user.
-func processMovies(_ context.Context, w io.Writer, wd string, movies []*model.Movie, owner, group int, ask bool) error {
+// Processes listed movies using the given prompter for user interaction.
+func processMovies(_ context.Context, w io.Writer, wd string, movies []*model.Movie, owner, group int, p prompt.Prompter) error {
 	for _, m := range movies {
 		fmt.Fprintln(w)
 
-		if ask {
-			// Ask if current movie must be processed.
-			prompt := promptui.Prompt{
-				Label:     fmt.Sprintf("Rename %s", m.Basename()),
-				IsConfirm: true,
-				Default:   "y",
-			}
-			_, err := prompt.Run()
-			if err != nil {
-				if err.Error() == "^C" {
-					return nil
-				}
-				continue
-			}
-
-			// Allow modification of parsed movie title.
-			prompt = promptui.Prompt{
-				Label:   "Name",
-				Default: m.Name(),
-			}
-			titleInput, err := prompt.Run()
-			if err != nil {
-				if err.Error() == "^C" {
-					return nil
-				}
-				continue
-			}
-
-			// Allow modification of parsed movie year.
-			prompt = promptui.Prompt{
-				Label:   "Year",
-				Default: strconv.Itoa(m.Year()),
-			}
-			yearInput, _ := prompt.Run()
-			yearInt, err := strconv.Atoi(yearInput)
-			if err != nil {
-				if err.Error() == "^C" {
-					return nil
-				}
-				continue
-			}
-			m.SetName(titleInput)
-			m.SetYear(yearInt)
+		// Ask if current movie must be processed.
+		confirmed, err := p.Confirm(fmt.Sprintf("Rename %s", m.Basename()))
+		if err != nil {
+			return nil
 		}
+		if !confirmed {
+			continue
+		}
+
+		// Allow modification of parsed movie title.
+		titleInput, err := p.Input("Name", m.Name())
+		if err != nil {
+			return nil
+		}
+
+		// Allow modification of parsed movie year.
+		yearInput, err := p.Input("Year", strconv.Itoa(m.Year()))
+		if err != nil {
+			return nil
+		}
+		yearInt, err := strconv.Atoi(yearInput)
+		if err != nil {
+			continue
+		}
+		m.SetName(titleInput)
+		m.SetYear(yearInt)
 
 		currentPath := filepath.Join(wd, m.Basename())
 		newPath := filepath.Join(wd, m.FullName())
