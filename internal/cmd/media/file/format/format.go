@@ -15,6 +15,7 @@ var (
 	formatDesc = "Batch media formatting depending on their type"
 	dryRun     bool
 	extensions []string
+	yes        bool
 )
 
 func New() *cobra.Command {
@@ -81,6 +82,7 @@ func New() *cobra.Command {
 
 	cmd.PersistentFlags().BoolVar(&dryRun, "dry-run", false, "print result without processing it")
 	cmd.PersistentFlags().StringArrayVarP(&extensions, "ext", "e", util.AcceptedVideoExtensions, "filter files by extension")
+	cmd.PersistentFlags().BoolVarP(&yes, "yes", "y", false, "automatic yes to prompts")
 	cmd.AddCommand(newMovieCmd())
 	cmd.AddCommand(newShowCmd())
 

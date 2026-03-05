@@ -17,7 +17,6 @@ import (
 
 var (
 	showDesc  = "Batch format shows"
-	yes       bool
 	showNames []string
 )
 
@@ -60,7 +59,6 @@ func newShowCmd() *cobra.Command {
 
 	cmd.MarkFlagDirname("directory")
 	cmd.Flags().StringArrayVarP(&showNames, "name", "n", nil, "override show name")
-	cmd.Flags().BoolVarP(&yes, "yes", "y", false, "automatic yes to prompts")
 
 	return cmd
 }
@@ -70,20 +68,18 @@ func processShows(_ context.Context, w io.Writer, wd string, shows []*model.Show
 	for _, show := range shows {
 		fmt.Fprintln(w)
 
-		var err error
 		if ask {
 			prompt := promptui.Prompt{
 				Label:     fmt.Sprintf("Process %s", show.Name()),
 				IsConfirm: true,
 				Default:   "y",
 			}
-			_, err = prompt.Run()
-		}
-		if err != nil {
-			if err.Error() == "^C" {
-				return nil
+			if _, err := prompt.Run(); err != nil {
+				if err.Error() == "^C" {
+					return nil
+				}
+				continue
 			}
-			continue
 		}
 
 		for _, season := range show.Seasons() {
@@ -93,13 +89,12 @@ func processShows(_ context.Context, w io.Writer, wd string, shows []*model.Show
 					IsConfirm: true,
 					Default:   "y",
 				}
-				_, err = prompt.Run()
-			}
-			if err != nil {
-				if err.Error() == "^C" {
-					return nil
+				if _, err := prompt.Run(); err != nil {
+					if err.Error() == "^C" {
+						return nil
+					}
+					continue
 				}
-				continue
 			}
 
 			for _, episode := range season.Episodes() {
