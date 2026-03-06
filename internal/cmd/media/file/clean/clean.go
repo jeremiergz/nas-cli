@@ -10,13 +10,15 @@ import (
 	"time"
 
 	"github.com/jedib0t/go-pretty/v6/progress"
+	"github.com/pterm/pterm"
 	"github.com/samber/lo"
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/jeremiergz/nas-cli/internal/cmd/media/file/clean/internal/clean"
 	"github.com/jeremiergz/nas-cli/internal/config"
-	"github.com/jeremiergz/nas-cli/internal/model"
+	"github.com/jeremiergz/nas-cli/internal/media"
+	"github.com/jeremiergz/nas-cli/internal/prompt"
 	svc "github.com/jeremiergz/nas-cli/internal/service"
 	"github.com/jeremiergz/nas-cli/internal/service/str"
 	"github.com/jeremiergz/nas-cli/internal/util"
@@ -98,27 +100,36 @@ func New() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			out := cmd.OutOrStdout()
 
-			files, err := model.Files(config.WD, videoExtensions, false)
+			files, err := media.Files(config.WD, videoExtensions, false)
 			if err != nil {
 				return err
 			}
 
 			if len(files) == 0 {
-				svc.Console.Success("Nothing to process")
+				pterm.Success.Println("Nothing to process")
 				return nil
 			}
 
-			svc.Console.PrintFiles(config.WD, files)
+			media.PrintFiles(config.WD, files)
 			if dryRun {
 				return nil
 			}
 
-			if !yes {
-				fmt.Fprintln(out)
-				shouldProcess := svc.Console.AskConfirmation("Process?", true)
-				if !shouldProcess {
-					return nil
-				}
+			var p prompt.Prompter
+			if yes {
+				p = prompt.NewAuto()
+			} else {
+				p = prompt.NewInteractive()
+			}
+
+			fmt.Fprintln(out)
+
+			shouldProcess, err := p.Confirm("Process?", true)
+			if err != nil {
+				return nil
+			}
+			if !shouldProcess {
+				return nil
 			}
 
 			fmt.Fprintln(out)
@@ -145,7 +156,7 @@ func New() *cobra.Command {
 }
 
 // Merges show language tracks into one video file.
-func process(ctx context.Context, w io.Writer, files []*model.File) error {
+func process(ctx context.Context, w io.Writer, files []*media.File) error {
 	pw := cmdutil.NewProgressWriter(w, len(files))
 
 	eg, _ := errgroup.WithContext(ctx)
@@ -154,7 +165,7 @@ func process(ctx context.Context, w io.Writer, files []*model.File) error {
 		eg.SetLimit(maxParallel)
 	}
 
-	padder := str.NewPadder(lo.Map(files, func(file *model.File, _ int) string { return file.Basename() }))
+	padder := str.NewPadder(lo.Map(files, func(file *media.File, _ int) string { return file.Basename() }))
 
 	cleaners := make([]svc.Runnable, len(files))
 	for index, file := range files {

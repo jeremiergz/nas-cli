@@ -5,18 +5,13 @@ import (
 
 	"github.com/pterm/pterm"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 
-	"github.com/jeremiergz/nas-cli/internal/config"
 	svc "github.com/jeremiergz/nas-cli/internal/service"
-	"github.com/jeremiergz/nas-cli/internal/service/plex"
 	"github.com/jeremiergz/nas-cli/internal/util/cmdutil"
 )
 
 var (
 	matchDesc = "Create Plex matching files to facilitate future scans"
-
-	plexSVC *plex.Plex
 )
 
 func New() *cobra.Command {
@@ -35,11 +30,6 @@ func New() *cobra.Command {
 			if err != nil {
 				return err
 			}
-
-			plexSVC = plex.NewPlex(
-				viper.GetString(config.KeyPlexAPIURL),
-				viper.GetString(config.KeyPlexAPIToken),
-			)
 
 			err = svc.SFTP.Connect()
 			if err != nil {

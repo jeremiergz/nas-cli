@@ -11,11 +11,13 @@ import (
 	"time"
 
 	"github.com/jedib0t/go-pretty/v6/progress"
+	"github.com/pterm/pterm"
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/jeremiergz/nas-cli/internal/cmd/media/subtitle/sync/internal/subsync"
 	"github.com/jeremiergz/nas-cli/internal/config"
+	"github.com/jeremiergz/nas-cli/internal/prompt"
 	svc "github.com/jeremiergz/nas-cli/internal/service"
 	"github.com/jeremiergz/nas-cli/internal/service/str"
 	"github.com/jeremiergz/nas-cli/internal/util"
@@ -70,13 +72,13 @@ func New() *cobra.Command {
 
 			subtitleFiles := fsutil.List(config.WD, []string{subtitleExtension}, nil, false)
 			if len(subtitleFiles) == 0 {
-				svc.Console.Success("No subtitle file to process")
+				pterm.Success.Println("No subtitle file to process")
 				return nil
 			}
 
 			videoFiles := fsutil.List(config.WD, videoExtensions, nil, false)
 			if len(videoFiles) == 0 {
-				svc.Console.Success("No video file to process")
+				pterm.Success.Println("No video file to process")
 				return nil
 			}
 
@@ -88,17 +90,26 @@ func New() *cobra.Command {
 				return nil
 			}
 
-			if !yes {
-				fmt.Fprintln(out)
-				shouldProcess := svc.Console.AskConfirmation("Process?", true)
-				if !shouldProcess {
-					return nil
-				}
+			var p prompt.Prompter
+			if yes {
+				p = prompt.NewAuto()
+			} else {
+				p = prompt.NewInteractive()
 			}
 
 			fmt.Fprintln(out)
 
-			err := process(cmd.Context(), out, videoFiles, subtitleFiles)
+			shouldProcess, err := p.Confirm("Process?", true)
+			if err != nil {
+				return nil
+			}
+			if !shouldProcess {
+				return nil
+			}
+
+			fmt.Fprintln(out)
+
+			err = process(cmd.Context(), out, videoFiles, subtitleFiles)
 			if err != nil {
 				return err
 			}

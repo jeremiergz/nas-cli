@@ -1,4 +1,4 @@
-package model
+package media
 
 import (
 	"cmp"
@@ -10,11 +10,13 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/pterm/pterm"
 	"github.com/samber/lo"
 
-	"github.com/jeremiergz/nas-cli/internal/model/image"
-	"github.com/jeremiergz/nas-cli/internal/model/internal/parser"
+	"github.com/jeremiergz/nas-cli/internal/image"
+	"github.com/jeremiergz/nas-cli/internal/media/internal/parser"
 	"github.com/jeremiergz/nas-cli/internal/util"
+	"github.com/jeremiergz/nas-cli/internal/util/cmdutil"
 	"github.com/jeremiergz/nas-cli/internal/util/fsutil"
 )
 
@@ -33,7 +35,7 @@ type Show struct {
 	episodesCount int
 }
 
-func Shows(wd string, extensions []string, recursive bool, subtitleExtension string, subtitleLangs []string, anyFiles bool) ([]*Show, error) {
+func ListShows(wd string, extensions []string, recursive bool, subtitleExtension string, subtitleLangs []string, anyFiles bool) ([]*Show, error) {
 	var selectedRegexp *regexp.Regexp
 	if !anyFiles {
 		selectedRegexp = showFmtRegexp
@@ -277,4 +279,63 @@ func listSeasonImageFiles(dir, referenceName string) (imageFiles []*image.Image,
 	}
 
 	return imageFiles, nil
+}
+
+// Prints given shows as a tree.
+func PrintShows(wd string, shows []*Show) {
+	lw := cmdutil.NewListWriter()
+	showsCount := len(shows)
+
+	lw.AppendItem(
+		fmt.Sprintf(
+			"%s (%d %s)",
+			wd,
+			showsCount,
+			lo.Ternary(showsCount <= 1, "show", "shows"),
+		),
+	)
+
+	lw.Indent()
+	for _, show := range shows {
+		lw.AppendItem(
+			fmt.Sprintf(
+				"%s (%d %s / %d %s)",
+				show.Name(),
+				show.SeasonsCount(),
+				lo.Ternary(show.SeasonsCount() <= 1, "season", "seasons"),
+				show.EpisodesCount(),
+				lo.Ternary(show.EpisodesCount() <= 1, "episode", "episodes"),
+			),
+		)
+
+		lw.Indent()
+		for _, season := range show.Seasons() {
+			episodesCount := len(season.Episodes())
+			episodeStr := "episodes"
+			if episodesCount == 1 {
+				episodeStr = "episode"
+			}
+			lw.AppendItem(
+				fmt.Sprintf(
+					"%s (%d %s)",
+					season.Name(),
+					episodesCount,
+					episodeStr,
+				),
+			)
+			lw.Indent()
+			for _, episode := range season.Episodes() {
+				lw.AppendItem(fmt.Sprintf(
+					"%s  <-  %s",
+					episode.FullName(),
+					pterm.Gray(episode.Basename()),
+				),
+				)
+			}
+			lw.UnIndent()
+		}
+		lw.UnIndent()
+	}
+
+	pterm.Println(lw.Render())
 }

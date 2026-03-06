@@ -7,12 +7,12 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/pterm/pterm"
 	"github.com/spf13/cobra"
 	"github.com/thediveo/enumflag/v2"
 
 	"github.com/jeremiergz/nas-cli/internal/config"
-	"github.com/jeremiergz/nas-cli/internal/model"
-	svc "github.com/jeremiergz/nas-cli/internal/service"
+	"github.com/jeremiergz/nas-cli/internal/media"
 	"github.com/jeremiergz/nas-cli/internal/util"
 	"github.com/jeremiergz/nas-cli/internal/util/cmdutil"
 )
@@ -75,21 +75,21 @@ func newMovieCmd() *cobra.Command {
 }
 
 func processMovies(ctx context.Context, out io.Writer) error {
-	movies, err := model.Movies(config.WD, []string{util.ExtensionMKV}, recursive)
+	movies, err := media.ListMovies(config.WD, []string{util.ExtensionMKV}, recursive)
 	if err != nil {
 		return err
 	}
 
 	if len(movies) == 0 {
-		svc.Console.Success("Nothing to upload")
+		pterm.Success.Println("Nothing to upload")
 		return nil
 	}
 
 	switch flagSortBy {
 	case SortByYear:
-		model.SortMoviesByYear(movies)
+		media.SortMoviesByYear(movies)
 	case SortByName:
-		model.SortMoviesByName(movies)
+		media.SortMoviesByName(movies)
 	}
 
 	uploads := make([]*upload, len(movies))
@@ -105,7 +105,7 @@ func processMovies(ctx context.Context, out io.Writer) error {
 		}
 	}
 
-	err = process(ctx, out, uploads, model.KindMovie)
+	err = process(ctx, out, uploads, media.KindMovie)
 	if err != nil {
 		return err
 	}

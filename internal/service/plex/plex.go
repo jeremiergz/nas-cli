@@ -15,19 +15,19 @@ const (
 	ShowMatchingFileName = ".plexmatch"
 )
 
-type Plex struct {
+type Service struct {
 	apiURL   string
 	apiToken string
 }
 
-func NewPlex(apiURL, apiToken string) *Plex {
-	return &Plex{
+func NewService(apiURL, apiToken string) *Service {
+	return &Service{
 		apiURL:   apiURL,
 		apiToken: apiToken,
 	}
 }
 
-func (p *Plex) Get(path string, output any) error {
+func (p *Service) Get(path string, output any) error {
 	targetURL, err := url.JoinPath(p.apiURL, path)
 	if err != nil {
 		return fmt.Errorf("failed to join URL path: %w", err)
@@ -90,7 +90,7 @@ var (
 	cachedLibraries []Library
 )
 
-func (p *Plex) Libraries() ([]Library, error) {
+func (p *Service) Libraries() ([]Library, error) {
 	if cachedLibraries == nil {
 		var sections librarySections
 		if err := p.Get("/library/sections", &sections); err != nil {
@@ -114,7 +114,7 @@ func (p *Plex) Libraries() ([]Library, error) {
 	return cachedLibraries, nil
 }
 
-func (p *Plex) LibraryID(kind LibraryKind) (int, error) {
+func (p *Service) LibraryID(kind LibraryKind) (int, error) {
 	libraries, err := p.Libraries()
 	if err != nil {
 		return 0, fmt.Errorf("failed to list libraries: %w", err)

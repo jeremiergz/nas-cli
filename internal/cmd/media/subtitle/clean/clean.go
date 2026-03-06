@@ -9,12 +9,14 @@ import (
 	"time"
 
 	"github.com/jedib0t/go-pretty/v6/progress"
+	"github.com/pterm/pterm"
 	"github.com/samber/lo"
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/jeremiergz/nas-cli/internal/cmd/media/subtitle/clean/internal/subcleaner"
 	"github.com/jeremiergz/nas-cli/internal/config"
+	"github.com/jeremiergz/nas-cli/internal/prompt"
 	svc "github.com/jeremiergz/nas-cli/internal/service"
 	"github.com/jeremiergz/nas-cli/internal/service/str"
 	"github.com/jeremiergz/nas-cli/internal/util/cmdutil"
@@ -63,7 +65,7 @@ func New() *cobra.Command {
 			subtitleFiles := fsutil.List(config.WD, []string{"srt"}, nil, true)
 
 			if len(subtitleFiles) == 0 {
-				svc.Console.Success("No subtitle file to process")
+				pterm.Success.Println("No subtitle file to process")
 				return nil
 			}
 
@@ -74,19 +76,27 @@ func New() *cobra.Command {
 
 			fmt.Fprintln(out)
 
-			if !yes {
-				shouldProcess := svc.Console.AskConfirmation(
-					fmt.Sprintf("Process %d file(s)?", len(subtitleFiles)),
-					true,
-				)
-				if !shouldProcess {
-					return nil
-				}
+			var p prompt.Prompter
+			if yes {
+				p = prompt.NewAuto()
+			} else {
+				p = prompt.NewInteractive()
+			}
+
+			shouldProcess, err := p.Confirm(
+				fmt.Sprintf("Process %d file(s)?", len(subtitleFiles)),
+				true,
+			)
+			if err != nil {
+				return nil
+			}
+			if !shouldProcess {
+				return nil
 			}
 
 			fmt.Fprintln(out)
 
-			err := process(cmd.Context(), out, subtitleFiles, !delete)
+			err = process(cmd.Context(), out, subtitleFiles, !delete)
 			if err != nil {
 				return err
 			}

@@ -15,8 +15,7 @@ import (
 
 	"github.com/jeremiergz/nas-cli/internal/cmd"
 	"github.com/jeremiergz/nas-cli/internal/config"
-	"github.com/jeremiergz/nas-cli/internal/model"
-	svc "github.com/jeremiergz/nas-cli/internal/service"
+	"github.com/jeremiergz/nas-cli/internal/media"
 	"github.com/jeremiergz/nas-cli/internal/util/cmdutil"
 )
 
@@ -72,9 +71,9 @@ func Test_Show_With_Dry_Run(t *testing.T) {
 	output := new(bytes.Buffer)
 	ctx := context.Background()
 
+	pterm.SetDefaultOutput(output)
 	rootCMD.SetOut(output)
 	rootCMD.SetErr(output)
-	svc.Console.SetOutput(output)
 	rootCMD.SetArgs(args)
 	err := rootCMD.ExecuteContext(ctx)
 
@@ -130,9 +129,9 @@ func Test_Show_Without_Options(t *testing.T) {
 	output := new(bytes.Buffer)
 	ctx := context.Background()
 
+	pterm.SetDefaultOutput(output)
 	rootCMD.SetOut(output)
 	rootCMD.SetErr(output)
-	svc.Console.SetOutput(output)
 	rootCMD.SetArgs(args)
 	err := rootCMD.ExecuteContext(ctx)
 
@@ -188,9 +187,9 @@ func Test_Show_With_Name_Override(t *testing.T) {
 	output := new(bytes.Buffer)
 	ctx := context.Background()
 
+	pterm.SetDefaultOutput(output)
 	rootCMD.SetOut(output)
 	rootCMD.SetErr(output)
-	svc.Console.SetOutput(output)
 	rootCMD.SetArgs(args)
 	err := rootCMD.ExecuteContext(ctx)
 
@@ -222,9 +221,9 @@ func Test_Show_With_Dry_Run_No_Files(t *testing.T) {
 	output := new(bytes.Buffer)
 	ctx := context.Background()
 
+	pterm.SetDefaultOutput(output)
 	rootCMD.SetOut(output)
 	rootCMD.SetErr(output)
-	svc.Console.SetOutput(output)
 	rootCMD.SetArgs(args)
 	err := rootCMD.ExecuteContext(ctx)
 
@@ -244,9 +243,9 @@ func Test_Show_With_Yes_No_Files(t *testing.T) {
 	output := new(bytes.Buffer)
 	ctx := context.Background()
 
+	pterm.SetDefaultOutput(output)
 	rootCMD.SetOut(output)
 	rootCMD.SetErr(output)
-	svc.Console.SetOutput(output)
 	rootCMD.SetArgs(args)
 	err := rootCMD.ExecuteContext(ctx)
 
@@ -265,9 +264,9 @@ func Test_Show_With_Invalid_Directory(t *testing.T) {
 	output := new(bytes.Buffer)
 	ctx := context.Background()
 
+	pterm.SetDefaultOutput(output)
 	rootCMD.SetOut(output)
 	rootCMD.SetErr(output)
-	svc.Console.SetOutput(output)
 	rootCMD.SetArgs(args)
 	err := rootCMD.ExecuteContext(ctx)
 
@@ -292,9 +291,9 @@ func Test_Show_With_Name_Count_Mismatch(t *testing.T) {
 	output := new(bytes.Buffer)
 	ctx := context.Background()
 
+	pterm.SetDefaultOutput(output)
 	rootCMD.SetOut(output)
 	rootCMD.SetErr(output)
-	svc.Console.SetOutput(output)
 	rootCMD.SetArgs(args)
 	err := rootCMD.ExecuteContext(ctx)
 
@@ -320,9 +319,9 @@ func Test_Show_With_Extension_Filter(t *testing.T) {
 	output := new(bytes.Buffer)
 	ctx := context.Background()
 
+	pterm.SetDefaultOutput(output)
 	rootCMD.SetOut(output)
 	rootCMD.SetErr(output)
-	svc.Console.SetOutput(output)
 	rootCMD.SetArgs(args)
 	err := rootCMD.ExecuteContext(ctx)
 
@@ -348,7 +347,7 @@ func Test_Show_ProcessShows_With_Confirm_Accept(t *testing.T) {
 		"test.s01e02.mkv",
 	})
 
-	shows, err := model.Shows(tempDir, []string{"mkv"}, false, "", nil, false)
+	shows, err := media.ListShows(tempDir, []string{"mkv"}, false, "", nil, false)
 	require.NoError(t, err)
 	require.Len(t, shows, 1)
 
@@ -361,7 +360,7 @@ func Test_Show_ProcessShows_With_Confirm_Accept(t *testing.T) {
 	}
 
 	output := new(bytes.Buffer)
-	svc.Console.SetOutput(output)
+	pterm.SetDefaultOutput(output)
 
 	err = processShows(context.Background(), output, tempDir, shows, os.Getuid(), os.Getgid(), p)
 	assert.NoError(t, err)
@@ -375,7 +374,7 @@ func Test_Show_ProcessShows_With_Show_Decline(t *testing.T) {
 		"test.s01e01.mkv",
 	})
 
-	shows, err := model.Shows(tempDir, []string{"mkv"}, false, "", nil, false)
+	shows, err := media.ListShows(tempDir, []string{"mkv"}, false, "", nil, false)
 	require.NoError(t, err)
 
 	// Decline the show.
@@ -386,6 +385,8 @@ func Test_Show_ProcessShows_With_Show_Decline(t *testing.T) {
 	}
 
 	output := new(bytes.Buffer)
+	pterm.SetDefaultOutput(output)
+
 	err = processShows(context.Background(), output, tempDir, shows, os.Getuid(), os.Getgid(), p)
 	assert.NoError(t, err)
 
@@ -399,7 +400,7 @@ func Test_Show_ProcessShows_With_Show_Interrupt(t *testing.T) {
 		"test.s01e01.mkv",
 	})
 
-	shows, err := model.Shows(tempDir, []string{"mkv"}, false, "", nil, false)
+	shows, err := media.ListShows(tempDir, []string{"mkv"}, false, "", nil, false)
 	require.NoError(t, err)
 
 	p := &mockPrompter{
@@ -409,6 +410,8 @@ func Test_Show_ProcessShows_With_Show_Interrupt(t *testing.T) {
 	}
 
 	output := new(bytes.Buffer)
+	pterm.SetDefaultOutput(output)
+
 	err = processShows(context.Background(), output, tempDir, shows, os.Getuid(), os.Getgid(), p)
 	assert.NoError(t, err)
 
@@ -423,7 +426,7 @@ func Test_Show_ProcessShows_With_Season_Decline(t *testing.T) {
 		"test.s02e01.mkv",
 	})
 
-	shows, err := model.Shows(tempDir, []string{"mkv"}, false, "", nil, false)
+	shows, err := media.ListShows(tempDir, []string{"mkv"}, false, "", nil, false)
 	require.NoError(t, err)
 
 	// Confirm show, decline season 1, confirm season 2.
@@ -436,7 +439,7 @@ func Test_Show_ProcessShows_With_Season_Decline(t *testing.T) {
 	}
 
 	output := new(bytes.Buffer)
-	svc.Console.SetOutput(output)
+	pterm.SetDefaultOutput(output)
 
 	err = processShows(context.Background(), output, tempDir, shows, os.Getuid(), os.Getgid(), p)
 	assert.NoError(t, err)
@@ -453,7 +456,7 @@ func Test_Show_ProcessShows_With_Season_Interrupt(t *testing.T) {
 		"test.s01e01.mkv",
 	})
 
-	shows, err := model.Shows(tempDir, []string{"mkv"}, false, "", nil, false)
+	shows, err := media.ListShows(tempDir, []string{"mkv"}, false, "", nil, false)
 	require.NoError(t, err)
 
 	// Confirm show, interrupt at season.
@@ -465,6 +468,8 @@ func Test_Show_ProcessShows_With_Season_Interrupt(t *testing.T) {
 	}
 
 	output := new(bytes.Buffer)
+	pterm.SetDefaultOutput(output)
+
 	err = processShows(context.Background(), output, tempDir, shows, os.Getuid(), os.Getgid(), p)
 	assert.NoError(t, err)
 
@@ -478,7 +483,7 @@ func Test_Show_ProcessShows_Rename_Error(t *testing.T) {
 		"test.s01e01.mkv",
 	})
 
-	shows, err := model.Shows(tempDir, []string{"mkv"}, false, "", nil, false)
+	shows, err := media.ListShows(tempDir, []string{"mkv"}, false, "", nil, false)
 	require.NoError(t, err)
 
 	// Remove the file after parsing to trigger rename error.
@@ -492,6 +497,8 @@ func Test_Show_ProcessShows_Rename_Error(t *testing.T) {
 	}
 
 	output := new(bytes.Buffer)
+	pterm.SetDefaultOutput(output)
+
 	err = processShows(context.Background(), output, tempDir, shows, os.Getuid(), os.Getgid(), p)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "could not rename")
