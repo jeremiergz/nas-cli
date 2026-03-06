@@ -3,7 +3,7 @@ package prompt
 import (
 	"fmt"
 
-	"github.com/manifoldco/promptui"
+	"github.com/pterm/pterm"
 )
 
 // Abstracts interactive prompting so that process functions can be tested without a TTY.
@@ -11,7 +11,7 @@ type Prompter interface {
 	// Asks the user a yes/no question.
 	//   - Returns true if confirmed, false if declined.
 	//   - Returns an error only on interrupt (^C).
-	Confirm(label string) (bool, error)
+	Confirm(label string, defaultValue bool) (bool, error)
 
 	// Asks the user for a text value with a default.
 	//   - Returns the entered string (or defaultValue if accepted as-is).
@@ -27,33 +27,43 @@ func NewInteractive() Prompter {
 	return &InteractivePrompter{}
 }
 
-func (p *InteractivePrompter) Confirm(label string) (bool, error) {
-	prompt := promptui.Prompt{
-		Label:     label,
-		IsConfirm: true,
-		Default:   "y",
+func (p *InteractivePrompter) Confirm(label string, defaultValue bool) (bool, error) {
+	isInterrupted := false
+	result, err := pterm.DefaultInteractiveConfirm.
+		WithConfirmText("y").
+		WithDefaultText(label).
+		WithDefaultValue(defaultValue).
+		WithOnInterruptFunc(func() {
+			isInterrupted = true
+		}).
+		Show()
+	if isInterrupted {
+		pterm.Println()
+		return false, fmt.Errorf("interrupted")
 	}
-	_, err := prompt.Run()
 	if err != nil {
-		if err.Error() == "^C" {
-			return false, fmt.Errorf("interrupted")
-		}
+		return false, fmt.Errorf("failed to handle confirm: %w", err)
+	}
+	if !result {
 		return false, nil
 	}
 	return true, nil
 }
 
 func (p *InteractivePrompter) Input(label, defaultValue string) (string, error) {
-	prompt := promptui.Prompt{
-		Label:   label,
-		Default: defaultValue,
+	isInterrupted := false
+	result, err := pterm.DefaultInteractiveTextInput.
+		WithDefaultText(label).
+		WithDefaultValue(defaultValue).
+		WithOnInterruptFunc(func() {
+			isInterrupted = true
+		}).
+		Show()
+	if isInterrupted {
+		return "", fmt.Errorf("interrupted")
 	}
-	result, err := prompt.Run()
 	if err != nil {
-		if err.Error() == "^C" {
-			return "", fmt.Errorf("interrupted")
-		}
-		return "", nil
+		return "", fmt.Errorf("failed to handle input: %w", err)
 	}
 	return result, nil
 }
@@ -66,7 +76,7 @@ func NewAuto() Prompter {
 	return &AutoPrompter{}
 }
 
-func (p *AutoPrompter) Confirm(_ string) (bool, error) {
+func (p *AutoPrompter) Confirm(_ string, _ bool) (bool, error) {
 	return true, nil
 }
 

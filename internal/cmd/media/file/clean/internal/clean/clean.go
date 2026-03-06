@@ -17,7 +17,7 @@ import (
 	"github.com/jedib0t/go-pretty/v6/progress"
 
 	"github.com/jeremiergz/nas-cli/internal/config"
-	"github.com/jeremiergz/nas-cli/internal/model"
+	"github.com/jeremiergz/nas-cli/internal/media"
 	svc "github.com/jeremiergz/nas-cli/internal/service"
 	"github.com/jeremiergz/nas-cli/internal/util"
 	"github.com/jeremiergz/nas-cli/internal/util/cmdutil"
@@ -28,14 +28,14 @@ var (
 )
 
 type process struct {
-	file           *model.File
+	file           *media.File
 	keepOriginal   bool
 	useDefaultLang bool
 	tracker        *progress.Tracker
 	w              io.Writer
 }
 
-func New(file *model.File, keepOriginal, useDefaultLangRegions bool) svc.Runnable {
+func New(file *media.File, keepOriginal, useDefaultLangRegions bool) svc.Runnable {
 	return &process{
 		file:           file,
 		keepOriginal:   keepOriginal,

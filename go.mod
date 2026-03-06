@@ -6,7 +6,6 @@ require (
 	github.com/asticode/go-astisub v0.39.0
 	github.com/google/uuid v1.6.0
 	github.com/jedib0t/go-pretty/v6 v6.7.8
-	github.com/manifoldco/promptui v0.9.0
 	github.com/pkg/sftp v1.13.10
 	github.com/pterm/pterm v0.12.83
 	github.com/samber/lo v1.53.0
@@ -27,7 +26,6 @@ require (
 	atomicgo.dev/schedule v0.1.0 // indirect
 	github.com/asticode/go-astikit v0.57.1 // indirect
 	github.com/asticode/go-astits v1.15.0 // indirect
-	github.com/chzyer/readline v1.5.1 // indirect
 	github.com/clipperhouse/uax29/v2 v2.7.0 // indirect
 	github.com/containerd/console v1.0.5 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect

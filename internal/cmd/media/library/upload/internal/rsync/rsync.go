@@ -17,8 +17,8 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/jeremiergz/nas-cli/internal/config"
-	"github.com/jeremiergz/nas-cli/internal/model"
-	"github.com/jeremiergz/nas-cli/internal/model/image"
+	"github.com/jeremiergz/nas-cli/internal/image"
+	"github.com/jeremiergz/nas-cli/internal/media"
 	svc "github.com/jeremiergz/nas-cli/internal/service"
 	"github.com/jeremiergz/nas-cli/internal/util"
 	"github.com/jeremiergz/nas-cli/internal/util/cmdutil"
@@ -30,10 +30,10 @@ var (
 
 type process struct {
 	destination      string
-	file             model.MediaFile
+	file             media.MediaFile
 	imageFiles       []*image.Image
 	keepOriginal     bool
-	kind             model.Kind
+	kind             media.Kind
 	ownerUID         int
 	ownerGID         int
 	permissionsDepth uint
@@ -43,8 +43,8 @@ type process struct {
 }
 
 func New(
-	kind model.Kind,
-	file model.MediaFile,
+	kind media.Kind,
+	file media.MediaFile,
 	imageFiles []*image.Image,
 	destDir string,
 	keepOriginal bool,
@@ -147,9 +147,9 @@ func (p *process) Run(ctx context.Context) error {
 
 		var imageDestDir string
 		switch p.kind {
-		case model.KindMovie:
+		case media.KindMovie:
 			imageDestDir = remoteParentDir
-		case model.KindTVShow, model.KindAnime:
+		case media.KindTVShow, media.KindAnime:
 			imageDestDir = filepath.Dir(remoteParentDir)
 		}
 

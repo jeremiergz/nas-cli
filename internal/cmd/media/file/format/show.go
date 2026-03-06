@@ -7,12 +7,12 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/pterm/pterm"
 	"github.com/spf13/cobra"
 
 	"github.com/jeremiergz/nas-cli/internal/config"
-	"github.com/jeremiergz/nas-cli/internal/model"
+	"github.com/jeremiergz/nas-cli/internal/media"
 	"github.com/jeremiergz/nas-cli/internal/prompt"
-	svc "github.com/jeremiergz/nas-cli/internal/service"
 )
 
 var (
@@ -28,7 +28,7 @@ func newShowCmd() *cobra.Command {
 		Long:    showDesc + ".",
 		Args:    cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			shows, err := model.Shows(config.WD, extensions, false, "", nil, false)
+			shows, err := media.ListShows(config.WD, extensions, false, "", nil, false)
 			if err != nil {
 				return err
 			}
@@ -43,11 +43,11 @@ func newShowCmd() *cobra.Command {
 			}
 
 			if len(shows) == 0 {
-				svc.Console.Success("Nothing to process")
+				pterm.Success.Println("Nothing to process")
 				return nil
 			}
 
-			svc.Console.PrintShows(config.WD, shows)
+			media.PrintShows(config.WD, shows)
 
 			if !dryRun {
 				var p prompt.Prompter
@@ -70,11 +70,11 @@ func newShowCmd() *cobra.Command {
 }
 
 // Processes listed shows using the given prompter for user interaction.
-func processShows(_ context.Context, w io.Writer, wd string, shows []*model.Show, owner, group int, p prompt.Prompter) error {
+func processShows(_ context.Context, w io.Writer, wd string, shows []*media.Show, owner, group int, p prompt.Prompter) error {
 	for _, show := range shows {
 		fmt.Fprintln(w)
 
-		confirmed, err := p.Confirm(fmt.Sprintf("Process %s", show.Name()))
+		confirmed, err := p.Confirm(fmt.Sprintf("Process %s", show.Name()), true)
 		if err != nil {
 			return nil
 		}
@@ -83,7 +83,7 @@ func processShows(_ context.Context, w io.Writer, wd string, shows []*model.Show
 		}
 
 		for _, season := range show.Seasons() {
-			confirmed, err := p.Confirm(season.Name())
+			confirmed, err := p.Confirm(season.Name(), true)
 			if err != nil {
 				return nil
 			}
@@ -102,7 +102,7 @@ func processShows(_ context.Context, w io.Writer, wd string, shows []*model.Show
 				os.Chown(newPath, owner, group)
 				os.Chmod(newPath, config.FileMode)
 
-				svc.Console.Success(episode.FullName())
+				pterm.Success.Println(episode.FullName())
 			}
 		}
 	}

@@ -12,10 +12,21 @@ import (
 	"github.com/jeremiergz/nas-cli/internal/cmd/info"
 	"github.com/jeremiergz/nas-cli/internal/cmd/media"
 	"github.com/jeremiergz/nas-cli/internal/cmd/version"
-	svc "github.com/jeremiergz/nas-cli/internal/service"
 )
 
 func main() {
+	pterm.DefaultInteractiveTextInput.TextStyle = pterm.NewStyle(pterm.FgGray)
+
+	pterm.Error.Prefix = pterm.Prefix{Text: " ✗", Style: pterm.NewStyle(pterm.FgRed)}
+	pterm.Error.MessageStyle = pterm.NewStyle()
+
+	pterm.Info.Prefix = pterm.Prefix{Text: " ❯", Style: pterm.NewStyle(pterm.FgYellow)}
+	pterm.Info.Prefix.Text = " ❯"
+	pterm.Info.MessageStyle = pterm.NewStyle()
+
+	pterm.Success.Prefix = pterm.Prefix{Text: " ✓", Style: pterm.NewStyle(pterm.FgGreen)}
+	pterm.Success.MessageStyle = pterm.NewStyle()
+
 	pterm.DefaultSpinner.RemoveWhenDone = true
 	pterm.DefaultSpinner.Style = pterm.NewStyle()
 
@@ -36,7 +47,6 @@ func main() {
 	ctx := context.Background()
 
 	pterm.SetDefaultOutput(rootCmd.OutOrStdout())
-	svc.Console.SetOutput(rootCmd.OutOrStdout())
 
 	if err := rootCmd.ExecuteContext(ctx); err != nil {
 		os.Exit(1)

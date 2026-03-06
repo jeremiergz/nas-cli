@@ -1,4 +1,4 @@
-package model
+package media
 
 import (
 	"errors"
@@ -9,9 +9,12 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
+	"github.com/pterm/pterm"
+	"github.com/samber/lo"
 
-	"github.com/jeremiergz/nas-cli/internal/model/image"
+	"github.com/jeremiergz/nas-cli/internal/image"
 	"github.com/jeremiergz/nas-cli/internal/util"
+	"github.com/jeremiergz/nas-cli/internal/util/cmdutil"
 	"github.com/jeremiergz/nas-cli/internal/util/fsutil"
 )
 
@@ -202,4 +205,26 @@ func listBaseImageFiles(dir, referenceName string) (imageFiles []*image.Image, e
 	}
 
 	return imageFiles, nil
+}
+
+// Prints given files array as a tree.
+func PrintFiles(wd string, files []*File) {
+	lw := cmdutil.NewListWriter()
+	filesCount := len(files)
+
+	lw.AppendItem(
+		fmt.Sprintf(
+			"%s (%d %s)",
+			wd,
+			filesCount,
+			lo.Ternary(filesCount <= 1, "file", "files"),
+		),
+	)
+
+	lw.Indent()
+	for _, f := range files {
+		lw.AppendItem(f.Basename())
+	}
+
+	pterm.Println(lw.Render())
 }

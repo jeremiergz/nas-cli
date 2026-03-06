@@ -8,12 +8,12 @@ import (
 	"path/filepath"
 	"strconv"
 
+	"github.com/pterm/pterm"
 	"github.com/spf13/cobra"
 
 	"github.com/jeremiergz/nas-cli/internal/config"
-	"github.com/jeremiergz/nas-cli/internal/model"
+	"github.com/jeremiergz/nas-cli/internal/media"
 	"github.com/jeremiergz/nas-cli/internal/prompt"
-	svc "github.com/jeremiergz/nas-cli/internal/service"
 )
 
 var (
@@ -28,17 +28,17 @@ func newMovieCmd() *cobra.Command {
 		Long:    movieDesc + ".",
 		Args:    cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			movies, err := model.Movies(config.WD, extensions, false)
+			movies, err := media.ListMovies(config.WD, extensions, false)
 			if err != nil {
 				return err
 			}
 
 			if len(movies) == 0 {
-				svc.Console.Success("Nothing to process")
+				pterm.Success.Println("Nothing to process")
 				return nil
 			}
 
-			svc.Console.PrintMovies(config.WD, movies)
+			media.PrintMovies(config.WD, movies)
 
 			if !dryRun {
 				var p prompt.Prompter
@@ -64,12 +64,12 @@ func newMovieCmd() *cobra.Command {
 }
 
 // Processes listed movies using the given prompter for user interaction.
-func processMovies(_ context.Context, w io.Writer, wd string, movies []*model.Movie, owner, group int, p prompt.Prompter) error {
+func processMovies(_ context.Context, w io.Writer, wd string, movies []*media.Movie, owner, group int, p prompt.Prompter) error {
 	for _, m := range movies {
 		fmt.Fprintln(w)
 
 		// Ask if current movie must be processed.
-		confirmed, err := p.Confirm(fmt.Sprintf("Rename %s", m.Basename()))
+		confirmed, err := p.Confirm(fmt.Sprintf("Rename %s", m.Basename()), true)
 		if err != nil {
 			return nil
 		}
@@ -105,7 +105,7 @@ func processMovies(_ context.Context, w io.Writer, wd string, movies []*model.Mo
 		os.Chown(newPath, owner, group)
 		os.Chmod(newPath, config.FileMode)
 
-		svc.Console.Success(m.FullName())
+		pterm.Success.Println(m.FullName())
 	}
 
 	return nil

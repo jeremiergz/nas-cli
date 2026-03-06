@@ -23,8 +23,9 @@ import (
 
 	"github.com/jeremiergz/nas-cli/internal/cmd/media/library/upload/internal/rsync"
 	"github.com/jeremiergz/nas-cli/internal/config"
-	"github.com/jeremiergz/nas-cli/internal/model"
-	image "github.com/jeremiergz/nas-cli/internal/model/image"
+	"github.com/jeremiergz/nas-cli/internal/image"
+	"github.com/jeremiergz/nas-cli/internal/media"
+	"github.com/jeremiergz/nas-cli/internal/prompt"
 	svc "github.com/jeremiergz/nas-cli/internal/service"
 	"github.com/jeremiergz/nas-cli/internal/service/str"
 	"github.com/jeremiergz/nas-cli/internal/util/cmdutil"
@@ -240,11 +241,11 @@ func getDiskUsage(str, path string) (percentage int, err error) {
 type upload struct {
 	Destination string
 	DisplayName string
-	File        model.MediaFile
+	File        media.MediaFile
 	ImageFiles  []*image.Image
 }
 
-func process(ctx context.Context, out io.Writer, uploads []*upload, kind model.Kind) error {
+func process(ctx context.Context, out io.Writer, uploads []*upload, kind media.Kind) error {
 	pw := cmdutil.NewProgressWriter(out, len(uploads))
 
 	eg, _ := errgroup.WithContext(ctx)
@@ -261,9 +262,19 @@ func process(ctx context.Context, out io.Writer, uploads []*upload, kind model.K
 
 	printUploads(out, uploadsGroupedByDirName, kind)
 
+	var p prompt.Prompter
+	if yes {
+		p = prompt.NewAuto()
+	} else {
+		p = prompt.NewInteractive()
+	}
+
 	if !yes {
 		fmt.Fprintln(out)
-		shouldProcess := svc.Console.AskConfirmation("Process?", true)
+		shouldProcess, err := p.Confirm("Process?", true)
+		if err != nil {
+			return nil
+		}
 		if !shouldProcess {
 			return nil
 		}
@@ -297,10 +308,10 @@ func process(ctx context.Context, out io.Writer, uploads []*upload, kind model.K
 
 	var permissionsDepth uint
 	switch kind {
-	case model.KindAnime, model.KindTVShow:
+	case media.KindAnime, media.KindTVShow:
 		permissionsDepth = 2
 
-	case model.KindMovie:
+	case media.KindMovie:
 		permissionsDepth = 1
 	}
 
@@ -339,15 +350,15 @@ func process(ctx context.Context, out io.Writer, uploads []*upload, kind model.K
 	return nil
 }
 
-func printUploads(out io.Writer, uploadsGroupedByDirName map[string][]*upload, kind model.Kind) {
+func printUploads(out io.Writer, uploadsGroupedByDirName map[string][]*upload, kind media.Kind) {
 	lw := cmdutil.NewListWriter()
 	for _, remoteDirName := range slices.Sorted(maps.Keys(uploadsGroupedByDirName)) {
 		var rootName string
 		switch kind {
-		case model.KindAnime, model.KindTVShow:
+		case media.KindAnime, media.KindTVShow:
 			rootName = toShortName(remoteDirName, 2)
 
-		case model.KindMovie:
+		case media.KindMovie:
 			rootName = toShortName(remoteDirName, 1)
 		}
 
@@ -356,10 +367,10 @@ func printUploads(out io.Writer, uploadsGroupedByDirName map[string][]*upload, k
 		for _, upload := range uploadsGroupedByDirName[remoteDirName] {
 			var localName string
 			switch kind {
-			case model.KindAnime, model.KindTVShow:
+			case media.KindAnime, media.KindTVShow:
 				localName = toShortName(upload.File.FilePath(), 3)
 
-			case model.KindMovie:
+			case media.KindMovie:
 				localName = toShortName(upload.File.FilePath(), 2)
 			}
 

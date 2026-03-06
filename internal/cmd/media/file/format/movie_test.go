@@ -15,8 +15,7 @@ import (
 
 	"github.com/jeremiergz/nas-cli/internal/cmd"
 	"github.com/jeremiergz/nas-cli/internal/config"
-	"github.com/jeremiergz/nas-cli/internal/model"
-	svc "github.com/jeremiergz/nas-cli/internal/service"
+	"github.com/jeremiergz/nas-cli/internal/media"
 	"github.com/jeremiergz/nas-cli/internal/util/cmdutil"
 )
 
@@ -38,7 +37,7 @@ type mockInputResult struct {
 	err   error
 }
 
-func (m *mockPrompter) Confirm(_ string) (bool, error) {
+func (m *mockPrompter) Confirm(_ string, _ bool) (bool, error) {
 	if m.confirmIndex >= len(m.confirmResults) {
 		return true, nil
 	}
@@ -84,9 +83,9 @@ func Test_Movie_With_Dry_Run(t *testing.T) {
 	output := new(bytes.Buffer)
 	ctx := context.Background()
 
+	pterm.SetDefaultOutput(output)
 	rootCMD.SetOut(output)
 	rootCMD.SetErr(output)
-	svc.Console.SetOutput(output)
 	rootCMD.SetArgs(args)
 	err := rootCMD.ExecuteContext(ctx)
 
@@ -106,9 +105,9 @@ func Test_Movie_With_Dry_Run_No_Files(t *testing.T) {
 	output := new(bytes.Buffer)
 	ctx := context.Background()
 
+	pterm.SetDefaultOutput(output)
 	rootCMD.SetOut(output)
 	rootCMD.SetErr(output)
-	svc.Console.SetOutput(output)
 	rootCMD.SetArgs(args)
 	err := rootCMD.ExecuteContext(ctx)
 
@@ -133,9 +132,9 @@ func Test_Movie_Without_Options(t *testing.T) {
 	output := new(bytes.Buffer)
 	ctx := context.Background()
 
+	pterm.SetDefaultOutput(output)
 	rootCMD.SetOut(output)
 	rootCMD.SetErr(output)
-	svc.Console.SetOutput(output)
 	rootCMD.SetArgs(args)
 	err := rootCMD.ExecuteContext(ctx)
 
@@ -168,9 +167,9 @@ func Test_Movie_Without_Options_Multiple(t *testing.T) {
 	output := new(bytes.Buffer)
 	ctx := context.Background()
 
+	pterm.SetDefaultOutput(output)
 	rootCMD.SetOut(output)
 	rootCMD.SetErr(output)
-	svc.Console.SetOutput(output)
 	rootCMD.SetArgs(args)
 	err := rootCMD.ExecuteContext(ctx)
 
@@ -203,9 +202,9 @@ func Test_Movie_ProcessMovies(t *testing.T) {
 	output := new(bytes.Buffer)
 	ctx := context.Background()
 
+	pterm.SetDefaultOutput(output)
 	rootCMD.SetOut(output)
 	rootCMD.SetErr(output)
-	svc.Console.SetOutput(output)
 	rootCMD.SetArgs(args)
 	err := rootCMD.ExecuteContext(ctx)
 
@@ -231,9 +230,9 @@ func Test_Movie_With_Yes_No_Files(t *testing.T) {
 	output := new(bytes.Buffer)
 	ctx := context.Background()
 
+	pterm.SetDefaultOutput(output)
 	rootCMD.SetOut(output)
 	rootCMD.SetErr(output)
-	svc.Console.SetOutput(output)
 	rootCMD.SetArgs(args)
 	err := rootCMD.ExecuteContext(ctx)
 
@@ -252,9 +251,9 @@ func Test_Movie_With_Invalid_Directory(t *testing.T) {
 	output := new(bytes.Buffer)
 	ctx := context.Background()
 
+	pterm.SetDefaultOutput(output)
 	rootCMD.SetOut(output)
 	rootCMD.SetErr(output)
-	svc.Console.SetOutput(output)
 	rootCMD.SetArgs(args)
 	err := rootCMD.ExecuteContext(ctx)
 
@@ -280,9 +279,9 @@ func Test_Movie_With_Extension_Filter(t *testing.T) {
 	output := new(bytes.Buffer)
 	ctx := context.Background()
 
+	pterm.SetDefaultOutput(output)
 	rootCMD.SetOut(output)
 	rootCMD.SetErr(output)
-	svc.Console.SetOutput(output)
 	rootCMD.SetArgs(args)
 	err := rootCMD.ExecuteContext(ctx)
 
@@ -314,9 +313,9 @@ func Test_Movie_Rename_Error(t *testing.T) {
 	output := new(bytes.Buffer)
 	ctx := context.Background()
 
+	pterm.SetDefaultOutput(output)
 	rootCMD.SetOut(output)
 	rootCMD.SetErr(output)
-	svc.Console.SetOutput(output)
 	rootCMD.SetArgs(args)
 	err := rootCMD.ExecuteContext(ctx)
 
@@ -329,7 +328,7 @@ func Test_Movie_ProcessMovies_With_Confirm_Accept(t *testing.T) {
 	tempDir := t.TempDir()
 	prepareMovies(t, tempDir, []string{"Random.Movie.Name.1992.mkv"})
 
-	movies, err := model.Movies(tempDir, []string{"mkv"}, false)
+	movies, err := media.ListMovies(tempDir, []string{"mkv"}, false)
 	require.NoError(t, err)
 	require.Len(t, movies, 1)
 
@@ -342,7 +341,7 @@ func Test_Movie_ProcessMovies_With_Confirm_Accept(t *testing.T) {
 	}
 
 	output := new(bytes.Buffer)
-	svc.Console.SetOutput(output)
+	pterm.SetDefaultOutput(output)
 
 	err = processMovies(context.Background(), output, tempDir, movies, os.Getuid(), os.Getgid(), p)
 	assert.NoError(t, err)
@@ -353,7 +352,7 @@ func Test_Movie_ProcessMovies_With_Confirm_Decline(t *testing.T) {
 	tempDir := t.TempDir()
 	prepareMovies(t, tempDir, []string{"Random.Movie.Name.1992.mkv"})
 
-	movies, err := model.Movies(tempDir, []string{"mkv"}, false)
+	movies, err := media.ListMovies(tempDir, []string{"mkv"}, false)
 	require.NoError(t, err)
 
 	p := &mockPrompter{
@@ -361,6 +360,8 @@ func Test_Movie_ProcessMovies_With_Confirm_Decline(t *testing.T) {
 	}
 
 	output := new(bytes.Buffer)
+	pterm.SetDefaultOutput(output)
+
 	err = processMovies(context.Background(), output, tempDir, movies, os.Getuid(), os.Getgid(), p)
 	assert.NoError(t, err)
 
@@ -374,7 +375,7 @@ func Test_Movie_ProcessMovies_With_Confirm_Interrupt(t *testing.T) {
 	tempDir := t.TempDir()
 	prepareMovies(t, tempDir, []string{"Random.Movie.Name.1992.mkv"})
 
-	movies, err := model.Movies(tempDir, []string{"mkv"}, false)
+	movies, err := media.ListMovies(tempDir, []string{"mkv"}, false)
 	require.NoError(t, err)
 
 	p := &mockPrompter{
@@ -382,6 +383,8 @@ func Test_Movie_ProcessMovies_With_Confirm_Interrupt(t *testing.T) {
 	}
 
 	output := new(bytes.Buffer)
+	pterm.SetDefaultOutput(output)
+
 	err = processMovies(context.Background(), output, tempDir, movies, os.Getuid(), os.Getgid(), p)
 	assert.NoError(t, err)
 
@@ -393,7 +396,7 @@ func Test_Movie_ProcessMovies_With_Name_Override(t *testing.T) {
 	tempDir := t.TempDir()
 	prepareMovies(t, tempDir, []string{"Random.Movie.Name.1992.mkv"})
 
-	movies, err := model.Movies(tempDir, []string{"mkv"}, false)
+	movies, err := media.ListMovies(tempDir, []string{"mkv"}, false)
 	require.NoError(t, err)
 
 	p := &mockPrompter{
@@ -405,7 +408,7 @@ func Test_Movie_ProcessMovies_With_Name_Override(t *testing.T) {
 	}
 
 	output := new(bytes.Buffer)
-	svc.Console.SetOutput(output)
+	pterm.SetDefaultOutput(output)
 
 	err = processMovies(context.Background(), output, tempDir, movies, os.Getuid(), os.Getgid(), p)
 	assert.NoError(t, err)
@@ -416,7 +419,7 @@ func Test_Movie_ProcessMovies_With_Name_Input_Interrupt(t *testing.T) {
 	tempDir := t.TempDir()
 	prepareMovies(t, tempDir, []string{"Random.Movie.Name.1992.mkv"})
 
-	movies, err := model.Movies(tempDir, []string{"mkv"}, false)
+	movies, err := media.ListMovies(tempDir, []string{"mkv"}, false)
 	require.NoError(t, err)
 
 	p := &mockPrompter{
@@ -427,6 +430,8 @@ func Test_Movie_ProcessMovies_With_Name_Input_Interrupt(t *testing.T) {
 	}
 
 	output := new(bytes.Buffer)
+	pterm.SetDefaultOutput(output)
+
 	err = processMovies(context.Background(), output, tempDir, movies, os.Getuid(), os.Getgid(), p)
 	assert.NoError(t, err)
 
@@ -438,7 +443,7 @@ func Test_Movie_ProcessMovies_With_Year_Input_Interrupt(t *testing.T) {
 	tempDir := t.TempDir()
 	prepareMovies(t, tempDir, []string{"Random.Movie.Name.1992.mkv"})
 
-	movies, err := model.Movies(tempDir, []string{"mkv"}, false)
+	movies, err := media.ListMovies(tempDir, []string{"mkv"}, false)
 	require.NoError(t, err)
 
 	p := &mockPrompter{
@@ -450,6 +455,8 @@ func Test_Movie_ProcessMovies_With_Year_Input_Interrupt(t *testing.T) {
 	}
 
 	output := new(bytes.Buffer)
+	pterm.SetDefaultOutput(output)
+
 	err = processMovies(context.Background(), output, tempDir, movies, os.Getuid(), os.Getgid(), p)
 	assert.NoError(t, err)
 
@@ -461,7 +468,7 @@ func Test_Movie_ProcessMovies_With_Invalid_Year(t *testing.T) {
 	tempDir := t.TempDir()
 	prepareMovies(t, tempDir, []string{"Random.Movie.Name.1992.mkv"})
 
-	movies, err := model.Movies(tempDir, []string{"mkv"}, false)
+	movies, err := media.ListMovies(tempDir, []string{"mkv"}, false)
 	require.NoError(t, err)
 
 	p := &mockPrompter{
@@ -473,6 +480,8 @@ func Test_Movie_ProcessMovies_With_Invalid_Year(t *testing.T) {
 	}
 
 	output := new(bytes.Buffer)
+	pterm.SetDefaultOutput(output)
+
 	err = processMovies(context.Background(), output, tempDir, movies, os.Getuid(), os.Getgid(), p)
 	assert.NoError(t, err)
 
@@ -484,7 +493,7 @@ func Test_Movie_ProcessMovies_Rename_Error(t *testing.T) {
 	tempDir := t.TempDir()
 	prepareMovies(t, tempDir, []string{"Random.Movie.Name.1992.mkv"})
 
-	movies, err := model.Movies(tempDir, []string{"mkv"}, false)
+	movies, err := media.ListMovies(tempDir, []string{"mkv"}, false)
 	require.NoError(t, err)
 
 	// Remove the file after parsing to trigger rename error.
@@ -499,6 +508,8 @@ func Test_Movie_ProcessMovies_Rename_Error(t *testing.T) {
 	}
 
 	output := new(bytes.Buffer)
+	pterm.SetDefaultOutput(output)
+
 	err = processMovies(context.Background(), output, tempDir, movies, os.Getuid(), os.Getgid(), p)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "could not rename")

@@ -4,10 +4,10 @@ import (
 	"bytes"
 	"testing"
 
+	"github.com/pterm/pterm"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/jeremiergz/nas-cli/internal/cmd"
-	svc "github.com/jeremiergz/nas-cli/internal/service"
 )
 
 func Test_Completion_For_Bash(t *testing.T) {
@@ -40,9 +40,9 @@ func testCompletionGeneration(t *testing.T, shell string) (string, error) {
 	args := []string{"completion", shell}
 
 	output := new(bytes.Buffer)
+	pterm.SetDefaultOutput(output)
 	rootCMD.SetOut(output)
 	rootCMD.SetErr(output)
-	svc.Console.SetOutput(output)
 	rootCMD.SetArgs(args)
 	err := rootCMD.Execute()
 

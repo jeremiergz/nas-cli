@@ -1,4 +1,4 @@
-package model
+package media
 
 import (
 	"fmt"
@@ -6,9 +6,13 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/jeremiergz/nas-cli/internal/model/image"
-	"github.com/jeremiergz/nas-cli/internal/model/internal/parser"
+	"github.com/pterm/pterm"
+	"github.com/samber/lo"
+
+	"github.com/jeremiergz/nas-cli/internal/image"
+	"github.com/jeremiergz/nas-cli/internal/media/internal/parser"
 	"github.com/jeremiergz/nas-cli/internal/util"
+	"github.com/jeremiergz/nas-cli/internal/util/cmdutil"
 	"github.com/jeremiergz/nas-cli/internal/util/fsutil"
 )
 
@@ -42,7 +46,7 @@ func SortMoviesByYear(movies []*Movie) {
 // Lists movies in given folder.
 //
 // Result can be filtered by extensions.
-func Movies(wd string, extensions []string, recursive bool) ([]*Movie, error) {
+func ListMovies(wd string, extensions []string, recursive bool) ([]*Movie, error) {
 	toProcess := fsutil.List(wd, extensions, nil, recursive)
 	movies := []*Movie{}
 	for _, path := range toProcess {
@@ -103,4 +107,32 @@ func (m *Movie) Year() int {
 
 func (m *Movie) SetYear(year int) {
 	m.year = year
+}
+
+// Prints given movies array as a tree.
+func PrintMovies(wd string, movies []*Movie) {
+	lw := cmdutil.NewListWriter()
+	moviesCount := len(movies)
+
+	lw.AppendItem(
+		fmt.Sprintf(
+			"%s (%d %s)",
+			wd,
+			moviesCount,
+			lo.Ternary(moviesCount <= 1, "movie", "movies"),
+		),
+	)
+
+	lw.Indent()
+	for _, m := range movies {
+		lw.AppendItem(
+			fmt.Sprintf(
+				"%s  <-  %s",
+				filepath.Join(m.FullName(), fmt.Sprintf("%s.%s", m.FullName(), m.Extension())),
+				pterm.Gray(m.Basename()),
+			),
+		)
+	}
+
+	pterm.Println(lw.Render())
 }

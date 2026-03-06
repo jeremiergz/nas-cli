@@ -6,12 +6,13 @@ import (
 	"io"
 	"path/filepath"
 
+	"github.com/pterm/pterm"
 	"github.com/samber/lo"
 	"github.com/spf13/cobra"
 
 	"github.com/jeremiergz/nas-cli/internal/config"
-	"github.com/jeremiergz/nas-cli/internal/model"
-	"github.com/jeremiergz/nas-cli/internal/model/image"
+	"github.com/jeremiergz/nas-cli/internal/image"
+	"github.com/jeremiergz/nas-cli/internal/media"
 	svc "github.com/jeremiergz/nas-cli/internal/service"
 	"github.com/jeremiergz/nas-cli/internal/util"
 	"github.com/jeremiergz/nas-cli/internal/util/cmdutil"
@@ -37,7 +38,7 @@ func newAnimeCmd() *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			err := processShows(cmd.Context(), cmd.OutOrStdout(), model.KindAnime)
+			err := processShows(cmd.Context(), cmd.OutOrStdout(), media.KindAnime)
 			if err != nil {
 				return err
 			}
@@ -67,7 +68,7 @@ func newTVShowCmd() *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			err := processShows(cmd.Context(), cmd.OutOrStdout(), model.KindTVShow)
+			err := processShows(cmd.Context(), cmd.OutOrStdout(), media.KindTVShow)
 			if err != nil {
 				return err
 			}
@@ -82,14 +83,14 @@ func newTVShowCmd() *cobra.Command {
 	return cmd
 }
 
-func processShows(ctx context.Context, out io.Writer, kind model.Kind) error {
-	shows, err := model.Shows(config.WD, []string{util.ExtensionMKV}, true, "", nil, true)
+func processShows(ctx context.Context, out io.Writer, kind media.Kind) error {
+	shows, err := media.ListShows(config.WD, []string{util.ExtensionMKV}, true, "", nil, true)
 	if err != nil {
 		return err
 	}
 
 	if len(shows) == 0 {
-		svc.Console.Success("Nothing to upload")
+		pterm.Success.Println("Nothing to upload")
 		return nil
 	}
 
