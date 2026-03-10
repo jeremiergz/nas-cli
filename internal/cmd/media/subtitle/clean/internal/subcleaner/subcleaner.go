@@ -45,6 +45,7 @@ var cleanupPipeline = []func([]*astisub.Item) []*astisub.Item{
 	removeSDH,
 	removeHTMLTags,
 	removeEmptyItems,
+	fixDashSpacing,
 }
 
 func (p *process) Run(ctx context.Context) error {
@@ -323,6 +324,23 @@ func removeEmptyItems(items []*astisub.Item) []*astisub.Item {
 	}
 
 	return result
+}
+
+// dashNoSpacePattern matches a leading dash immediately followed by a non-space character.
+var dashNoSpacePattern = regexp.MustCompile(`^- *(?P<rest>\S)`)
+
+// Ensures a space exists between a leading dash and the following character (e.g. "-Hey" becomes "- Hey").
+func fixDashSpacing(items []*astisub.Item) []*astisub.Item {
+	for _, item := range items {
+		for i, line := range item.Lines {
+			for j, lineItem := range line.Items {
+				if strings.HasPrefix(lineItem.Text, "-") {
+					item.Lines[i].Items[j].Text = dashNoSpacePattern.ReplaceAllString(lineItem.Text, "- ${rest}")
+				}
+			}
+		}
+	}
+	return items
 }
 
 func writeToSRTFile(subs *astisub.Subtitles, path string) ([]backup, error) {
