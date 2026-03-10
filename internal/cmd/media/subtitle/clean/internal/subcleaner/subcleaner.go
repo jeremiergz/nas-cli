@@ -280,7 +280,8 @@ func removeEmptyItems(items []*astisub.Item) []*astisub.Item {
 		for _, line := range item.Lines {
 			for _, lineItem := range line.Items {
 				text := stylingTagPattern.ReplaceAllString(lineItem.Text, "")
-				if strings.TrimSpace(text) != "" {
+				text = strings.TrimSpace(text)
+				if text != "" && text != "-" {
 					hasText = true
 					break
 				}
