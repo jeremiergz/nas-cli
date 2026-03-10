@@ -270,18 +270,40 @@ func removeHTMLTags(items []*astisub.Item) []*astisub.Item {
 	return result
 }
 
-// Discards subtitle items whose lines contain no visible text (e.g. items left with only styling tags or
-// whitespace after prior cleaning).
+// Discards subtitle lines that are empty or contain only a lone dash, then discards items whose remaining lines
+// contain no visible text (e.g. items left with only styling tags or whitespace after prior cleaning).
 func removeEmptyItems(items []*astisub.Item) []*astisub.Item {
 	result := []*astisub.Item{}
 
 	for _, item := range items {
-		hasText := false
+		// Filter out lines that are empty or consist of only a dash (possibly wrapped in styling tags).
+		// Lines containing only styling tags (e.g. {\an8}) without any dash are preserved.
+		var cleanedLines []astisub.Line
 		for _, line := range item.Lines {
+			keepLine := true
+			for _, lineItem := range line.Items {
+				stripped := stylingTagPattern.ReplaceAllString(lineItem.Text, "")
+				stripped = strings.TrimSpace(stripped)
+				if stripped == "-" {
+					keepLine = false
+					break
+				}
+			}
+			if keepLine {
+				cleanedLines = append(cleanedLines, line)
+			}
+		}
+
+		if len(cleanedLines) == 0 {
+			continue
+		}
+
+		// Check whether any remaining line has visible text after stripping styling tags.
+		hasText := false
+		for _, line := range cleanedLines {
 			for _, lineItem := range line.Items {
 				text := stylingTagPattern.ReplaceAllString(lineItem.Text, "")
-				text = strings.TrimSpace(text)
-				if text != "" && text != "-" {
+				if strings.TrimSpace(text) != "" {
 					hasText = true
 					break
 				}
@@ -290,9 +312,14 @@ func removeEmptyItems(items []*astisub.Item) []*astisub.Item {
 				break
 			}
 		}
-		if hasText {
-			result = append(result, item)
+
+		if !hasText {
+			continue
 		}
+
+		cleanedItem := *item
+		cleanedItem.Lines = cleanedLines
+		result = append(result, &cleanedItem)
 	}
 
 	return result
