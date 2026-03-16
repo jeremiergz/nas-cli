@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"slices"
+	"strings"
 	"sync"
 
 	"github.com/pterm/pterm"
@@ -106,16 +107,8 @@ func processShows(_ context.Context, kind plex.ShowsKind) error {
 			continue
 		}
 
-		textToDisplay := fmt.Sprintf("Match %s %s:\n",
-			pterm.Blue(remoteShow.Name),
-			pterm.Gray("["+remoteShowDetails.Path+"]"),
-		)
-		for _, dbID := range remoteShow.IDs {
-			textToDisplay += fmt.Sprintf(" %sid: %s\n", dbID.Identifier, dbID.Value)
-		}
-
 		shouldMatch, _ := pterm.DefaultInteractiveConfirm.
-			WithDefaultText(textToDisplay).
+			WithDefaultText(formatShowTextPrompt(remoteShow, remoteShowDetails.Path)).
 			WithDefaultValue(true).
 			Show()
 		if shouldMatch {
@@ -131,4 +124,28 @@ func processShows(_ context.Context, kind plex.ShowsKind) error {
 	}
 
 	return nil
+}
+
+func formatShowTextPrompt(show *plex.Show, showPath string) string {
+	var result strings.Builder
+
+	fmt.Fprintf(&result, "Match %s %s:\n",
+		pterm.Blue(show.Name),
+		pterm.Gray("["+showPath+"]"),
+	)
+
+	if show.Description != "" {
+		fmt.Fprintf(&result, "%s\n",
+			pterm.DefaultParagraph.WithMaxWidth(100).Sprint(pterm.Gray(pterm.Italic.Sprint(show.Description))),
+		)
+	}
+
+	for _, dbID := range show.IDs {
+		fmt.Fprintf(&result, " %s: %s\n",
+			pterm.Underscore.Sprint(dbID.Identifier+"id"),
+			dbID.Value,
+		)
+	}
+
+	return result.String()
 }
