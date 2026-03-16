@@ -95,3 +95,7 @@ Some new line.
 00:01:13,000 --> 00:01:14,500
 - Hey, wait up!
 - No way.
+
+25
+00:01:22,000 --> 00:01:23,500
+- Hello friend!

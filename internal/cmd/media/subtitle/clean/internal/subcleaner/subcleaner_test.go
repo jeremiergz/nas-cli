@@ -101,6 +101,56 @@ func TestRemoveSDH_MusicSymbols(t *testing.T) {
 	}
 }
 
+func TestRemoveSDH_SpacedParentheses(t *testing.T) {
+	items := []*astisub.Item{
+		newItem(0, 1000, "( wood crackling )"),
+		newItem(1000, 2000, "Normal text"),
+	}
+
+	result := removeSDH(items)
+
+	if len(result) != 1 {
+		t.Fatalf("expected 1 item, got %d", len(result))
+	}
+	texts := itemTexts(result)
+	if texts[0] != "Normal text" {
+		t.Errorf("expected 'Normal text', got %q", texts[0])
+	}
+}
+
+func TestRemoveSDH_MultiLine(t *testing.T) {
+	items := []*astisub.Item{
+		newItem(0, 1000, "(thunder", "ratling)"),
+		newItem(1000, 2000, "Keep this"),
+	}
+
+	result := removeSDH(items)
+
+	if len(result) != 1 {
+		t.Fatalf("expected 1 item, got %d", len(result))
+	}
+	texts := itemTexts(result)
+	if texts[0] != "Keep this" {
+		t.Errorf("expected 'Keep this', got %q", texts[0])
+	}
+}
+
+func TestRemoveSDH_MultiLineWithTrailingText(t *testing.T) {
+	items := []*astisub.Item{
+		newItem(0, 1000, "(thunder", "ratling) Run!"),
+	}
+
+	result := removeSDH(items)
+
+	if len(result) != 1 {
+		t.Fatalf("expected 1 item, got %d", len(result))
+	}
+	texts := itemTexts(result)
+	if texts[0] != "Run!" {
+		t.Errorf("expected 'Run!', got %q", texts[0])
+	}
+}
+
 // func TestRemoveSDH_SpeakerLabels(t *testing.T) {
 // 	tests := []struct {
 // 		name     string

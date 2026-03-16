@@ -146,11 +146,15 @@ var (
 //
 // It removes bracketed/parenthesized annotations, music symbols, ASS/SSA styling tags, and uppercase speaker labels.
 // Lines and items that become empty after stripping are discarded.
+// Handles multi-line SDH annotations where an opening delimiter appears on one line
+// and the closing delimiter on a subsequent line.
 func removeSDH(items []*astisub.Item) []*astisub.Item {
 	result := []*astisub.Item{}
 
 	for _, item := range items {
 		var cleanedLines []astisub.Line
+		inParenSDH := false
+		inBracketSDH := false
 
 		for _, line := range item.Lines {
 			var cleanedLineItems []astisub.LineItem
@@ -158,8 +162,40 @@ func removeSDH(items []*astisub.Item) []*astisub.Item {
 			for _, lineItem := range line.Items {
 				text := lineItem.Text
 
-				// Remove bracketed and parenthesized SDH annotations.
+				// Continue removing multi-line parenthesized SDH from a previous line.
+				if inParenSDH {
+					if idx := strings.Index(text, ")"); idx >= 0 {
+						text = text[idx+1:]
+						inParenSDH = false
+					} else {
+						continue
+					}
+				}
+
+				// Continue removing multi-line bracketed SDH from a previous line.
+				if inBracketSDH {
+					if idx := strings.Index(text, "]"); idx >= 0 {
+						text = text[idx+1:]
+						inBracketSDH = false
+					} else {
+						continue
+					}
+				}
+
+				// Remove single-line bracketed and parenthesized SDH annotations.
 				text = sdhPattern.ReplaceAllString(text, "")
+
+				// Detect unmatched opening parenthesis (start of multi-line SDH).
+				if idx := strings.LastIndex(text, "("); idx >= 0 {
+					text = text[:idx]
+					inParenSDH = true
+				}
+
+				// Detect unmatched opening bracket (start of multi-line SDH).
+				if idx := strings.LastIndex(text, "["); idx >= 0 {
+					text = text[:idx]
+					inBracketSDH = true
+				}
 
 				// Remove music symbols.
 				text = musicPattern.ReplaceAllString(text, "")
