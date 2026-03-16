@@ -1,6 +1,6 @@
 ﻿1
 00:00:06,000 --> 00:00:08,000
-NARRATOR: It was a dark and stormy night.
+It was a dark and stormy night.
 
 2
 00:00:08,500 --> 00:00:10,500
@@ -8,11 +8,11 @@ Narrator: The wind howled through the trees.
 
 3
 00:00:11,000 --> 00:00:13,000
-MAN 1: Did you hear that?
+Did you hear that?
 
 4
 00:00:13,500 --> 00:00:15,500
-WOMAN: What was that?
+What was that?
 
 5
 00:00:16,000 --> 00:00:18,000
