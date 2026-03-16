@@ -190,6 +190,8 @@ func GetShowDetails(title, ratingKey string) (*Show, error) {
 	}
 
 	if len(meta.MediaContainer.Metadata) > 0 {
+		tvShow.Description = meta.MediaContainer.Metadata[0].Summary
+
 		for _, guid := range meta.MediaContainer.Metadata[0].GUIDs {
 			matches := apiGUIDRegex.FindStringSubmatch(guid.ID)
 			if matches == nil || len(matches) != 3 {
@@ -234,9 +236,10 @@ type ID struct {
 }
 
 type Show struct {
-	IDs        []*ID
-	Name       string
-	FolderName string
+	Description string
+	FolderName  string
+	IDs         []*ID
+	Name        string
 }
 
 type apiShow struct {
@@ -279,6 +282,7 @@ type apiMetadataResponse struct {
 			Locations []struct {
 				Path string `json:"path"`
 			} `json:"Location"`
+			Summary string `json:"summary"`
 		} `json:"Metadata"`
 	} `json:"MediaContainer"`
 }
