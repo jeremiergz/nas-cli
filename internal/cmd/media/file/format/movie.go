@@ -47,11 +47,7 @@ func newMovieCmd() *cobra.Command {
 				} else {
 					p = prompt.NewInteractive()
 				}
-				err := processMovies(cmd.Context(), cmd.OutOrStdout(), config.WD, movies, config.UID, config.GID, p)
-				if err != nil {
-					return err
-				}
-
+				return processMovies(cmd.Context(), cmd.OutOrStdout(), config.WD, movies, config.UID, config.GID, p)
 			}
 
 			return nil

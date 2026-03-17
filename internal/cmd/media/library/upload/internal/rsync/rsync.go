@@ -190,9 +190,9 @@ func (p *process) Run(ctx context.Context) error {
 
 	if !p.keepOriginal {
 		for _, imageFile := range p.imageFiles {
-			_ = os.Remove(imageFile.FilePath)
+			os.Remove(imageFile.FilePath)
 		}
-		_ = os.Remove(p.file.FilePath())
+		os.Remove(p.file.FilePath())
 	}
 
 	p.tracker.MarkAsDone()

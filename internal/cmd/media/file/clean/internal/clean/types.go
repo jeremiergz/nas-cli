@@ -37,8 +37,8 @@ type mkvmergeIdentificationOutput struct {
 	Container *container `json:"container,omitempty"`
 
 	// Identified file's name.
-	Filename   string        `json:"file_name,omitempty"`
-	GlobalTags []interface{} `json:"global_tags,omitempty"`
+	Filename   string `json:"file_name,omitempty"`
+	GlobalTags []any  `json:"global_tags,omitempty"`
 
 	// Output format's version.
 	IdentificationFormatVersion int               `json:"identification_format_version,omitempty"`

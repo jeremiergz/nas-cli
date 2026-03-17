@@ -16,7 +16,6 @@ import (
 	"github.com/jeremiergz/nas-cli/internal/media"
 	svc "github.com/jeremiergz/nas-cli/internal/service"
 	"github.com/jeremiergz/nas-cli/internal/service/plex"
-	plexsvc "github.com/jeremiergz/nas-cli/internal/service/plex"
 )
 
 type ShowsKind media.Kind
@@ -75,7 +74,7 @@ func GetShowsDetails(kind ShowsKind) (folders map[string]*ShowDetails, err error
 				}
 				folders[entry.Name()] = showDetails
 
-				plexMatchFile, err := svc.SFTP.Client.Open(filepath.Join(showDetails.Path, plexsvc.ShowMatchingFileName))
+				plexMatchFile, err := svc.SFTP.Client.Open(filepath.Join(showDetails.Path, plex.ShowMatchingFileName))
 				if err != nil {
 					if os.IsNotExist(err) {
 						continue
@@ -87,7 +86,7 @@ func GetShowsDetails(kind ShowsKind) (folders map[string]*ShowDetails, err error
 					plexMatchFile.Close()
 					return nil, fmt.Errorf("failed to read matching file in %q: %w", showDetails.Path, err)
 				}
-				_ = plexMatchFile.Close()
+				plexMatchFile.Close()
 
 				matches := matchingFileGUIDRegex.FindAllStringSubmatch(strings.TrimSpace(string(contentBytes)), -1)
 				for _, match := range matches {
@@ -123,19 +122,19 @@ func SortShows(remoteShows []*Show) {
 }
 
 func WriteShowMatchingFile(show *Show, remotePath string) error {
-	content := ""
+	var content strings.Builder
 	for _, id := range show.IDs {
-		content += fmt.Sprintf("%sid: %s\n", id.Identifier, id.Value)
+		fmt.Fprintf(&content, "%sid: %s\n", id.Identifier, id.Value)
 	}
 
-	remoteFilePath := filepath.Join(remotePath, plexsvc.ShowMatchingFileName)
+	remoteFilePath := filepath.Join(remotePath, plex.ShowMatchingFileName)
 	remoteFile, err := svc.SFTP.Client.Create(remoteFilePath)
 	if err != nil {
 		return fmt.Errorf("failed to create matching file %q: %w", remoteFilePath, err)
 	}
 	defer remoteFile.Close()
 
-	if _, err := remoteFile.Write([]byte(content)); err != nil {
+	if _, err := remoteFile.Write([]byte(content.String())); err != nil {
 		return fmt.Errorf("failed to write to matching file %q: %w", remoteFilePath, err)
 	}
 
@@ -305,7 +304,7 @@ var (
 	plexSVC *plex.Service
 )
 
-func plexService() *plexsvc.Service {
+func plexService() *plex.Service {
 	if plexSVC == nil {
 		plexSVC = plex.NewService(
 			viper.GetString(config.KeyPlexAPIURL),

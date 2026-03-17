@@ -197,8 +197,8 @@ func setRemoteDiskUsageStats(paths []string) error {
 
 func getDiskUsage(str, path string) (percentage int, err error) {
 	found := false
-	lines := strings.Split(str, "\n")
-	for _, line := range lines {
+	lines := strings.SplitSeq(str, "\n")
+	for line := range lines {
 		usageRegexp := regexp.MustCompile(`(?P<Pool>[a-zA-Z0-9-_]+)(?:\s+.+)(?:\d+%\s+)(?P<Percentage>\d+)(?:%)(?:.+)$`)
 
 		allMatches := usageRegexp.FindAllStringSubmatch(line, -1)

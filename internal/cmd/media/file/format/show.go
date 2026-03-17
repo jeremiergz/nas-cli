@@ -56,7 +56,7 @@ func newShowCmd() *cobra.Command {
 				} else {
 					p = prompt.NewInteractive()
 				}
-				processShows(cmd.Context(), cmd.OutOrStdout(), config.WD, shows, config.UID, config.GID, p)
+				return processShows(cmd.Context(), cmd.OutOrStdout(), config.WD, shows, config.UID, config.GID, p)
 			}
 
 			return nil

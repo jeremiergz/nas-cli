@@ -91,7 +91,7 @@ func Parse(filename string) (*DownloadedFile, error) {
 	file := &DownloadedFile{}
 
 	var startIndex, endIndex = 0, len(filename)
-	cleanName := strings.Replace(filename, "_", " ", -1)
+	cleanName := strings.ReplaceAll(filename, "_", " ")
 	for _, pattern := range patterns {
 		matches := pattern.regexp.FindAllStringSubmatch(cleanName, -1)
 		if len(matches) == 0 {
@@ -117,10 +117,10 @@ func Parse(filename string) (*DownloadedFile, error) {
 	}
 
 	if strings.ContainsRune(cleanName, '.') && !strings.ContainsRune(cleanName, ' ') {
-		cleanName = strings.Replace(cleanName, ".", " ", -1)
+		cleanName = strings.ReplaceAll(cleanName, ".", " ")
 	}
 
-	cleanName = strings.Replace(cleanName, "_", " ", -1)
+	cleanName = strings.ReplaceAll(cleanName, "_", " ")
 	cleanName = dashSuffixRegexp.ReplaceAllString(cleanName, "")
 	setField(file, "title", strings.TrimSpace(cleanName))
 
@@ -132,7 +132,7 @@ var (
 )
 
 func setField(file *DownloadedFile, field, val string) {
-	kind := reflect.TypeOf(file)
+	kind := reflect.TypeFor[*DownloadedFile]()
 	value := reflect.ValueOf(file)
 	field = caser.String(field)
 	v, _ := kind.Elem().FieldByName(field)

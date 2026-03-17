@@ -32,7 +32,7 @@ func (s *Service) Connect() error {
 	)
 
 	if err != nil {
-		s.ssh.Client.Conn.Close()
+		sshSvc.Client.Close()
 		sftpClient.Close()
 		return err
 	}
