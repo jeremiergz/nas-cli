@@ -1,4 +1,4 @@
-1
+﻿1
 00:00:01,000 --> 00:00:03,000
 [thunder rumbling]
 
@@ -143,3 +143,27 @@ ratling)
 - ( Another
 sound )
 - Hello friend!
+
+35
+00:01:24,000 --> 00:01:25,500
+Hello&nbsp;World
+
+36
+00:01:26,000 --> 00:01:27,500
+She said &quot;hello&quot;
+
+37
+00:01:28,000 --> 00:01:29,500
+It&apos;s a test
+
+38
+00:01:30,000 --> 00:01:31,500
+&copy; 2026 Acme Corp
+
+39
+00:01:33,000 --> 00:01:35,500
+Acme&reg; Product
+
+40
+00:01:40,000 --> 00:01:42,500
+SuperWidget&trade; is great

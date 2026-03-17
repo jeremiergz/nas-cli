@@ -175,6 +175,49 @@ func TestRemoveSDH_SpeakerLabels(t *testing.T) {
 	}
 }
 
+func TestRemoveHTLMEntities(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{"nbsp", "Hello&nbsp;World", "Hello World"},
+		{"quot", `She said &quot;hello&quot;`, `She said "hello"`},
+		{"apos", "It&apos;s a test", "It's a test"},
+		{"copy", "&copy; 2026", "© 2026"},
+		{"reg", "Acme&reg;", "Acme®"},
+		{"trade", "Widget&trade;", "Widget™"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			items := []*astisub.Item{newItem(0, 1000, tt.input)}
+			result := replaceHTLMEntities(items)
+			texts := itemTexts(result)
+			if len(texts) != 1 || texts[0] != tt.expected {
+				t.Errorf("expected %q, got %v", tt.expected, texts)
+			}
+		})
+	}
+}
+
+func TestRemoveHTLMEntities_EmptyAfterStrip(t *testing.T) {
+	items := []*astisub.Item{
+		newItem(0, 1000, "\u00A0"),
+		newItem(1000, 2000, "Keep this"),
+	}
+
+	result := replaceHTLMEntities(items)
+
+	if len(result) != 1 {
+		t.Fatalf("expected 1 item, got %d", len(result))
+	}
+	texts := itemTexts(result)
+	if texts[0] != "Keep this" {
+		t.Errorf("expected 'Keep this', got %q", texts[0])
+	}
+}
+
 func TestRemoveHTMLTags_StripsNonItalicTags(t *testing.T) {
 	items := []*astisub.Item{
 		newItem(0, 1000, `<font color="#ffff00">Yellow text</font>`),
@@ -327,10 +370,7 @@ func TestRun_IntegrationWithSRTFile(t *testing.T) {
 		resultLines := strings.Split(result, "\n")
 		goldenLines := strings.Split(golden, "\n")
 
-		maxLines := len(resultLines)
-		if len(goldenLines) > maxLines {
-			maxLines = len(goldenLines)
-		}
+		maxLines := max(len(goldenLines), len(resultLines))
 
 		for i := range maxLines {
 			var rLine, gLine string
