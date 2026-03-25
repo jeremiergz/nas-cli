@@ -45,6 +45,7 @@ var cleanupPipeline = []func([]*astisub.Item) []*astisub.Item{
 	replaceHTLMEntities,
 	removeSDH,
 	removeHTMLTags,
+	removeMusicCues,
 	removeEmptyItems,
 	fixDashSpacing,
 }
@@ -129,8 +130,8 @@ var (
 	// Matches ASS/SSA override tags such as {\an8}.
 	stylingTagPattern = regexp.MustCompile(`\{\\[^}]*\}`)
 
-	// Matches music symbols (♪, ♫) and surrounding whitespace.
-	musicPattern = regexp.MustCompile(`[♪♫]+`)
+	// Matches music symbols (♪, ♫) at the start or end of text.
+	musicPattern = regexp.MustCompile(`^\s*[♪♫]|[♪♫]\s*$`)
 
 	// Matches speaker labels like "SPEAKER:" at the start of text.
 	colonPrefixPattern = regexp.MustCompile(`^[A-Z][A-Z0-9 ]*:\s*`)
@@ -198,9 +199,6 @@ func removeSDH(items []*astisub.Item) []*astisub.Item {
 					inBracketSDH = true
 				}
 
-				// Remove music symbols.
-				text = musicPattern.ReplaceAllString(text, "")
-
 				// Remove speaker labels (e.g. "NARRATOR:", "MAN 1:").
 				text = colonPrefixPattern.ReplaceAllString(text, "")
 
@@ -231,6 +229,39 @@ func removeSDH(items []*astisub.Item) []*astisub.Item {
 				Items:     cleanedLineItems,
 				VoiceName: line.VoiceName,
 			})
+		}
+
+		if len(cleanedLines) == 0 {
+			continue
+		}
+
+		cleanedItem := *item
+		cleanedItem.Lines = cleanedLines
+		result = append(result, &cleanedItem)
+	}
+
+	return result
+}
+
+// Removes entire lines that contain music symbols (♪, ♫).
+// Items that become empty after removal are discarded.
+func removeMusicCues(items []*astisub.Item) []*astisub.Item {
+	result := []*astisub.Item{}
+
+	for _, item := range items {
+		var cleanedLines []astisub.Line
+
+		for _, line := range item.Lines {
+			hasMusic := false
+			for _, lineItem := range line.Items {
+				if musicPattern.MatchString(lineItem.Text) {
+					hasMusic = true
+					break
+				}
+			}
+			if !hasMusic {
+				cleanedLines = append(cleanedLines, line)
+			}
 		}
 
 		if len(cleanedLines) == 0 {

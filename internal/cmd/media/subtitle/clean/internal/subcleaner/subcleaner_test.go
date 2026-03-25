@@ -84,20 +84,55 @@ func TestRemoveSDH_FullyBracketed(t *testing.T) {
 	}
 }
 
-func TestRemoveSDH_MusicSymbols(t *testing.T) {
+func TestRemoveMusicCues_RemovesLinesWithMusicAtStartOrEnd(t *testing.T) {
 	items := []*astisub.Item{
 		newItem(0, 1000, "♪ La la la ♪"),
 		newItem(1000, 2000, "♫♫"),
+		newItem(2000, 3000, "Normal text"),
+		newItem(3000, 4000, "♪ Only at start"),
+		newItem(4000, 5000, "Only at end ♫"),
 	}
 
-	result := removeSDH(items)
+	result := removeMusicCues(items)
 
 	if len(result) != 1 {
 		t.Fatalf("expected 1 item, got %d", len(result))
 	}
 	texts := itemTexts(result)
-	if texts[0] != "La la la" {
-		t.Errorf("expected 'La la la', got %q", texts[0])
+	if texts[0] != "Normal text" {
+		t.Errorf("expected 'Normal text', got %q", texts[0])
+	}
+}
+
+func TestRemoveMusicCues_PreservesMiddleMusic(t *testing.T) {
+	items := []*astisub.Item{
+		newItem(0, 1000, "He said ♪ but moved on"),
+	}
+
+	result := removeMusicCues(items)
+
+	if len(result) != 1 {
+		t.Fatalf("expected 1 item, got %d", len(result))
+	}
+	texts := itemTexts(result)
+	if texts[0] != "He said ♪ but moved on" {
+		t.Errorf("expected 'He said ♪ but moved on', got %q", texts[0])
+	}
+}
+
+func TestRemoveMusicCues_MultiLineItem(t *testing.T) {
+	items := []*astisub.Item{
+		newItem(0, 1000, "♪ Song lyric ♪", "Normal dialogue"),
+	}
+
+	result := removeMusicCues(items)
+
+	if len(result) != 1 {
+		t.Fatalf("expected 1 item, got %d", len(result))
+	}
+	texts := itemTexts(result)
+	if len(texts) != 1 || texts[0] != "Normal dialogue" {
+		t.Errorf("expected ['Normal dialogue'], got %v", texts)
 	}
 }
 
@@ -318,14 +353,13 @@ func TestFullPipeline(t *testing.T) {
 	// [thunder rumbling] -> removed entirely (SDH)
 	// NARRATOR: It was a dark night. -> "It was a dark night." (speaker label)
 	//   merged with {\an8}(wind howling) -> SDH removes parens, {\an8} kept as line in same item
-	// <font ...>♪ Theme song ♪</font> -> music symbols removed, font tags removed -> "Theme song"
+	// <font ...>♪ Theme song ♪</font> -> font tags removed, then music cue removes entire line
 	// <i>Whispered words</i> -> preserved
 	// Normal dialogue here. + Duplicate timestamp line. -> merged (same timestamps)
 
 	expected := []string{
 		"It was a dark night.",
 		`{\an8}`,
-		"Theme song",
 		"<i>Whispered words</i>",
 		"Normal dialogue here.",
 		"Duplicate timestamp line.",
