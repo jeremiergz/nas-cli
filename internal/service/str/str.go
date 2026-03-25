@@ -12,8 +12,8 @@ type Padder struct {
 
 func NewPadder(filenames []string) *Padder {
 	maxFilenameLength := len(lo.MaxBy(filenames, func(a, b string) bool {
-		a, _ = util.RemoveDiacritics(a)
-		b, _ = util.RemoveDiacritics(b)
+		a = util.RemoveDiacritics(a)
+		b = util.RemoveDiacritics(b)
 		return len(a) > len(b)
 	}))
 
@@ -21,6 +21,6 @@ func NewPadder(filenames []string) *Padder {
 }
 
 func (p *Padder) PaddingLength(filename string, margin int) int {
-	videoFilenameWithoutDiacritics, _ := util.RemoveDiacritics(filename)
+	videoFilenameWithoutDiacritics := util.RemoveDiacritics(filename)
 	return p.maxFilenameLength - len(videoFilenameWithoutDiacritics) + margin
 }

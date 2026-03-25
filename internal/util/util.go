@@ -25,13 +25,13 @@ var (
 )
 
 // Removes all diacritics from given string.
-func RemoveDiacritics(s string) (string, error) {
+func RemoveDiacritics(s string) string {
 	output, _, err := transform.String(diacriticsTransformer, s)
 	if err != nil {
-		return s, err
+		return s
 	}
 
-	return output, nil
+	return output
 }
 
 // Returns an error from a list of strings.

@@ -104,12 +104,8 @@ func (f *file) Subtitles(languages ...string) map[string]string {
 
 		files, err := os.ReadDir(filepath.Dir(f.FilePath()))
 		if err == nil {
-			videoFilenameLength := len(f.Name())
+			videoName := util.RemoveDiacritics(strings.ToLower(f.Name()))
 			subtitleExtension := fmt.Sprintf(".%s", util.AcceptedSubtitleExtension)
-
-			// We look for files with the same name as the video file, the .srt extension
-			// and a 3-letter language code. E.g.: video.eng.srt, video.spa.srt.
-			expectedSuffixSize := 4 + len(subtitleExtension)
 
 			for _, file := range files {
 				if file.IsDir() {
@@ -117,21 +113,30 @@ func (f *file) Subtitles(languages ...string) map[string]string {
 				}
 
 				filename := file.Name()
-				isValidExtension := filepath.Ext(filename) == subtitleExtension
+				if filepath.Ext(filename) != subtitleExtension {
+					continue
+				}
 
-				if isValidExtension {
-					isSubtitle := (videoFilenameLength + expectedSuffixSize) == len(filename)
+				// Strip the subtitle extension to get "<name>.<lang>".
+				withoutExt := strings.TrimSuffix(filename, subtitleExtension)
+				lastDot := strings.LastIndex(withoutExt, ".")
+				if lastDot < 0 {
+					continue
+				}
 
-					if isSubtitle {
-						languageCode := filename[videoFilenameLength+1 : videoFilenameLength+4]
-						subtitleName := filename[:len(filename)-expectedSuffixSize]
-						if languages != nil && !slices.Contains(languages, languageCode) {
-							continue
-						}
-						if subtitleName == f.Name() {
-							subtitles[languageCode] = filename
-						}
-					}
+				subtitleName := withoutExt[:lastDot]
+				languageCode := strings.ToLower(withoutExt[lastDot+1:])
+				if len(languageCode) != 3 {
+					continue
+				}
+
+				if languages != nil && !slices.Contains(languages, languageCode) {
+					continue
+				}
+
+				normalizedSubName := util.RemoveDiacritics(strings.ToLower(subtitleName))
+				if normalizedSubName == videoName {
+					subtitles[languageCode] = filename
 				}
 			}
 		}
