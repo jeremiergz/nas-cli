@@ -43,7 +43,7 @@ func TestFiles(t *testing.T) {
 	}
 }
 
-func TestSubtitles(t *testing.T) {
+func TestFileSubtitles(t *testing.T) {
 	tests := []struct {
 		name          string
 		videoFile     string
@@ -144,6 +144,71 @@ func TestSubtitles(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestKindString(t *testing.T) {
+	tests := []struct {
+		kind Kind
+		want string
+	}{
+		{KindAnime, "anime"},
+		{KindMovie, "movie"},
+		{KindTVShow, "tvshow"},
+	}
+	for _, tt := range tests {
+		if got := tt.kind.String(); got != tt.want {
+			t.Errorf("Kind(%q).String() = %q, want %q", tt.kind, got, tt.want)
+		}
+	}
+}
+
+func TestFileSetFilePath(t *testing.T) {
+	f, err := newFile("video.mkv", "mkv", "/tmp/video.mkv")
+	if err != nil {
+		t.Fatalf("newFile() error: %v", err)
+	}
+
+	f.SetFilePath("/other/dir/renamed.avi")
+
+	if f.Basename() != "renamed.avi" {
+		t.Errorf("Basename() = %q, want %q", f.Basename(), "renamed.avi")
+	}
+	if f.Extension() != "avi" {
+		t.Errorf("Extension() = %q, want %q", f.Extension(), "avi")
+	}
+	if f.FilePath() != "/other/dir/renamed.avi" {
+		t.Errorf("FilePath() = %q, want %q", f.FilePath(), "/other/dir/renamed.avi")
+	}
+	if f.Name() != "renamed" {
+		t.Errorf("Name() = %q, want %q", f.Name(), "renamed")
+	}
+}
+
+func TestFileSetFilePath_EmptyPanics(t *testing.T) {
+	f, _ := newFile("video.mkv", "mkv", "/tmp/video.mkv")
+
+	defer func() {
+		if r := recover(); r == nil {
+			t.Error("SetFilePath(\"\") did not panic")
+		}
+	}()
+	f.SetFilePath("")
+}
+
+func TestFileNew_EmptyFilePath(t *testing.T) {
+	_, err := newFile("video.mkv", "mkv", "")
+	if err != ErrEmptyFilePath {
+		t.Errorf("newFile() error = %v, want %v", err, ErrEmptyFilePath)
+	}
+}
+
+func TestFileID(t *testing.T) {
+	f1, _ := newFile("a.mkv", "mkv", "/tmp/a.mkv")
+	f2, _ := newFile("b.mkv", "mkv", "/tmp/b.mkv")
+
+	if f1.ID() == f2.ID() {
+		t.Error("two files should have distinct UUIDs")
 	}
 }
 
