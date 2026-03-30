@@ -9,6 +9,8 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -102,7 +104,7 @@ func (p *process) Run(ctx context.Context) error {
 
 	go func() {
 		for !p.tracker.IsDone() {
-			progress, err := cmdutil.GetRsyncProgress(bufOut.String())
+			progress, err := getRsyncProgress(bufOut.String())
 			if err == nil {
 				// Keep the progress under 99 because the last 1% is for changing permissions.
 				if progress > 1 && progress <= 99 {
@@ -233,4 +235,30 @@ func (p *process) SetOutput(w io.Writer) svc.Runnable {
 func (p *process) SetTracker(tracker *progress.Tracker) svc.Runnable {
 	p.tracker = tracker
 	return p
+}
+
+var rsyncProgressRegexp = regexp.MustCompile(`(?m)(?:\s+)(?P<Percentage>\d+)(?:%)(?:\s+)`)
+
+func getRsyncProgress(str string) (percentage int, err error) {
+	allProgressMatches := rsyncProgressRegexp.FindAllStringSubmatch(str, -1)
+	if len(allProgressMatches) == 0 {
+		return 0, fmt.Errorf("could not find progress percentage")
+	}
+
+	progressMatches := allProgressMatches[len(allProgressMatches)-1]
+
+	if len(progressMatches) != 2 {
+		return 0, fmt.Errorf("could not find progress percentage")
+	}
+
+	percentageIndex := rsyncProgressRegexp.SubexpIndex("Percentage")
+	if percentageIndex == -1 {
+		return 0, fmt.Errorf("could not determine progress percentage")
+	}
+	percentage, err = strconv.Atoi(progressMatches[percentageIndex])
+	if err != nil {
+		return 0, fmt.Errorf("could not parse progress percentage: %w", err)
+	}
+
+	return percentage, nil
 }

@@ -8,6 +8,8 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
+	"strconv"
 	"time"
 
 	"github.com/jedib0t/go-pretty/v6/progress"
@@ -102,7 +104,7 @@ func (p *process) Run(ctx context.Context) error {
 	go func() {
 		originalMessage := p.tracker.Message[:(len(p.tracker.Message) - 12)] // Remove margin from the message.
 		for !p.tracker.IsDone() {
-			progress, points, err := cmdutil.GetSubsyncProgress(bufOut.String())
+			progress, points, err := getSubsyncProgress(bufOut.String())
 			if err == nil {
 				p.tracker.SetValue(int64(progress))
 				p.tracker.UpdateMessage(fmt.Sprintf("%s %s points ", originalMessage, formatPoints(points)))
@@ -149,4 +151,39 @@ func formatPoints(points int) string {
 	}
 
 	return style(fmt.Sprintf("%3d", points))
+}
+
+var subsyncProgressRegexp = regexp.MustCompile(`(?m)(?:progress\s+)(?P<Percentage>\d+)(?:%)(?:,\s+)(?P<Points>\d+)(?:\s+points)`)
+
+func getSubsyncProgress(str string) (percentage int, points int, err error) {
+	allProgressMatches := subsyncProgressRegexp.FindAllStringSubmatch(str, -1)
+	if len(allProgressMatches) == 0 {
+		return 0, 0, fmt.Errorf("could not find progress percentage and points")
+	}
+
+	progressMatches := allProgressMatches[len(allProgressMatches)-1]
+
+	if len(progressMatches) != 3 {
+		return 0, 0, fmt.Errorf("could not find progress percentage and points")
+	}
+
+	percentageIndex := subsyncProgressRegexp.SubexpIndex("Percentage")
+	if percentageIndex == -1 {
+		return 0, 0, fmt.Errorf("could not determine progress percentage")
+	}
+	percentage, err = strconv.Atoi(progressMatches[percentageIndex])
+	if err != nil {
+		return 0, 0, fmt.Errorf("could not parse progress percentage: %w", err)
+	}
+
+	pointsIndex := subsyncProgressRegexp.SubexpIndex("Points")
+	if pointsIndex == -1 {
+		return 0, 0, fmt.Errorf("could not determine progress points")
+	}
+	points, err = strconv.Atoi(progressMatches[pointsIndex])
+	if err != nil {
+		return 0, 0, fmt.Errorf("could not parse progress points: %w", err)
+	}
+
+	return percentage, points, nil
 }
