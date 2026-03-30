@@ -155,28 +155,24 @@ func listMoviesWithParser(
 			return nil, fmt.Errorf("failed to parse movie %s: %w", basename, err)
 		}
 
-		if err == nil {
-			filePath := filepath.Join(wd, path)
-			f, err := newFile(basename, extension, filePath)
-			if err != nil {
-				return nil, err
-			}
-
-			referenceName := strings.TrimSuffix(basename, filepath.Ext(basename))
-			baseImages, err := listBaseImageFiles(wd, referenceName)
-			if err != nil {
-				return nil, fmt.Errorf("failed to list movie images for %s: %w", referenceName, err)
-			}
-
-			movies = append(movies, &Movie{
-				file:   f,
-				images: baseImages,
-				title:  name,
-				year:   year,
-			})
-		} else {
+		filePath := filepath.Join(wd, path)
+		f, err := newFile(basename, extension, filePath)
+		if err != nil {
 			return nil, err
 		}
+
+		referenceName := strings.TrimSuffix(basename, filepath.Ext(basename))
+		baseImages, err := listBaseImageFiles(wd, referenceName)
+		if err != nil {
+			return nil, fmt.Errorf("failed to list movie images for %s: %w", referenceName, err)
+		}
+
+		movies = append(movies, &Movie{
+			file:   f,
+			images: baseImages,
+			title:  name,
+			year:   year,
+		})
 	}
 	return movies, nil
 }
