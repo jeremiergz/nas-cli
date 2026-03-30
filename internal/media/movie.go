@@ -1,9 +1,12 @@
 package media
 
 import (
+	"errors"
 	"fmt"
 	"path/filepath"
+	"regexp"
 	"slices"
+	"strconv"
 	"strings"
 
 	"github.com/pterm/pterm"
@@ -43,41 +46,18 @@ func SortMoviesByYear(movies []*Movie) {
 	})
 }
 
+// Parses movies in given folder.
+//
+// Result can be filtered by extensions.
+func ParseMovies(wd string, extensions []string, recursive bool) ([]*Movie, error) {
+	return listMoviesWithParser(wd, extensions, recursive, parseMovieWithParser)
+}
+
 // Lists movies in given folder.
 //
 // Result can be filtered by extensions.
 func ListMovies(wd string, extensions []string, recursive bool) ([]*Movie, error) {
-	toProcess := fsutil.List(wd, extensions, nil, recursive)
-	movies := []*Movie{}
-	for _, path := range toProcess {
-		basename := filepath.Base(path)
-		m, err := parser.Parse(basename)
-		m.Title = util.ToTitleCase(m.Title)
-
-		if err == nil {
-			filePath := filepath.Join(wd, path)
-			f, err := newFile(basename, m.Container, filePath)
-			if err != nil {
-				return nil, err
-			}
-
-			referenceName := strings.TrimSuffix(basename, filepath.Ext(basename))
-			baseImages, err := listBaseImageFiles(wd, referenceName)
-			if err != nil {
-				return nil, fmt.Errorf("failed to list movie images for %s: %w", referenceName, err)
-			}
-
-			movies = append(movies, &Movie{
-				file:   f,
-				images: baseImages,
-				title:  m.Title,
-				year:   m.Year,
-			})
-		} else {
-			return nil, err
-		}
-	}
-	return movies, nil
+	return listMoviesWithParser(wd, extensions, recursive, parseMovieWithRegexp)
 }
 
 func (m *Movie) Images() []*image.Image {
@@ -135,4 +115,68 @@ func PrintMovies(wd string, movies []*Movie) {
 	}
 
 	pterm.Println(lw.Render())
+}
+
+var movieParsingRegexp = regexp.MustCompile(`^(?<name>.+)\s\((?<year>\d{4})\)\.(?<extension>.{3})$`)
+
+func parseMovieWithRegexp(basename string) (name string, year int, extension string, err error) {
+	matches := movieParsingRegexp.FindStringSubmatch(basename)
+	if len(matches) != 4 {
+		return "", 0, "", errors.New("filename does not match expected format")
+	}
+
+	name = matches[1]
+	year, _ = strconv.Atoi(matches[2])
+	extension = matches[3]
+
+	return name, year, extension, nil
+}
+
+func parseMovieWithParser(basename string) (name string, year int, extension string, err error) {
+	movie, err := parser.Parse(basename)
+	movie.Title = util.ToTitleCase(movie.Title)
+
+	return movie.Title, movie.Year, movie.Container, nil
+}
+
+func listMoviesWithParser(
+	wd string,
+	extensions []string,
+	recursive bool,
+	parser func(basename string) (name string, year int, extension string, err error),
+) ([]*Movie, error) {
+	toProcess := fsutil.List(wd, extensions, nil, recursive)
+	movies := []*Movie{}
+	for _, path := range toProcess {
+		basename := filepath.Base(path)
+
+		name, year, extension, err := parser(basename)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse movie %s: %w", basename, err)
+		}
+
+		if err == nil {
+			filePath := filepath.Join(wd, path)
+			f, err := newFile(basename, extension, filePath)
+			if err != nil {
+				return nil, err
+			}
+
+			referenceName := strings.TrimSuffix(basename, filepath.Ext(basename))
+			baseImages, err := listBaseImageFiles(wd, referenceName)
+			if err != nil {
+				return nil, fmt.Errorf("failed to list movie images for %s: %w", referenceName, err)
+			}
+
+			movies = append(movies, &Movie{
+				file:   f,
+				images: baseImages,
+				title:  name,
+				year:   year,
+			})
+		} else {
+			return nil, err
+		}
+	}
+	return movies, nil
 }

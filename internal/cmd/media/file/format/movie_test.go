@@ -328,7 +328,7 @@ func Test_Movie_ProcessMovies_With_Confirm_Accept(t *testing.T) {
 	tempDir := t.TempDir()
 	prepareMovies(t, tempDir, []string{"Random.Movie.Name.1992.mkv"})
 
-	movies, err := media.ListMovies(tempDir, []string{"mkv"}, false)
+	movies, err := media.ParseMovies(tempDir, []string{"mkv"}, false)
 	require.NoError(t, err)
 	require.Len(t, movies, 1)
 
@@ -352,7 +352,7 @@ func Test_Movie_ProcessMovies_With_Confirm_Decline(t *testing.T) {
 	tempDir := t.TempDir()
 	prepareMovies(t, tempDir, []string{"Random.Movie.Name.1992.mkv"})
 
-	movies, err := media.ListMovies(tempDir, []string{"mkv"}, false)
+	movies, err := media.ParseMovies(tempDir, []string{"mkv"}, false)
 	require.NoError(t, err)
 
 	p := &mockPrompter{
@@ -375,7 +375,7 @@ func Test_Movie_ProcessMovies_With_Confirm_Interrupt(t *testing.T) {
 	tempDir := t.TempDir()
 	prepareMovies(t, tempDir, []string{"Random.Movie.Name.1992.mkv"})
 
-	movies, err := media.ListMovies(tempDir, []string{"mkv"}, false)
+	movies, err := media.ParseMovies(tempDir, []string{"mkv"}, false)
 	require.NoError(t, err)
 
 	p := &mockPrompter{
@@ -396,7 +396,7 @@ func Test_Movie_ProcessMovies_With_Name_Override(t *testing.T) {
 	tempDir := t.TempDir()
 	prepareMovies(t, tempDir, []string{"Random.Movie.Name.1992.mkv"})
 
-	movies, err := media.ListMovies(tempDir, []string{"mkv"}, false)
+	movies, err := media.ParseMovies(tempDir, []string{"mkv"}, false)
 	require.NoError(t, err)
 
 	p := &mockPrompter{
@@ -419,7 +419,7 @@ func Test_Movie_ProcessMovies_With_Name_Input_Interrupt(t *testing.T) {
 	tempDir := t.TempDir()
 	prepareMovies(t, tempDir, []string{"Random.Movie.Name.1992.mkv"})
 
-	movies, err := media.ListMovies(tempDir, []string{"mkv"}, false)
+	movies, err := media.ParseMovies(tempDir, []string{"mkv"}, false)
 	require.NoError(t, err)
 
 	p := &mockPrompter{
@@ -443,7 +443,7 @@ func Test_Movie_ProcessMovies_With_Year_Input_Interrupt(t *testing.T) {
 	tempDir := t.TempDir()
 	prepareMovies(t, tempDir, []string{"Random.Movie.Name.1992.mkv"})
 
-	movies, err := media.ListMovies(tempDir, []string{"mkv"}, false)
+	movies, err := media.ParseMovies(tempDir, []string{"mkv"}, false)
 	require.NoError(t, err)
 
 	p := &mockPrompter{
@@ -468,7 +468,7 @@ func Test_Movie_ProcessMovies_With_Invalid_Year(t *testing.T) {
 	tempDir := t.TempDir()
 	prepareMovies(t, tempDir, []string{"Random.Movie.Name.1992.mkv"})
 
-	movies, err := media.ListMovies(tempDir, []string{"mkv"}, false)
+	movies, err := media.ParseMovies(tempDir, []string{"mkv"}, false)
 	require.NoError(t, err)
 
 	p := &mockPrompter{
@@ -493,7 +493,7 @@ func Test_Movie_ProcessMovies_Rename_Error(t *testing.T) {
 	tempDir := t.TempDir()
 	prepareMovies(t, tempDir, []string{"Random.Movie.Name.1992.mkv"})
 
-	movies, err := media.ListMovies(tempDir, []string{"mkv"}, false)
+	movies, err := media.ParseMovies(tempDir, []string{"mkv"}, false)
 	require.NoError(t, err)
 
 	// Remove the file after parsing to trigger rename error.

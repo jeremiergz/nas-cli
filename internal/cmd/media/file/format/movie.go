@@ -28,7 +28,7 @@ func newMovieCmd() *cobra.Command {
 		Long:    movieDesc + ".",
 		Args:    cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			movies, err := media.ListMovies(config.WD, extensions, false)
+			movies, err := media.ParseMovies(config.WD, extensions, false)
 			if err != nil {
 				return err
 			}

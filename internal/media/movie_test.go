@@ -82,7 +82,7 @@ func TestSortMoviesByYear(t *testing.T) {
 	}
 }
 
-func TestListMovies(t *testing.T) {
+func TestParseMovies(t *testing.T) {
 	dir := t.TempDir()
 
 	// Parser expects filenames like "Title.Year.Resolution.Container".
@@ -96,9 +96,9 @@ func TestListMovies(t *testing.T) {
 		}
 	}
 
-	movies, err := ListMovies(dir, []string{"mkv"}, false)
+	movies, err := ParseMovies(dir, []string{"mkv"}, false)
 	if err != nil {
-		t.Fatalf("ListMovies() error: %v", err)
+		t.Fatalf("ParseMovies() error: %v", err)
 	}
 
 	if len(movies) != 2 {
