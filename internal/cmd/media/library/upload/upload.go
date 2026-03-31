@@ -353,18 +353,26 @@ func process(ctx context.Context, out io.Writer, uploads []*upload, kind media.K
 func printUploads(out io.Writer, uploadsGroupedByDirName map[string][]*upload, kind media.Kind) {
 	lw := cmdutil.NewListWriter()
 	for _, remoteDirName := range slices.Sorted(maps.Keys(uploadsGroupedByDirName)) {
+		uploads := uploadsGroupedByDirName[remoteDirName]
+
 		var rootName string
+		var displayedText string
 		switch kind {
 		case media.KindAnime, media.KindTVShow:
 			rootName = toShortName(remoteDirName, 2)
-
+			displayedText = fmt.Sprintf("%s (%d episode%s)",
+				rootName,
+				len(uploads),
+				lo.Ternary(len(uploads) > 1, "s", ""),
+			)
 		case media.KindMovie:
 			rootName = toShortName(remoteDirName, 1)
+			displayedText = rootName
 		}
 
-		lw.AppendItem(rootName)
+		lw.AppendItem(displayedText)
 		lw.Indent()
-		for _, upload := range uploadsGroupedByDirName[remoteDirName] {
+		for _, upload := range uploads {
 			var localName string
 			switch kind {
 			case media.KindAnime, media.KindTVShow:
