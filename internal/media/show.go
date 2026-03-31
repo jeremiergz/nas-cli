@@ -2,7 +2,9 @@ package media
 
 import (
 	"cmp"
+	"errors"
 	"fmt"
+	"math"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -22,8 +24,6 @@ import (
 
 var (
 	_ MediaFile = (*Episode)(nil)
-
-	showFmtRegexp = regexp.MustCompile(`(^.+)(\s-\s)S\d+E\d+\.(.+)$`)
 )
 
 // Holds information about a show such as its name and seasons.
@@ -35,96 +35,18 @@ type Show struct {
 	episodesCount int
 }
 
-func ListShows(wd string, extensions []string, recursive bool, subtitleExtension string, subtitleLangs []string, anyFiles bool) ([]*Show, error) {
-	var selectedRegexp *regexp.Regexp
-	if !anyFiles {
-		selectedRegexp = showFmtRegexp
-	}
+// Lists shows in given folder. Useful when name is in expected format and can be parsed with a simple regexp.
+//
+// Result can be filtered by extensions.
+func ListShows(wd string, extensions []string, recursive bool) ([]*Show, error) {
+	return listShowsWithParser(wd, extensions, recursive, parseShowWithRegexp)
+}
 
-	toProcess := fsutil.List(wd, extensions, selectedRegexp, recursive)
-	shows := []*Show{}
-	for _, path := range toProcess {
-		basename := filepath.Base(path)
-		e, err := parser.Parse(basename)
-		e.Title = util.ToTitleCase(e.Title)
-
-		if err == nil {
-			var show *Show
-			showIndex := findShowIndex(e.Title, shows)
-			if showIndex == -1 {
-				baseImages, err := listBaseImageFiles(wd, e.Title)
-				if err != nil {
-					return nil, fmt.Errorf("failed to list show images for %s: %w", e.Title, err)
-				}
-
-				seasonImages, err := listSeasonImageFiles(wd, e.Title)
-				if err != nil {
-					return nil, fmt.Errorf("failed to list show season images for %s: %w", e.Title, err)
-				}
-
-				show = &Show{
-					images:  slices.Concat(baseImages, seasonImages),
-					name:    e.Title,
-					seasons: []*Season{},
-				}
-			} else {
-				show = shows[showIndex]
-			}
-			seasonName := fmt.Sprintf("Season %d", e.Season)
-			seasonIndex := findShowSeasonIndex(seasonName, show.Seasons())
-
-			f, err := newFile(basename, e.Container, filepath.Join(wd, path))
-			if err != nil {
-				return nil, err
-			}
-
-			episode := Episode{
-				file:  f,
-				index: e.Episode,
-			}
-
-			var season *Season
-			if seasonIndex == -1 {
-				season = &Season{
-					episodes: []*Episode{},
-					index:    e.Season,
-					name:     seasonName,
-					show:     show,
-				}
-				episode.season = season
-				season.episodes = append(season.episodes, &episode)
-				show.seasons = append(show.seasons, season)
-			} else {
-				season := show.seasons[seasonIndex]
-				episode.season = season
-				season.episodes = append(season.episodes, &episode)
-			}
-
-			for _, season := range show.seasons {
-				slices.SortFunc(season.episodes, func(i, j *Episode) int {
-					return cmp.Compare(i.index, j.index)
-				})
-			}
-			slices.SortFunc(show.seasons, func(i, j *Season) int {
-				return cmp.Compare(i.index, j.index)
-			})
-
-			if showIndex == -1 {
-				shows = append(shows, show)
-			}
-		} else {
-			return nil, err
-		}
-	}
-
-	for _, show := range shows {
-		show.seasonsCount = len(show.seasons)
-		for _, season := range show.seasons {
-			show.episodesCount += len(season.episodes)
-		}
-	}
-
-	return shows, nil
+// Parses shows in given folder. Useful when name is not in expected format and requires a more complex parsing logic.
+//
+// Result can be filtered by extensions.
+func ParseShows(wd string, extensions []string, recursive bool) ([]*Show, error) {
+	return listShowsWithParser(wd, extensions, recursive, parseShowWithParser)
 }
 
 func (s *Show) Images() []*image.Image {
@@ -188,9 +110,11 @@ func (e *Episode) Index() int {
 }
 
 func (e *Episode) Name() string {
-	return fmt.Sprintf("%s - S%02dE%02d",
+	width := max(numberOfDigits(e.Index()), 2)
+	return fmt.Sprintf("%s - S%02dE%0*d",
 		e.Season().Show().Name(),
 		e.Season().Index(),
+		width,
 		e.Index(),
 	)
 }
@@ -338,4 +262,126 @@ func PrintShows(wd string, shows []*Show) {
 	}
 
 	pterm.Println(lw.Render())
+}
+
+var showParsingRegexp = regexp.MustCompile(`^(?<name>.+)\s-\sS(?<season>\d{2})E(?<episode>\d{2,4})\.(?<extension>.{3})$`)
+
+func parseShowWithRegexp(basename string) (name string, seasonNumber, episodeNumber int, extension string, err error) {
+	matches := showParsingRegexp.FindStringSubmatch(basename)
+	if len(matches) != 5 {
+		return "", 0, 0, "", errors.New("filename does not match expected format")
+	}
+
+	name = matches[1]
+	seasonNumber, _ = strconv.Atoi(matches[2])
+	episodeNumber, _ = strconv.Atoi(matches[3])
+	extension = matches[4]
+
+	return name, seasonNumber, episodeNumber, extension, nil
+}
+
+func parseShowWithParser(basename string) (name string, seasonNumber, episodeNumber int, extension string, err error) {
+	show, err := parser.Parse(basename)
+	if err != nil {
+		return "", 0, 0, "", fmt.Errorf("failed to parse show %s: %w", basename, err)
+	}
+
+	show.Title = util.ToTitleCase(show.Title)
+
+	return show.Title, show.Season, show.Episode, show.Container, nil
+}
+
+func listShowsWithParser(
+	wd string,
+	extensions []string,
+	recursive bool,
+	parser func(basename string) (name string, seasonNumber, episodeNumber int, extension string, err error),
+) ([]*Show, error) {
+	toProcess := fsutil.List(wd, extensions, nil, recursive)
+	shows := []*Show{}
+	for _, path := range toProcess {
+		basename := filepath.Base(path)
+
+		name, seasonNumber, episodeNumber, extension, err := parser(basename)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse show %s: %w", basename, err)
+		}
+
+		var show *Show
+		showIndex := findShowIndex(name, shows)
+		if showIndex == -1 {
+			baseImages, err := listBaseImageFiles(wd, name)
+			if err != nil {
+				return nil, fmt.Errorf("failed to list show images for %s: %w", name, err)
+			}
+
+			seasonImages, err := listSeasonImageFiles(wd, name)
+			if err != nil {
+				return nil, fmt.Errorf("failed to list show season images for %s: %w", name, err)
+			}
+
+			show = &Show{
+				images:  slices.Concat(baseImages, seasonImages),
+				name:    name,
+				seasons: []*Season{},
+			}
+		} else {
+			show = shows[showIndex]
+		}
+		seasonName := fmt.Sprintf("Season %d", seasonNumber)
+		seasonIndex := findShowSeasonIndex(seasonName, show.Seasons())
+
+		f, err := newFile(basename, extension, filepath.Join(wd, path))
+		if err != nil {
+			return nil, err
+		}
+
+		episode := Episode{
+			file:  f,
+			index: episodeNumber,
+		}
+
+		var season *Season
+		if seasonIndex == -1 {
+			season = &Season{
+				episodes: []*Episode{},
+				index:    seasonNumber,
+				name:     seasonName,
+				show:     show,
+			}
+			episode.season = season
+			season.episodes = append(season.episodes, &episode)
+			show.seasons = append(show.seasons, season)
+		} else {
+			season := show.seasons[seasonIndex]
+			episode.season = season
+			season.episodes = append(season.episodes, &episode)
+		}
+
+		for _, season := range show.seasons {
+			slices.SortFunc(season.episodes, func(i, j *Episode) int {
+				return cmp.Compare(i.index, j.index)
+			})
+		}
+		slices.SortFunc(show.seasons, func(i, j *Season) int {
+			return cmp.Compare(i.index, j.index)
+		})
+
+		if showIndex == -1 {
+			shows = append(shows, show)
+		}
+	}
+
+	for _, show := range shows {
+		show.seasonsCount = len(show.seasons)
+		for _, season := range show.seasons {
+			show.episodesCount += len(season.episodes)
+		}
+	}
+
+	return shows, nil
+}
+
+func numberOfDigits(n int) int {
+	return len(strconv.Itoa(int(math.Abs(float64(n)))))
 }

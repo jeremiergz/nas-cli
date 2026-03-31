@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-func TestListShows(t *testing.T) {
+func TestParseShows(t *testing.T) {
 	dir := t.TempDir()
 
 	// Parser expects filenames like "Show.Name.S01E01.Resolution.Container".
@@ -21,9 +21,9 @@ func TestListShows(t *testing.T) {
 		}
 	}
 
-	shows, err := ListShows(dir, []string{"mkv"}, false, "srt", nil, false)
+	shows, err := ParseShows(dir, []string{"mkv"}, false)
 	if err != nil {
-		t.Fatalf("ListShows() error: %v", err)
+		t.Fatalf("ParseShows() error: %v", err)
 	}
 
 	if len(shows) != 1 {
@@ -60,6 +60,135 @@ func TestListShows(t *testing.T) {
 	}
 	if s1Episodes[1].Index() != 2 {
 		t.Errorf("s1e2.Index() = %d, want 2", s1Episodes[1].Index())
+	}
+}
+
+func TestListShows(t *testing.T) {
+	type expectedEpisode struct {
+		fileName      string
+		showName      string
+		seasonNumber  int
+		episodeNumber int
+	}
+
+	tests := []struct {
+		name       string
+		files      []string
+		extensions []string
+		expected   []expectedEpisode
+	}{
+		{
+			name: "multiple shows with multiple seasons",
+			files: []string{
+				"One Piece - S01E0001.mkv",
+				"One Piece - S01E0002.mkv",
+				"One Piece - S01E1100.mkv",
+				"One Piece - S01E1201.mkv",
+				"The Office - S01E01.mkv",
+				"The Office - S01E02.mkv",
+				"The Office - S02E01.mkv",
+				"The Office - S02E05.mkv",
+				"Friends - S01E01.mkv",
+				"Friends - S03E10.mkv",
+			},
+			extensions: []string{"mkv"},
+			expected: []expectedEpisode{
+				{"One Piece - S01E01.mkv", "One Piece", 1, 1},
+				{"One Piece - S01E02.mkv", "One Piece", 1, 2},
+				{"One Piece - S01E1100.mkv", "One Piece", 1, 1100},
+				{"One Piece - S01E1201.mkv", "One Piece", 1, 1201},
+				{"The Office - S01E01.mkv", "The Office", 1, 1},
+				{"The Office - S01E02.mkv", "The Office", 1, 2},
+				{"The Office - S02E01.mkv", "The Office", 2, 1},
+				{"The Office - S02E05.mkv", "The Office", 2, 5},
+				{"Friends - S01E01.mkv", "Friends", 1, 1},
+				{"Friends - S03E10.mkv", "Friends", 3, 10},
+			},
+		},
+		{
+			name: "filter by extension",
+			files: []string{
+				"Show - S01E01.mkv",
+				"Show - S01E02.avi",
+				"Show - S01E03.mkv",
+			},
+			extensions: []string{"mkv"},
+			expected: []expectedEpisode{
+				{"Show - S01E01.mkv", "Show", 1, 1},
+				{"Show - S01E03.mkv", "Show", 1, 3},
+			},
+		},
+		{
+			name:       "empty directory",
+			files:      []string{},
+			extensions: []string{"mkv"},
+			expected:   []expectedEpisode{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			dir := t.TempDir()
+
+			for _, name := range tt.files {
+				if err := os.WriteFile(filepath.Join(dir, name), nil, 0644); err != nil {
+					t.Fatalf("failed to create file %s: %v", name, err)
+				}
+			}
+
+			shows, err := ListShows(dir, tt.extensions, false)
+			if err != nil {
+				t.Fatalf("ListShows() error: %v", err)
+			}
+
+			// Collect all episodes from the result.
+			type actualEpisode struct {
+				fileName      string
+				showName      string
+				seasonNumber  int
+				episodeNumber int
+			}
+			var got []actualEpisode
+			for _, show := range shows {
+				for _, season := range show.Seasons() {
+					for _, ep := range season.Episodes() {
+						got = append(got, actualEpisode{
+							fileName:      ep.FullName(),
+							showName:      show.Name(),
+							seasonNumber:  season.Index(),
+							episodeNumber: ep.Index(),
+						})
+					}
+				}
+			}
+
+			if len(got) != len(tt.expected) {
+				t.Fatalf("expected %d episodes, got %d", len(tt.expected), len(got))
+			}
+
+			// Build a lookup from the actual episodes for order-independent matching.
+			lookup := map[string]actualEpisode{}
+			for _, ep := range got {
+				lookup[ep.fileName] = ep
+			}
+
+			for _, want := range tt.expected {
+				actual, ok := lookup[want.fileName]
+				if !ok {
+					t.Errorf("expected episode %q not found", want.fileName)
+					continue
+				}
+				if actual.showName != want.showName {
+					t.Errorf("%s: showName = %q, want %q", want.fileName, actual.showName, want.showName)
+				}
+				if actual.seasonNumber != want.seasonNumber {
+					t.Errorf("%s: seasonNumber = %d, want %d", want.fileName, actual.seasonNumber, want.seasonNumber)
+				}
+				if actual.episodeNumber != want.episodeNumber {
+					t.Errorf("%s: episodeNumber = %d, want %d", want.fileName, actual.episodeNumber, want.episodeNumber)
+				}
+			}
+		})
 	}
 }
 
@@ -145,7 +274,7 @@ func TestShowSetName(t *testing.T) {
 	}
 }
 
-func TestListShows_MultipleShows(t *testing.T) {
+func TestParseShows_MultipleShows(t *testing.T) {
 	dir := t.TempDir()
 
 	filenames := []string{
@@ -159,9 +288,9 @@ func TestListShows_MultipleShows(t *testing.T) {
 		}
 	}
 
-	shows, err := ListShows(dir, []string{"mkv"}, false, "srt", nil, false)
+	shows, err := ParseShows(dir, []string{"mkv"}, false)
 	if err != nil {
-		t.Fatalf("ListShows() error: %v", err)
+		t.Fatalf("ParseShows() error: %v", err)
 	}
 
 	if len(shows) != 2 {

@@ -28,7 +28,7 @@ func newShowCmd() *cobra.Command {
 		Long:    showDesc + ".",
 		Args:    cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			shows, err := media.ListShows(config.WD, extensions, false, "", nil, false)
+			shows, err := media.ParseShows(config.WD, extensions, false)
 			if err != nil {
 				return err
 			}

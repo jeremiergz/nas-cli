@@ -84,7 +84,7 @@ func newTVShowCmd() *cobra.Command {
 }
 
 func processShows(ctx context.Context, out io.Writer, kind media.Kind) error {
-	shows, err := media.ListShows(config.WD, []string{util.ExtensionMKV}, true, "", nil, true)
+	shows, err := media.ListShows(config.WD, []string{util.ExtensionMKV}, false)
 	if err != nil {
 		return err
 	}

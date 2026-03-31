@@ -347,7 +347,7 @@ func Test_Show_ProcessShows_With_Confirm_Accept(t *testing.T) {
 		"test.s01e02.mkv",
 	})
 
-	shows, err := media.ListShows(tempDir, []string{"mkv"}, false, "", nil, false)
+	shows, err := media.ParseShows(tempDir, []string{"mkv"}, false)
 	require.NoError(t, err)
 	require.Len(t, shows, 1)
 
@@ -374,7 +374,7 @@ func Test_Show_ProcessShows_With_Show_Decline(t *testing.T) {
 		"test.s01e01.mkv",
 	})
 
-	shows, err := media.ListShows(tempDir, []string{"mkv"}, false, "", nil, false)
+	shows, err := media.ParseShows(tempDir, []string{"mkv"}, false)
 	require.NoError(t, err)
 
 	// Decline the show.
@@ -400,7 +400,7 @@ func Test_Show_ProcessShows_With_Show_Interrupt(t *testing.T) {
 		"test.s01e01.mkv",
 	})
 
-	shows, err := media.ListShows(tempDir, []string{"mkv"}, false, "", nil, false)
+	shows, err := media.ParseShows(tempDir, []string{"mkv"}, false)
 	require.NoError(t, err)
 
 	p := &mockPrompter{
@@ -426,7 +426,7 @@ func Test_Show_ProcessShows_With_Season_Decline(t *testing.T) {
 		"test.s02e01.mkv",
 	})
 
-	shows, err := media.ListShows(tempDir, []string{"mkv"}, false, "", nil, false)
+	shows, err := media.ParseShows(tempDir, []string{"mkv"}, false)
 	require.NoError(t, err)
 
 	// Confirm show, decline season 1, confirm season 2.
@@ -456,7 +456,7 @@ func Test_Show_ProcessShows_With_Season_Interrupt(t *testing.T) {
 		"test.s01e01.mkv",
 	})
 
-	shows, err := media.ListShows(tempDir, []string{"mkv"}, false, "", nil, false)
+	shows, err := media.ParseShows(tempDir, []string{"mkv"}, false)
 	require.NoError(t, err)
 
 	// Confirm show, interrupt at season.
@@ -483,7 +483,7 @@ func Test_Show_ProcessShows_Rename_Error(t *testing.T) {
 		"test.s01e01.mkv",
 	})
 
-	shows, err := media.ListShows(tempDir, []string{"mkv"}, false, "", nil, false)
+	shows, err := media.ParseShows(tempDir, []string{"mkv"}, false)
 	require.NoError(t, err)
 
 	// Remove the file after parsing to trigger rename error.

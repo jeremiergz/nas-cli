@@ -46,18 +46,18 @@ func SortMoviesByYear(movies []*Movie) {
 	})
 }
 
-// Parses movies in given folder.
-//
-// Result can be filtered by extensions.
-func ParseMovies(wd string, extensions []string, recursive bool) ([]*Movie, error) {
-	return listMoviesWithParser(wd, extensions, recursive, parseMovieWithParser)
-}
-
-// Lists movies in given folder.
+// Lists movies in given folder. Useful when name is in expected format and can be parsed with a simple regexp.
 //
 // Result can be filtered by extensions.
 func ListMovies(wd string, extensions []string, recursive bool) ([]*Movie, error) {
 	return listMoviesWithParser(wd, extensions, recursive, parseMovieWithRegexp)
+}
+
+// Parses movies in given folder. Useful when name is not in expected format and requires a more complex parsing logic.
+//
+// Result can be filtered by extensions.
+func ParseMovies(wd string, extensions []string, recursive bool) ([]*Movie, error) {
+	return listMoviesWithParser(wd, extensions, recursive, parseMovieWithParser)
 }
 
 func (m *Movie) Images() []*image.Image {
@@ -134,6 +134,10 @@ func parseMovieWithRegexp(basename string) (name string, year int, extension str
 
 func parseMovieWithParser(basename string) (name string, year int, extension string, err error) {
 	movie, err := parser.Parse(basename)
+	if err != nil {
+		return "", 0, "", fmt.Errorf("failed to parse movie %s: %w", basename, err)
+	}
+
 	movie.Title = util.ToTitleCase(movie.Title)
 
 	return movie.Title, movie.Year, movie.Container, nil
