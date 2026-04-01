@@ -12,6 +12,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/jedib0t/go-pretty/v6/progress"
@@ -66,6 +67,31 @@ func New(
 	}
 }
 
+type syncBuffer struct {
+	mu  sync.Mutex
+	buf bytes.Buffer
+}
+
+func (sb *syncBuffer) Write(p []byte) (int, error) {
+	sb.mu.Lock()
+	defer sb.mu.Unlock()
+	return sb.buf.Write(p)
+}
+
+func (sb *syncBuffer) StringAndReset() string {
+	sb.mu.Lock()
+	defer sb.mu.Unlock()
+	str := sb.buf.String()
+	sb.buf.Reset()
+	return str
+}
+
+func (sb *syncBuffer) String() string {
+	sb.mu.Lock()
+	defer sb.mu.Unlock()
+	return sb.buf.String()
+}
+
 func (p *process) Run(ctx context.Context) error {
 	if p.tracker == nil {
 		return fmt.Errorf("required tracker is not set")
@@ -92,7 +118,7 @@ func (p *process) Run(ctx context.Context) error {
 
 	rsync := exec.CommandContext(ctx, cmdutil.CommandRsync, options...)
 
-	bufOut := new(bytes.Buffer)
+	bufOut := &syncBuffer{}
 	bufErr := new(bytes.Buffer)
 	rsync.Stdout = bufOut
 	rsync.Stderr = bufErr
@@ -104,14 +130,13 @@ func (p *process) Run(ctx context.Context) error {
 
 	go func() {
 		for !p.tracker.IsDone() {
-			progress, err := getRsyncProgress(bufOut.String())
+			progress, err := getRsyncProgress(bufOut.StringAndReset())
 			if err == nil {
 				// Keep the progress under 99 because the last 1% is for changing permissions.
 				if progress > 1 && progress <= 99 {
 					p.tracker.SetValue(int64(progress))
 				}
 			}
-			bufOut.Reset()
 			time.Sleep(100 * time.Millisecond)
 		}
 	}()
