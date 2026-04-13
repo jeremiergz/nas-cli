@@ -373,18 +373,9 @@ func printUploads(out io.Writer, uploadsGroupedByDirName map[string][]*upload, k
 		lw.AppendItem(displayedText)
 		lw.Indent()
 		for _, upload := range uploads {
-			var localName string
-			switch kind {
-			case media.KindAnime, media.KindTVShow:
-				localName = toShortName(upload.File.FilePath(), 3)
-
-			case media.KindMovie:
-				localName = toShortName(upload.File.FilePath(), 2)
-			}
-
 			lw.AppendItem(fmt.Sprintf(
 				"%s  ->  %s",
-				pterm.Gray(localName),
+				pterm.Gray(upload.File.Basename()),
 				upload.Destination),
 			)
 		}
