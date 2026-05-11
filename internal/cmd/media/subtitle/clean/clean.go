@@ -14,7 +14,7 @@ import (
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/jeremiergz/nas-cli/internal/cmd/media/subtitle/clean/internal/subcleaner"
+	"github.com/jeremiergz/nas-cli/internal/cmd/media/subtitle/internal/subcleaner"
 	"github.com/jeremiergz/nas-cli/internal/config"
 	"github.com/jeremiergz/nas-cli/internal/prompt"
 	svc "github.com/jeremiergz/nas-cli/internal/service"
@@ -69,7 +69,7 @@ func New() *cobra.Command {
 				return nil
 			}
 
-			print(out, subtitleFiles)
+			PrintSubtitles(out, subtitleFiles)
 			if dryRun {
 				return nil
 			}
@@ -113,7 +113,7 @@ func New() *cobra.Command {
 }
 
 // Prints given subtitles as a tree.
-func print(w io.Writer, files []string) {
+func PrintSubtitles(w io.Writer, files []string) {
 	lw := cmdutil.NewListWriter()
 	filesCount := len(files)
 

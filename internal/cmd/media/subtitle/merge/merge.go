@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -14,6 +15,7 @@ import (
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
 
+	"github.com/jeremiergz/nas-cli/internal/cmd/media/subtitle/internal/subcleaner"
 	"github.com/jeremiergz/nas-cli/internal/cmd/media/subtitle/merge/internal/mkvmerge"
 	"github.com/jeremiergz/nas-cli/internal/config"
 	"github.com/jeremiergz/nas-cli/internal/media"
@@ -27,6 +29,7 @@ import (
 
 var (
 	mergeDesc         = "Merge tracks using MKVMerge tool"
+	cleanFirst        bool
 	delete            bool
 	dryRun            bool
 	maxParallel       int
@@ -115,6 +118,7 @@ func New() *cobra.Command {
 		},
 	}
 
+	cmd.Flags().BoolVarP(&cleanFirst, "clean", "c", false, "clean subtitle files before merging")
 	cmd.Flags().BoolVarP(&delete, "delete", "d", false, "delete original files")
 	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "print result without processing it")
 	cmd.Flags().IntVarP(&maxParallel, "max-parallel", "p", 0, "maximum number of parallel processes. 0 means no limit")
@@ -164,8 +168,20 @@ func print(w io.Writer, files []*media.File) {
 }
 
 // Merges language tracks into one video file.
+// If --clean is set, each file's associated subtitle files are cleaned just before they are merged.
 func process(ctx context.Context, w io.Writer, files []*media.File, keepOriginal bool) error {
-	pw := cmdutil.NewProgressWriter(w, len(files))
+	// Pre-count trackers: one merge tracker per file + one clean tracker per subtitle (if cleanFirst).
+	totalTrackers := len(files)
+	allFileNames := lo.Map(files, func(file *media.File, _ int) string { return file.Basename() })
+	if cleanFirst {
+		for _, file := range files {
+			subtitleNames := lo.Values(file.Subtitles())
+			totalTrackers += len(subtitleNames)
+			allFileNames = append(allFileNames, subtitleNames...)
+		}
+	}
+
+	pw := cmdutil.NewProgressWriter(w, totalTrackers)
 
 	eg, _ := errgroup.WithContext(ctx)
 	eg.SetLimit(cmdutil.MaxConcurrentGoroutines)
@@ -173,28 +189,57 @@ func process(ctx context.Context, w io.Writer, files []*media.File, keepOriginal
 		eg.SetLimit(maxParallel)
 	}
 
-	padder := str.NewPadder(lo.Map(files, func(file *media.File, _ int) string { return file.Basename() }))
+	padder := str.NewPadder(allFileNames)
 
-	mergers := make([]svc.Runnable, len(files))
-	for index, file := range files {
+	for _, file := range files {
+		// Build per-file cleaners if --clean is set.
+		var cleaners []svc.Runnable
+		if cleanFirst {
+			fileSubtitles := file.Subtitles()
+			subtitleNames := lo.Values(fileSubtitles)
+			if len(subtitleNames) > 0 {
+				for _, subtitleName := range subtitleNames {
+					paddingLength := padder.PaddingLength(subtitleName, 1)
+					tracker := &progress.Tracker{
+						DeferStart: true,
+						Message:    fmt.Sprintf("%s%*s", subtitleName, paddingLength, " "),
+						Total:      100,
+					}
+					pw.AppendTracker(tracker)
+					subtitlePath := filepath.Join(filepath.Dir(file.FilePath()), subtitleName)
+					cleaner := subcleaner.
+						New(subtitlePath, true).
+						SetOutput(w).
+						SetTracker(tracker)
+					cleaners = append(cleaners, cleaner)
+				}
+			}
+		}
+
+		// Merge tracker.
 		paddingLength := padder.PaddingLength(file.Basename(), 1)
-		tracker := &progress.Tracker{
+		mergeTracker := &progress.Tracker{
 			DeferStart: true,
 			Message:    fmt.Sprintf("%s%*s", file.Basename(), paddingLength, " "),
 			Total:      100,
 		}
-		pw.AppendTracker(tracker)
+		pw.AppendTracker(mergeTracker)
 		merger := mkvmerge.
 			New(file, keepOriginal, overrideLanguage).
 			SetOutput(w).
-			SetTracker(tracker)
-		mergers[index] = merger
-	}
-	for _, merger := range mergers {
+			SetTracker(mergeTracker)
+
 		eg.Go(func() error {
+			// Clean each subtitle sequentially, then merge.
+			for _, cleaner := range cleaners {
+				if err := cleaner.Run(ctx); err != nil {
+					return err
+				}
+			}
 			return merger.Run(ctx)
 		})
 	}
+
 	if err := eg.Wait(); err != nil {
 		return err
 	}
