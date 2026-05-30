@@ -82,6 +82,7 @@ func processMovies(
 	if err != nil {
 		return fmt.Errorf("could not start spinner: %w", err)
 	}
+	defer spinner.Stop()
 
 	movies := []*movie{}
 	moviesGroupedByFolder := map[string][]*movie{}

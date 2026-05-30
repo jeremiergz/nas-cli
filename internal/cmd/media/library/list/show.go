@@ -127,6 +127,7 @@ func processShows(
 	if err != nil {
 		return fmt.Errorf("could not start spinner: %w", err)
 	}
+	defer spinner.Stop()
 
 	shows := []*show{}
 	showsGroupedByFolder := map[string][]*show{}

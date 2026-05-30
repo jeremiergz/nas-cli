@@ -53,6 +53,7 @@ func processShows(_ context.Context, kind plex.ShowsKind) error {
 	if err != nil {
 		return fmt.Errorf("could not start spinner: %w", err)
 	}
+	defer spinner.Stop()
 
 	shows, err := plex.FetchPlexShows(kind)
 	if err != nil {
