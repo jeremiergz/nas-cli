@@ -283,6 +283,7 @@ func (s *show) loadSeasons() error {
 	sortSeasons(showEntries)
 
 	eg := errgroup.Group{}
+	eg.SetLimit(8) // Limit concurrent reads to avoid exhausting file descriptors.
 
 	hasBackgroundImageFile := false
 	hasPosterImageFile := false
@@ -292,13 +293,17 @@ func (s *show) loadSeasons() error {
 		eg.Go(func() error {
 			showEntryName := showEntry.Name()
 			if showEntryName == "background.jpg" {
+				s.mu.Lock()
 				hasBackgroundImageFile = true
 				s.Files = append(s.Files, showEntryName)
+				s.mu.Unlock()
 				return nil
 			}
 			if showEntryName == "poster.jpg" {
+				s.mu.Lock()
 				hasPosterImageFile = true
 				s.Files = append(s.Files, showEntryName)
+				s.mu.Unlock()
 				return nil
 			}
 
@@ -329,16 +334,15 @@ func (s *show) loadSeasons() error {
 				if isSeasonPoster {
 					seasonFiles = append(seasonFiles, seasonEntryName)
 					hasSeasonPosterImageFile = true
-				} else if slices.Contains(util.AcceptedVideoExtensions, strings.ToLower(filepath.Ext(seasonEntryName)[1:])) {
+				} else if isVideoFile(seasonEntryName) {
 					episodes = append(episodes, seasonEntry.Name())
 				}
 			}
 
+			s.mu.Lock()
 			if !hasSeasonPosterImageFile {
 				hasAllSeasonPosterImageFiles = false
 			}
-
-			s.mu.Lock()
 			s.Seasons = append(s.Seasons, &season{
 				Name:     showEntry.Name(),
 				Episodes: episodes,
@@ -365,6 +369,14 @@ func (s *show) loadSeasons() error {
 	}
 
 	return nil
+}
+
+func isVideoFile(name string) bool {
+	extension := filepath.Ext(name)
+	if len(extension) < 3 {
+		return false
+	}
+	return slices.Contains(util.AcceptedVideoExtensions, strings.ToLower(extension[1:]))
 }
 
 func sortShows(shows []*show) {
