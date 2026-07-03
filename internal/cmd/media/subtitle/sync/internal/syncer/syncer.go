@@ -1,4 +1,4 @@
-package subsync
+package syncer
 
 import (
 	"bytes"

@@ -1,4 +1,4 @@
-package clean
+package cleaner
 
 type attachmentsItems struct {
 	ContentType string      `json:"content_type,omitempty"`

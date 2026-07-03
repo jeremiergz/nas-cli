@@ -14,7 +14,7 @@ import (
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/jeremiergz/nas-cli/internal/cmd/media/subtitle/internal/subcleaner"
+	"github.com/jeremiergz/nas-cli/internal/cmd/media/subtitle/internal/cleaner"
 	"github.com/jeremiergz/nas-cli/internal/config"
 	"github.com/jeremiergz/nas-cli/internal/prompt"
 	svc "github.com/jeremiergz/nas-cli/internal/service"
@@ -154,10 +154,11 @@ func process(ctx context.Context, w io.Writer, subtitleFiles []string, keepOrigi
 			Total:      100,
 		}
 		pw.AppendTracker(tracker)
-		cleaner := subcleaner.New(subtitleFilePath, keepOriginal).
+
+		c := cleaner.New(subtitleFilePath, keepOriginal).
 			SetOutput(w).
 			SetTracker(tracker)
-		cleaners[index] = cleaner
+		cleaners[index] = c
 	}
 	for _, cleaner := range cleaners {
 		eg.Go(func() error {

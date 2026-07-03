@@ -15,7 +15,7 @@ import (
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/jeremiergz/nas-cli/internal/cmd/media/file/clean/internal/clean"
+	"github.com/jeremiergz/nas-cli/internal/cmd/media/file/clean/internal/cleaner"
 	"github.com/jeremiergz/nas-cli/internal/config"
 	"github.com/jeremiergz/nas-cli/internal/media"
 	"github.com/jeremiergz/nas-cli/internal/prompt"
@@ -176,11 +176,12 @@ func process(ctx context.Context, w io.Writer, files []*media.File) error {
 			Total:      100,
 		}
 		pw.AppendTracker(tracker)
-		cleaner := clean.
+
+		c := cleaner.
 			New(file, !delete, shouldOverrideLanguageRegions).
 			SetOutput(w).
 			SetTracker(tracker)
-		cleaners[index] = cleaner
+		cleaners[index] = c
 	}
 	for _, cleaner := range cleaners {
 		eg.Go(func() error {

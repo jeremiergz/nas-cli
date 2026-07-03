@@ -15,8 +15,8 @@ import (
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/jeremiergz/nas-cli/internal/cmd/media/subtitle/internal/subcleaner"
-	"github.com/jeremiergz/nas-cli/internal/cmd/media/subtitle/merge/internal/mkvmerge"
+	"github.com/jeremiergz/nas-cli/internal/cmd/media/subtitle/internal/cleaner"
+	"github.com/jeremiergz/nas-cli/internal/cmd/media/subtitle/merge/internal/merger"
 	"github.com/jeremiergz/nas-cli/internal/config"
 	"github.com/jeremiergz/nas-cli/internal/media"
 	"github.com/jeremiergz/nas-cli/internal/prompt"
@@ -206,12 +206,14 @@ func process(ctx context.Context, w io.Writer, files []*media.File, keepOriginal
 						Total:      100,
 					}
 					pw.AppendTracker(tracker)
+
 					subtitlePath := filepath.Join(filepath.Dir(file.FilePath()), subtitleName)
-					cleaner := subcleaner.
+
+					c := cleaner.
 						New(subtitlePath, true).
 						SetOutput(w).
 						SetTracker(tracker)
-					cleaners = append(cleaners, cleaner)
+					cleaners = append(cleaners, c)
 				}
 			}
 		}
@@ -224,7 +226,8 @@ func process(ctx context.Context, w io.Writer, files []*media.File, keepOriginal
 			Total:      100,
 		}
 		pw.AppendTracker(mergeTracker)
-		merger := mkvmerge.
+
+		m := merger.
 			New(file, keepOriginal, overrideLanguage).
 			SetOutput(w).
 			SetTracker(mergeTracker)
@@ -236,7 +239,7 @@ func process(ctx context.Context, w io.Writer, files []*media.File, keepOriginal
 					return err
 				}
 			}
-			return merger.Run(ctx)
+			return m.Run(ctx)
 		})
 	}
 

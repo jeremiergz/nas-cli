@@ -1,4 +1,4 @@
-package mkvmerge
+package merger
 
 import (
 	"bytes"

@@ -1,4 +1,4 @@
-package subcleaner
+package cleaner
 
 import (
 	"context"

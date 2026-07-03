@@ -21,7 +21,7 @@ import (
 	"github.com/spf13/viper"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/jeremiergz/nas-cli/internal/cmd/media/library/upload/internal/rsync"
+	"github.com/jeremiergz/nas-cli/internal/cmd/media/library/upload/internal/uploader"
 	"github.com/jeremiergz/nas-cli/internal/config"
 	"github.com/jeremiergz/nas-cli/internal/image"
 	"github.com/jeremiergz/nas-cli/internal/media"
@@ -326,11 +326,11 @@ func process(ctx context.Context, out io.Writer, uploads []*upload, kind media.K
 		}
 		pw.AppendTracker(tracker)
 
-		uploader := rsync.
+		u := uploader.
 			New(kind, upload.File, upload.ImageFiles, upload.Destination, !delete, permissionsDepth).
 			SetOutput(out).
 			SetTracker(tracker)
-		uploaders[index] = uploader
+		uploaders[index] = u
 	}
 	for _, uploader := range uploaders {
 		eg.Go(func() error {

@@ -15,7 +15,7 @@ import (
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/jeremiergz/nas-cli/internal/cmd/media/subtitle/sync/internal/subsync"
+	"github.com/jeremiergz/nas-cli/internal/cmd/media/subtitle/sync/internal/syncer"
 	"github.com/jeremiergz/nas-cli/internal/config"
 	"github.com/jeremiergz/nas-cli/internal/prompt"
 	svc "github.com/jeremiergz/nas-cli/internal/service"
@@ -167,7 +167,8 @@ func process(ctx context.Context, out io.Writer, videoFiles, subtitleFiles []str
 			Total:      100,
 		}
 		pw.AppendTracker(tracker)
-		syncer := subsync.
+
+		s := syncer.
 			New(
 				videoFile,
 				videoLang,
@@ -179,7 +180,7 @@ func process(ctx context.Context, out io.Writer, videoFiles, subtitleFiles []str
 			).
 			SetOutput(out).
 			SetTracker(tracker)
-		syncers[index] = syncer
+		syncers[index] = s
 	}
 	for _, syncer := range syncers {
 		eg.Go(func() error {
