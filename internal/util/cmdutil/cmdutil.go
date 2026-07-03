@@ -17,6 +17,8 @@ import (
 
 const (
 	CommandExifTool    string = "exiftool"
+	CommandFFmpeg      string = "ffmpeg"
+	CommandFFprobe     string = "ffprobe"
 	CommandMKVMerge    string = "mkvmerge"
 	CommandMKVPropEdit string = "mkvpropedit"
 	CommandRsync       string = "rsync"
