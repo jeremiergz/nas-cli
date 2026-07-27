@@ -228,7 +228,7 @@ func (p *process) Run(ctx context.Context) error {
 	return nil
 }
 
-func (p *process) uploadImageFile(ctx context.Context, imageFilePath, targetFilePath string) error {
+func (p *process) uploadImageFile(_ context.Context, imageFilePath, targetFilePath string) error {
 	remoteDir := filepath.Dir(targetFilePath)
 	if remoteDir != "." {
 		err := svc.SFTP.Client.MkdirAll(remoteDir)
@@ -238,17 +238,20 @@ func (p *process) uploadImageFile(ctx context.Context, imageFilePath, targetFile
 		}
 	}
 
-	options := []string{
-		"--append",
-		imageFilePath,
-		fmt.Sprintf("%s:%q", p.remoteHost, targetFilePath),
-	}
-
-	rsync := exec.CommandContext(ctx, cmdutil.CommandRsync, options...)
-
-	err := rsync.Run()
+	src, err := os.Open(imageFilePath)
 	if err != nil {
-		return fmt.Errorf("failed to run rsync command: %w", err)
+		return fmt.Errorf("failed to open image file: %w", err)
+	}
+	defer src.Close()
+
+	dst, err := svc.SFTP.Client.OpenFile(targetFilePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC)
+	if err != nil {
+		return fmt.Errorf("failed to open remote file: %w", err)
+	}
+	defer dst.Close()
+
+	if _, err := io.Copy(dst, src); err != nil {
+		return fmt.Errorf("failed to upload image file: %w", err)
 	}
 
 	return nil
