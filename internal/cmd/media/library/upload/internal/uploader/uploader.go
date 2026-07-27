@@ -110,7 +110,9 @@ func (p *process) Run(ctx context.Context) error {
 
 	options := []string{
 		"--append",
-		"--compress",
+		"--inplace",
+		"--no-perms",
+		"--no-times",
 		"--progress",
 		p.file.FilePath(),
 		fmt.Sprintf("%s:%q", p.remoteHost, remoteParentDir),
@@ -132,8 +134,7 @@ func (p *process) Run(ctx context.Context) error {
 		for !p.tracker.IsDone() {
 			progress, err := getRsyncProgress(bufOut.StringAndReset())
 			if err == nil {
-				// Keep the progress under 99 because the last 1% is for changing permissions.
-				if progress > 1 && progress <= 99 {
+				if progress > 1 {
 					p.tracker.SetValue(int64(progress))
 				}
 			}
