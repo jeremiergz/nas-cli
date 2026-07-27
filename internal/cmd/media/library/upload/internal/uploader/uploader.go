@@ -134,7 +134,8 @@ func (p *process) Run(ctx context.Context) error {
 		for !p.tracker.IsDone() {
 			progress, err := getRsyncProgress(bufOut.StringAndReset())
 			if err == nil {
-				if progress > 1 {
+				// Keep the progress under 99 because the last 1% is for changing permissions.
+				if progress > 1 && progress <= 99 {
 					p.tracker.SetValue(int64(progress))
 				}
 			}
