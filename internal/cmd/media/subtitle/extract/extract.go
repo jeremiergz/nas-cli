@@ -146,12 +146,22 @@ func displayList(out io.Writer, wd string, entries []mkvEntry) {
 
 		lw.Indent()
 		lw.AppendItem(e.file)
+		maxLen := 0
 		for _, s := range e.streams {
+			if l := len(extractor.OutputFilename(e.file, s.Lang, s.Forced)); l > maxLen {
+				maxLen = l
+			}
+		}
+		for _, s := range e.streams {
+			outFile := extractor.OutputFilename(e.file, s.Lang, s.Forced)
 			info := fmt.Sprintf("#%d: %s - %s/%s", s.SubtitleIndex, s.Lang, s.CodecName, s.Encoding)
+			if s.Forced {
+				info += " - forced"
+			}
 			if s.Title != "" {
 				info += " - " + s.Title
 			}
-			lw.AppendItem(fmt.Sprintf("%s  <-  %s", extractor.OutputFilename(e.file, s.Lang), pterm.Gray(info)))
+			lw.AppendItem(fmt.Sprintf("%-*s  <-  %s", maxLen, outFile, pterm.Gray(info)))
 		}
 
 		lw.UnIndentAll()
@@ -223,7 +233,7 @@ type mkvTrackProperties struct {
 	TrackName   string `json:"track_name,omitempty"`
 }
 
-// probeSubtitles returns all non-forced subtitle streams found in the given file.
+// probeSubtitles returns all subtitle streams (including forced) found in the given file.
 func probeSubtitles(ctx context.Context, filePath string) ([]extractor.SubtitleStream, error) {
 	args := []string{
 		"--identification-format", "json",
@@ -249,19 +259,18 @@ func probeSubtitles(ctx context.Context, filePath string) ([]extractor.SubtitleS
 		}
 		isForced := track.Properties.ForcedTrack ||
 			strings.Contains(strings.ToLower(track.Properties.TrackName), "forc")
-		if !isForced {
-			lang := track.Properties.Language
-			if lang == "" {
-				lang = "und"
-			}
-			streams = append(streams, extractor.SubtitleStream{
-				CodecName:     track.Codec,
-				Encoding:      track.Properties.Encoding,
-				Lang:          lang,
-				SubtitleIndex: subtitleIndex,
-				Title:         track.Properties.TrackName,
-			})
+		lang := track.Properties.Language
+		if lang == "" {
+			lang = "und"
 		}
+		streams = append(streams, extractor.SubtitleStream{
+			CodecName:     track.Codec,
+			Encoding:      track.Properties.Encoding,
+			Forced:        isForced,
+			Lang:          lang,
+			SubtitleIndex: subtitleIndex,
+			Title:         track.Properties.TrackName,
+		})
 		subtitleIndex++
 	}
 

@@ -21,12 +21,14 @@ var (
 	_ svc.Runnable = (*process)(nil)
 )
 
-// SubtitleStream represents a single non-forced subtitle track within an MKV file.
+// SubtitleStream represents a subtitle track within an MKV file.
 type SubtitleStream struct {
 	// CodecName is the subtitle codec, e.g. "subrip", "ass".
 	CodecName string
 	// Encoding is the subtitle encoding, e.g. "UTF-8", "ISO-8859-1".
 	Encoding string
+	// Forced indicates whether this is a forced subtitle track.
+	Forced bool
 	// Lang is the ISO 639-2/3 language tag (e.g. "eng", "fre"). Falls back to "und".
 	Lang string
 	// SubtitleIndex is the 0-based position among subtitle streams (used as 0:s:N in ffmpeg).
@@ -36,8 +38,12 @@ type SubtitleStream struct {
 }
 
 // OutputFilename returns the expected .srt filename for the given input file and language.
-func OutputFilename(inputFile, lang string) string {
+// Forced subtitle files include ".forced" before the extension.
+func OutputFilename(inputFile, lang string, forced bool) string {
 	basename := strings.TrimSuffix(inputFile, ".mkv")
+	if forced {
+		return fmt.Sprintf("%s.%s.forced.srt", basename, lang)
+	}
 	return fmt.Sprintf("%s.%s.srt", basename, lang)
 }
 
@@ -66,7 +72,7 @@ func (p *process) Run(ctx context.Context) error {
 	inputPath := filepath.Join(config.WD, p.inputFile)
 
 	for i, stream := range p.streams {
-		outFile := OutputFilename(p.inputFile, stream.Lang)
+		outFile := OutputFilename(p.inputFile, stream.Lang, stream.Forced)
 		outPath := filepath.Join(config.WD, outFile)
 
 		args := []string{
