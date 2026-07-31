@@ -14,6 +14,8 @@ const (
 	ExtensionAVI string = "avi"
 	ExtensionMKV string = "mkv"
 	ExtensionMP4 string = "mp4"
+
+	CodecPGS string = "HDMV PGS"
 )
 
 var (

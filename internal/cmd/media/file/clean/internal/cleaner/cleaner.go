@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/jedib0t/go-pretty/v6/progress"
+	"github.com/pterm/pterm"
 
 	"github.com/jeremiergz/nas-cli/internal/config"
 	"github.com/jeremiergz/nas-cli/internal/media"
@@ -31,6 +32,7 @@ type process struct {
 	file           *media.File
 	keepOriginal   bool
 	useDefaultLang bool
+	removedPGS     int
 	tracker        *progress.Tracker
 	w              io.Writer
 }
@@ -59,10 +61,25 @@ func (p *process) Run(ctx context.Context) error {
 		}
 	}
 
-	err := p.cleanTracks(ctx)
+	err := p.removePGSTracks(ctx)
+	if err != nil {
+		p.tracker.MarkAsErrored()
+		return fmt.Errorf("failed to remove PGS tracks: %w", err)
+	}
+
+	err = p.cleanTracks(ctx)
 	if err != nil {
 		p.tracker.MarkAsErrored()
 		return fmt.Errorf("failed to clean file: %w", err)
+	}
+
+	if p.removedPGS > 0 {
+		p.tracker.UpdateMessage(strings.TrimRight(p.tracker.Message, " ") +
+			fmt.Sprintf(
+				" %s removed %d PGS subtitle(s)",
+				pterm.FgYellow.Sprint("[!]"),
+				p.removedPGS,
+			))
 	}
 
 	p.tracker.MarkAsDone()
@@ -143,6 +160,79 @@ func (p *process) convertToMKV(ctx context.Context) error {
 	}
 
 	p.file.SetFilePath(newFilePath)
+
+	return nil
+}
+
+func (p *process) removePGSTracks(ctx context.Context) error {
+	characteristics, err := p.getCharacteristics(ctx)
+	if err != nil {
+		return err
+	}
+
+	var pgsIDs []int
+	var keepIDs []int
+
+	for _, track := range characteristics.Tracks {
+		if track.Type != "subtitles" {
+			continue
+		}
+		if track.Codec == util.CodecPGS {
+			pgsIDs = append(pgsIDs, track.ID)
+		} else {
+			keepIDs = append(keepIDs, track.ID)
+		}
+	}
+
+	if len(pgsIDs) == 0 {
+		return nil
+	}
+
+	originalFilePath := p.file.FilePath()
+	tmpFilePath := originalFilePath + ".pgs.tmp"
+
+	options := []string{
+		"--output",
+		tmpFilePath,
+	}
+
+	if len(keepIDs) > 0 {
+		ids := make([]string, len(keepIDs))
+		for i, id := range keepIDs {
+			ids[i] = strconv.Itoa(id)
+		}
+		options = append(options, "--subtitle-tracks", strings.Join(ids, ","))
+	} else {
+		options = append(options, "--no-subtitles")
+	}
+
+	options = append(options, originalFilePath)
+
+	merge := exec.CommandContext(ctx, cmdutil.CommandMKVMerge, options...)
+
+	bufOut := new(bytes.Buffer)
+	bufErr := new(bytes.Buffer)
+	merge.Stdout = bufOut
+	merge.Stderr = bufErr
+
+	if err := merge.Run(); err != nil {
+		os.Remove(tmpFilePath)
+		return util.ErrorFromStrings(
+			fmt.Errorf("failed to remove PGS tracks: %w", err),
+			bufOut.String(),
+			bufErr.String(),
+		)
+	}
+
+	os.Chown(tmpFilePath, config.UID, config.GID)
+	os.Chmod(tmpFilePath, config.FileMode)
+	os.Remove(originalFilePath)
+
+	if err := os.Rename(tmpFilePath, originalFilePath); err != nil {
+		return fmt.Errorf("failed to replace file after PGS removal: %w", err)
+	}
+
+	p.removedPGS = len(pgsIDs)
 
 	return nil
 }

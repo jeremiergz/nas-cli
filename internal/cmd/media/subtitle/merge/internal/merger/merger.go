@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/jedib0t/go-pretty/v6/progress"
+	"github.com/pterm/pterm"
 
 	"github.com/jeremiergz/nas-cli/internal/config"
 	"github.com/jeremiergz/nas-cli/internal/media"
@@ -72,7 +73,7 @@ func (p *process) Run(ctx context.Context) error {
 		{currentPath: videoFileBackupPath, originalPath: p.file.FilePath()},
 	}
 
-	options, backups, err := computeMergeOptions(ctx, p.file.FilePath(), videoFileBackupPath, backups, subtitles)
+	options, backups, removedPGS, err := computeMergeOptions(ctx, p.file.FilePath(), videoFileBackupPath, backups, subtitles)
 	if err != nil {
 		// Restore backups.
 		wg := sync.WaitGroup{}
@@ -143,6 +144,15 @@ func (p *process) Run(ctx context.Context) error {
 		wg.Wait()
 	}
 
+	if removedPGS > 0 {
+		p.tracker.UpdateMessage(strings.TrimRight(p.tracker.Message, " ") +
+			fmt.Sprintf(
+				" %s removed %d PGS subtitle(s)",
+				pterm.FgYellow.Sprint("[!]"),
+				removedPGS,
+			))
+	}
+
 	p.tracker.MarkAsDone()
 	return nil
 }
@@ -160,7 +170,7 @@ func computeMergeOptions(
 	videoFileBackupPath string,
 	backups []backup,
 	subtitles map[string][]media.Subtitle,
-) ([]string, []backup, error) {
+) ([]string, []backup, int, error) {
 	// We'll assemble input-specific args separately so we can place global flags
 	// like --track-order and --tracks before the input files.
 	options := []string{"--gui-mode", "--output", videoFilePath}
@@ -213,7 +223,8 @@ func computeMergeOptions(
 	// Build track-order by identifying each input and collecting track IDs.
 	type identOut struct {
 		Tracks []struct {
-			ID         int `json:"id"`
+			Codec      string `json:"codec"`
+			ID         int    `json:"id"`
 			Type       string
 			Properties struct {
 				ForcedTrack  bool   `json:"forced_track"`
@@ -230,6 +241,7 @@ func computeMergeOptions(
 	// Collect subtitle track IDs to keep from the video input.
 	videoSubtitleTrackIDsToKeep := []string{}
 	videoIndex := len(inputFiles) - 1
+	removedPGS := 0
 
 	for idx, input := range inputFiles {
 		idOpts := []string{"--identification-format", "json", "--identify", input}
@@ -240,12 +252,12 @@ func computeMergeOptions(
 		idCmd.Stderr = idErrBuf
 
 		if err := idCmd.Run(); err != nil {
-			return nil, backups, util.ErrorFromStrings(fmt.Errorf("unable to identify input %s: %w", input, err), idOutBuf.String(), idErrBuf.String())
+			return nil, backups, 0, util.ErrorFromStrings(fmt.Errorf("unable to identify input %s: %w", input, err), idOutBuf.String(), idErrBuf.String())
 		}
 
 		var id identOut
 		if err := json.Unmarshal(idOutBuf.Bytes(), &id); err != nil {
-			return nil, backups, fmt.Errorf("unable to parse MKVMerge identification for %s: %w", input, err)
+			return nil, backups, 0, fmt.Errorf("unable to parse MKVMerge identification for %s: %w", input, err)
 		}
 
 		for _, t := range id.Tracks {
@@ -267,6 +279,12 @@ func computeMergeOptions(
 				}
 			}
 			norm := normalizeLanguage(lang)
+
+			// Drop PGS (bitmap) subtitle tracks from the video input.
+			if idx == videoIndex && t.Codec == util.CodecPGS {
+				removedPGS++
+				continue
+			}
 
 			// Drop existing subtitle tracks of the same kind as the incoming ones for matching languages.
 			if idx == videoIndex && norm != "" {
@@ -334,7 +352,7 @@ func computeMergeOptions(
 	// Finally, append input-specific args (languages and file paths).
 	options = append(options, inputArgs...)
 
-	return options, backups, nil
+	return options, backups, removedPGS, nil
 }
 
 func (p *process) SetTracker(tracker *progress.Tracker) svc.Runnable {
