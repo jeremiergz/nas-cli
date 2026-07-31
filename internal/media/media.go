@@ -42,7 +42,23 @@ type MediaFile interface {
 	ID() uuid.UUID
 	Name() string
 	SetFilePath(path string)
-	Subtitles(languages ...string) map[string]string
+	Subtitles(languages ...string) map[string][]Subtitle
+}
+
+// SubtitleKind distinguishes full from forced subtitle tracks.
+type SubtitleKind string
+
+const (
+	SubtitleKindFull   SubtitleKind = "full"
+	SubtitleKindForced SubtitleKind = "forced"
+)
+
+// Subtitle represents a single subtitle file associated with a video.
+type Subtitle struct {
+	// Kind indicates whether this is a full or forced subtitle track.
+	Kind SubtitleKind
+	// Name is the subtitle filename.
+	Name string
 }
 
 type file struct {
@@ -50,7 +66,7 @@ type file struct {
 	extension string
 	filePath  string
 	id        uuid.UUID
-	subtitles map[string]string
+	subtitles map[string][]Subtitle
 }
 
 func newFile(basename, extension, filePath string) (*file, error) {
@@ -98,9 +114,9 @@ func (f *file) SetFilePath(path string) {
 	f.filePath = path
 }
 
-func (f *file) Subtitles(languages ...string) map[string]string {
+func (f *file) Subtitles(languages ...string) map[string][]Subtitle {
 	if f.subtitles == nil {
-		subtitles := map[string]string{}
+		subtitles := map[string][]Subtitle{}
 
 		files, err := os.ReadDir(filepath.Dir(f.FilePath()))
 		if err == nil {
@@ -117,8 +133,12 @@ func (f *file) Subtitles(languages ...string) map[string]string {
 					continue
 				}
 
-				// Strip the subtitle extension to get "<name>.<lang>".
+				// Strip the subtitle extension to get "<name>.<lang>[.forced]".
 				withoutExt := strings.TrimSuffix(filename, subtitleExtension)
+				forced := strings.HasSuffix(withoutExt, ".forced")
+				if forced {
+					withoutExt = strings.TrimSuffix(withoutExt, ".forced")
+				}
 				lastDot := strings.LastIndex(withoutExt, ".")
 				if lastDot < 0 {
 					continue
@@ -136,7 +156,11 @@ func (f *file) Subtitles(languages ...string) map[string]string {
 
 				normalizedSubName := util.RemoveDiacritics(strings.ToLower(subtitleName))
 				if normalizedSubName == videoName {
-					subtitles[languageCode] = filename
+					kind := SubtitleKindFull
+					if forced {
+						kind = SubtitleKindForced
+					}
+					subtitles[languageCode] = append(subtitles[languageCode], Subtitle{Kind: kind, Name: filename})
 				}
 			}
 		}

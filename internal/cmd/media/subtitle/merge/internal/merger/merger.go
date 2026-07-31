@@ -29,19 +29,17 @@ var (
 )
 
 type process struct {
-	file             *media.File
-	keepOriginal     bool
-	overrideLanguage bool
-	tracker          *progress.Tracker
-	w                io.Writer
+	file         *media.File
+	keepOriginal bool
+	tracker      *progress.Tracker
+	w            io.Writer
 }
 
-func New(file *media.File, keepOriginal bool, overrideLanguage bool) svc.Runnable {
+func New(file *media.File, keepOriginal bool) svc.Runnable {
 	return &process{
-		file:             file,
-		keepOriginal:     keepOriginal,
-		overrideLanguage: overrideLanguage,
-		w:                os.Stdout,
+		file:         file,
+		keepOriginal: keepOriginal,
+		w:            os.Stdout,
 	}
 }
 
@@ -74,7 +72,7 @@ func (p *process) Run(ctx context.Context) error {
 		{currentPath: videoFileBackupPath, originalPath: p.file.FilePath()},
 	}
 
-	options, backups, err := computeMergeOptions(ctx, p.file.FilePath(), videoFileBackupPath, backups, subtitles, p.overrideLanguage)
+	options, backups, err := computeMergeOptions(ctx, p.file.FilePath(), videoFileBackupPath, backups, subtitles)
 	if err != nil {
 		// Restore backups.
 		wg := sync.WaitGroup{}
@@ -161,37 +159,54 @@ func computeMergeOptions(
 	videoFilePath string,
 	videoFileBackupPath string,
 	backups []backup,
-	subtitles map[string]string,
-	overrideLanguage bool,
+	subtitles map[string][]media.Subtitle,
 ) ([]string, []backup, error) {
 	// We'll assemble input-specific args separately so we can place global flags
 	// like --track-order and --tracks before the input files.
 	options := []string{"--gui-mode", "--output", videoFilePath}
 	inputFiles := []string{}
 	langByFile := map[string]string{}
+	forcedFiles := map[string]bool{}
 	inputArgs := []string{}
 
-	for lang, subtitle := range subtitles {
-		subtitleFilePath := path.Join(config.WD, subtitle)
-		subtitleFileBackupPath := path.Join(config.WD, fmt.Sprintf("%s%s%s", "_", subtitle, ".bak"))
+	addInput := func(lang, filename string, forced bool) {
+		subtitleFilePath := path.Join(config.WD, filename)
+		subtitleFileBackupPath := path.Join(config.WD, fmt.Sprintf("_%s.bak", filename))
 		os.Rename(subtitleFilePath, subtitleFileBackupPath)
 		backups = append(backups, backup{currentPath: subtitleFileBackupPath, originalPath: subtitleFilePath})
-		// Record the language for this input file so we can use it if MKVMerge identification doesn't include it.
 		langByFile[subtitleFileBackupPath] = lang
+		forcedFiles[subtitleFileBackupPath] = forced
 		inputFiles = append(inputFiles, subtitleFileBackupPath)
-		inputArgs = append(inputArgs, "--language", fmt.Sprintf("0:%s", lang), subtitleFileBackupPath)
+		if forced {
+			inputArgs = append(inputArgs, "--language", fmt.Sprintf("0:%s", lang), "--forced-track", "0:1", subtitleFileBackupPath)
+		} else {
+			inputArgs = append(inputArgs, "--language", fmt.Sprintf("0:%s", lang), subtitleFileBackupPath)
+		}
+	}
+
+	for lang, subs := range subtitles {
+		for _, sub := range subs {
+			addInput(lang, sub.Name, sub.Kind == media.SubtitleKindForced)
+		}
 	}
 
 	// Video file is passed as last input.
 	inputFiles = append(inputFiles, videoFileBackupPath)
 	inputArgs = append(inputArgs, videoFileBackupPath)
 
-	// Build a set of normalized incoming subtitle language codes (first 3 chars, lowercase).
-	incomingLangs := map[string]struct{}{}
-	for _, l := range langByFile {
-		norm := normalizeLanguage(l)
-		if norm != "" {
-			incomingLangs[norm] = struct{}{}
+	// Build per-kind sets of incoming languages so --override-language only replaces
+	// the kinds that are actually being supplied (forced replaces forced, full replaces full).
+	incomingForcedLangs := map[string]struct{}{}
+	incomingFullLangs := map[string]struct{}{}
+	for backupPath, lang := range langByFile {
+		norm := normalizeLanguage(lang)
+		if norm == "" {
+			continue
+		}
+		if forcedFiles[backupPath] {
+			incomingForcedLangs[norm] = struct{}{}
+		} else {
+			incomingFullLangs[norm] = struct{}{}
 		}
 	}
 
@@ -253,11 +268,14 @@ func computeMergeOptions(
 			}
 			norm := normalizeLanguage(lang)
 
-			// If overrideLanguage is set and this is the video input, skip non-forced subtitle tracks whose
-			// normalized language matches an incoming subtitle language. Forced tracks are always preserved.
-			if overrideLanguage && idx == videoIndex && !t.Properties.ForcedTrack {
-				if norm != "" {
-					if _, ok := incomingLangs[norm]; ok {
+			// Drop existing subtitle tracks of the same kind as the incoming ones for matching languages.
+			if idx == videoIndex && norm != "" {
+				if t.Properties.ForcedTrack {
+					if _, ok := incomingForcedLangs[norm]; ok {
+						continue
+					}
+				} else {
+					if _, ok := incomingFullLangs[norm]; ok {
 						continue
 					}
 				}
@@ -270,7 +288,7 @@ func computeMergeOptions(
 			} else if isEnglish(norm) {
 				group = &englishSubs
 			}
-			if t.Properties.ForcedTrack {
+			if t.Properties.ForcedTrack || forcedFiles[input] {
 				group.forced = append(group.forced, entry)
 			} else {
 				group.full = append(group.full, entry)
@@ -300,11 +318,9 @@ func computeMergeOptions(
 		options = append(options, "--track-order", strings.Join(finalOrder, ","))
 	}
 
-	// If --override-language is set, limit subtitle tracks for the video input to the ones we kept.
+	// Limit subtitle tracks for the video input to the ones we kept.
 	// This replaces only the incoming subtitle languages while preserving other subtitle tracks.
-	if overrideLanguage {
-		// We must apply input-specific options *before* the file they apply to, so we
-		// prepend them to inputArgs for the video input.
+	{
 		videoArg := videoFileBackupPath
 		inputArgs = inputArgs[:len(inputArgs)-1]
 		if len(videoSubtitleTrackIDsToKeep) == 0 {

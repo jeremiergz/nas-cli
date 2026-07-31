@@ -49,7 +49,7 @@ func TestFileSubtitles(t *testing.T) {
 		videoFile     string
 		neighborFiles []string
 		filterLangs   []string
-		wantSubtitles map[string]string
+		wantSubtitles map[string][]Subtitle
 	}{
 		{
 			name:      "finds matching subtitles",
@@ -58,15 +58,15 @@ func TestFileSubtitles(t *testing.T) {
 				"movie.eng.srt",
 				"movie.spa.srt",
 			},
-			wantSubtitles: map[string]string{
-				"eng": "movie.eng.srt",
-				"spa": "movie.spa.srt",
+			wantSubtitles: map[string][]Subtitle{
+				"eng": {{Kind: SubtitleKindFull, Name: "movie.eng.srt"}},
+				"spa": {{Kind: SubtitleKindFull, Name: "movie.spa.srt"}},
 			},
 		},
 		{
 			name:          "no subtitles present",
 			videoFile:     "movie.mkv",
-			wantSubtitles: map[string]string{},
+			wantSubtitles: map[string][]Subtitle{},
 		},
 		{
 			name:      "ignores non-srt files",
@@ -75,7 +75,7 @@ func TestFileSubtitles(t *testing.T) {
 				"movie.eng.sub",
 				"movie.eng.txt",
 			},
-			wantSubtitles: map[string]string{},
+			wantSubtitles: map[string][]Subtitle{},
 		},
 		{
 			name:      "ignores subtitles for different video",
@@ -83,7 +83,7 @@ func TestFileSubtitles(t *testing.T) {
 			neighborFiles: []string{
 				"other.eng.srt",
 			},
-			wantSubtitles: map[string]string{},
+			wantSubtitles: map[string][]Subtitle{},
 		},
 		{
 			name:      "filters by language",
@@ -94,9 +94,9 @@ func TestFileSubtitles(t *testing.T) {
 				"movie.fra.srt",
 			},
 			filterLangs: []string{"eng", "fra"},
-			wantSubtitles: map[string]string{
-				"eng": "movie.eng.srt",
-				"fra": "movie.fra.srt",
+			wantSubtitles: map[string][]Subtitle{
+				"eng": {{Kind: SubtitleKindFull, Name: "movie.eng.srt"}},
+				"fra": {{Kind: SubtitleKindFull, Name: "movie.fra.srt"}},
 			},
 		},
 		{
@@ -106,9 +106,25 @@ func TestFileSubtitles(t *testing.T) {
 				"móvíé.ENG.srt",
 				"MÓVÍÉ.spa.srt",
 			},
-			wantSubtitles: map[string]string{
-				"eng": "móvíé.ENG.srt",
-				"spa": "MÓVÍÉ.spa.srt",
+			wantSubtitles: map[string][]Subtitle{
+				"eng": {{Kind: SubtitleKindFull, Name: "móvíé.ENG.srt"}},
+				"spa": {{Kind: SubtitleKindFull, Name: "MÓVÍÉ.spa.srt"}},
+			},
+		},
+		{
+			name:      "finds forced subtitles",
+			videoFile: "movie.mkv",
+			neighborFiles: []string{
+				"movie.fre.srt",
+				"movie.fre.forced.srt",
+				"movie.eng.forced.srt",
+			},
+			wantSubtitles: map[string][]Subtitle{
+				"fre": {
+					{Kind: SubtitleKindForced, Name: "movie.fre.forced.srt"},
+					{Kind: SubtitleKindFull, Name: "movie.fre.srt"},
+				},
+				"eng": {{Kind: SubtitleKindForced, Name: "movie.eng.forced.srt"}},
 			},
 		},
 	}
@@ -138,9 +154,16 @@ func TestFileSubtitles(t *testing.T) {
 			if len(got) != len(tt.wantSubtitles) {
 				t.Fatalf("expected %d subtitles, got %d: %v", len(tt.wantSubtitles), len(got), got)
 			}
-			for lang, wantFile := range tt.wantSubtitles {
-				if got[lang] != wantFile {
-					t.Errorf("lang %q: expected %q, got %q", lang, wantFile, got[lang])
+			for lang, wantSubs := range tt.wantSubtitles {
+				gotSubs := got[lang]
+				if len(gotSubs) != len(wantSubs) {
+					t.Errorf("lang %q: expected %d subtitles, got %d: %+v", lang, len(wantSubs), len(gotSubs), gotSubs)
+					continue
+				}
+				for i, wantSub := range wantSubs {
+					if gotSubs[i] != wantSub {
+						t.Errorf("lang %q[%d]: expected %+v, got %+v", lang, i, wantSub, gotSubs[i])
+					}
 				}
 			}
 		})

@@ -33,7 +33,6 @@ var (
 	delete            bool
 	dryRun            bool
 	maxParallel       int
-	overrideLanguage  bool
 	subtitleExtension string
 	subtitleLanguages []string
 	videoExtensions   []string
@@ -122,7 +121,6 @@ func New() *cobra.Command {
 	cmd.Flags().BoolVarP(&delete, "delete", "d", false, "delete original files")
 	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "print result without processing it")
 	cmd.Flags().IntVarP(&maxParallel, "max-parallel", "p", 0, "maximum number of parallel processes. 0 means no limit")
-	cmd.Flags().BoolVar(&overrideLanguage, "override-language", false, "replace existing subtitle tracks with incoming ones of the same language")
 	cmd.Flags().StringArrayVarP(&subtitleLanguages, "language", "l", []string{"eng", "fre"}, "language tracks to merge")
 	cmd.Flags().StringVar(&subtitleExtension, "sub-ext", util.AcceptedSubtitleExtension, "filter subtitles by extension")
 	cmd.Flags().StringArrayVarP(&videoExtensions, "video-ext", "e", util.AcceptedVideoExtensions, "filter video files by extension")
@@ -150,16 +148,17 @@ func print(w io.Writer, files []*media.File) {
 		lw.AppendItem(file.Name())
 
 		lw.Indent()
-		for lang, subtitle := range file.Subtitles() {
+		for lang, subs := range file.Subtitles() {
 			flag := util.ToLanguageFlag(lang)
-			var str string
+			prefix := ""
 			if flag != "" {
-				str = fmt.Sprintf("%s  %s", flag, subtitle)
+				prefix = flag
 			} else {
-				langCode := lang[0:1] + lang[1:2]
-				str = fmt.Sprintf("%s  %s", strings.ToUpper(langCode), subtitle)
+				prefix = strings.ToUpper(lang[0:2])
 			}
-			lw.AppendItem(str)
+			for _, sub := range subs {
+				lw.AppendItem(fmt.Sprintf("%s  %s", prefix, sub.Name))
+			}
 		}
 		lw.UnIndent()
 	}
@@ -175,9 +174,9 @@ func process(ctx context.Context, w io.Writer, files []*media.File, keepOriginal
 	allFileNames := lo.Map(files, func(file *media.File, _ int) string { return file.Basename() })
 	if cleanFirst {
 		for _, file := range files {
-			subtitleNames := lo.Values(file.Subtitles())
-			totalTrackers += len(subtitleNames)
-			allFileNames = append(allFileNames, subtitleNames...)
+			names := subtitleFileNames(file.Subtitles())
+			totalTrackers += len(names)
+			allFileNames = append(allFileNames, names...)
 		}
 	}
 
@@ -195,26 +194,23 @@ func process(ctx context.Context, w io.Writer, files []*media.File, keepOriginal
 		// Build per-file cleaners if --clean is set.
 		var cleaners []svc.Runnable
 		if cleanFirst {
-			fileSubtitles := file.Subtitles()
-			subtitleNames := lo.Values(fileSubtitles)
-			if len(subtitleNames) > 0 {
-				for _, subtitleName := range subtitleNames {
-					paddingLength := padder.PaddingLength(subtitleName, 1)
-					tracker := &progress.Tracker{
-						DeferStart: true,
-						Message:    fmt.Sprintf("%s%*s", subtitleName, paddingLength, " "),
-						Total:      100,
-					}
-					pw.AppendTracker(tracker)
-
-					subtitlePath := filepath.Join(filepath.Dir(file.FilePath()), subtitleName)
-
-					c := cleaner.
-						New(subtitlePath, true).
-						SetOutput(w).
-						SetTracker(tracker)
-					cleaners = append(cleaners, c)
+			subtitleNames := subtitleFileNames(file.Subtitles())
+			for _, subtitleName := range subtitleNames {
+				paddingLength := padder.PaddingLength(subtitleName, 1)
+				tracker := &progress.Tracker{
+					DeferStart: true,
+					Message:    fmt.Sprintf("%s%*s", subtitleName, paddingLength, " "),
+					Total:      100,
 				}
+				pw.AppendTracker(tracker)
+
+				subtitlePath := filepath.Join(filepath.Dir(file.FilePath()), subtitleName)
+
+				c := cleaner.
+					New(subtitlePath, true).
+					SetOutput(w).
+					SetTracker(tracker)
+				cleaners = append(cleaners, c)
 			}
 		}
 
@@ -228,7 +224,7 @@ func process(ctx context.Context, w io.Writer, files []*media.File, keepOriginal
 		pw.AppendTracker(mergeTracker)
 
 		m := merger.
-			New(file, keepOriginal, overrideLanguage).
+			New(file, keepOriginal).
 			SetOutput(w).
 			SetTracker(mergeTracker)
 
@@ -255,4 +251,15 @@ func process(ctx context.Context, w io.Writer, files []*media.File, keepOriginal
 	}
 
 	return nil
+}
+
+// subtitleFileNames extracts all filenames from a Subtitles map.
+func subtitleFileNames(subtitles map[string][]media.Subtitle) []string {
+	var names []string
+	for _, subs := range subtitles {
+		for _, sub := range subs {
+			names = append(names, sub.Name)
+		}
+	}
+	return names
 }
