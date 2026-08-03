@@ -113,7 +113,7 @@ func processShows(ctx context.Context, out io.Writer, kind media.Kind) error {
 
 		hasAddedImagesToUpload := false
 		for _, season := range show.Seasons() {
-			for i, episode := range season.Episodes() {
+			for _, episode := range season.Episodes() {
 				uploads = append(uploads, &upload{
 					File: episode,
 					Destination: filepath.Join(
@@ -131,7 +131,7 @@ func processShows(ctx context.Context, out io.Writer, kind media.Kind) error {
 				// We only want to add the show's images to the first episode upload to avoid duplicate
 				// uploads of the same images for each episode.
 				if !hasAddedImagesToUpload && len(imagesToUpload) > 0 {
-					uploads[i].ImageFiles = imagesToUpload
+					uploads[len(uploads)-1].ImageFiles = imagesToUpload
 					hasAddedImagesToUpload = true
 				}
 			}
