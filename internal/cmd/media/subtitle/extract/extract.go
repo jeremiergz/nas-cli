@@ -35,8 +35,9 @@ var (
 )
 
 type mkvEntry struct {
-	file    string
-	streams []extractor.SubtitleStream
+	file     string
+	streams  []extractor.SubtitleStream
+	duration int64 // Nanoseconds, from mkvmerge container properties.
 }
 
 func New() *cobra.Command {
@@ -83,12 +84,12 @@ func New() *cobra.Command {
 
 			var entries []mkvEntry
 			for _, f := range mkvFiles {
-				streams, err := probeSubtitles(ctx, filepath.Join(config.WD, f))
+				streams, durationNS, err := probeSubtitles(ctx, filepath.Join(config.WD, f))
 				if err != nil {
 					return err
 				}
 				if len(streams) > 0 {
-					entries = append(entries, mkvEntry{file: f, streams: streams})
+					entries = append(entries, mkvEntry{file: f, streams: streams, duration: durationNS})
 				}
 			}
 
@@ -192,7 +193,7 @@ func process(ctx context.Context, w io.Writer, entries []mkvEntry) error {
 		pw.AppendTracker(tracker)
 
 		ex := extractor.
-			New(e.file, e.streams).
+			New(e.file, e.streams, e.duration).
 			SetOutput(w).
 			SetTracker(tracker)
 		extractors[i] = ex
@@ -217,7 +218,16 @@ func process(ctx context.Context, w io.Writer, entries []mkvEntry) error {
 }
 
 type mkvIdentification struct {
-	Tracks []*mkvTrack `json:"tracks"`
+	Container *mkvContainer `json:"container,omitempty"`
+	Tracks    []*mkvTrack   `json:"tracks"`
+}
+
+type mkvContainer struct {
+	Properties *mkvContainerProperties `json:"properties,omitempty"`
+}
+
+type mkvContainerProperties struct {
+	Duration int64 `json:"duration,omitempty"` // nanoseconds
 }
 
 type mkvTrack struct {
@@ -233,8 +243,9 @@ type mkvTrackProperties struct {
 	TrackName   string `json:"track_name,omitempty"`
 }
 
-// probeSubtitles returns all subtitle streams (including forced) found in the given file.
-func probeSubtitles(ctx context.Context, filePath string) ([]extractor.SubtitleStream, error) {
+// probeSubtitles returns all subtitle streams (including forced) found in the given file,
+// along with the container duration in nanoseconds (0 if unavailable).
+func probeSubtitles(ctx context.Context, filePath string) ([]extractor.SubtitleStream, int64, error) {
 	args := []string{
 		"--identification-format", "json",
 		"--identify",
@@ -243,12 +254,17 @@ func probeSubtitles(ctx context.Context, filePath string) ([]extractor.SubtitleS
 
 	out, err := exec.CommandContext(ctx, cmdutil.CommandMKVMerge, args...).Output()
 	if err != nil {
-		return nil, fmt.Errorf("mkvmerge identify failed on %s: %w", filePath, err)
+		return nil, 0, fmt.Errorf("mkvmerge identify failed on %s: %w", filePath, err)
 	}
 
 	var result mkvIdentification
 	if err := json.Unmarshal(out, &result); err != nil {
-		return nil, fmt.Errorf("failed to parse mkvmerge output: %w", err)
+		return nil, 0, fmt.Errorf("failed to parse mkvmerge output: %w", err)
+	}
+
+	var durationNS int64
+	if result.Container != nil && result.Container.Properties != nil {
+		durationNS = result.Container.Properties.Duration
 	}
 
 	var streams []extractor.SubtitleStream
@@ -274,5 +290,5 @@ func probeSubtitles(ctx context.Context, filePath string) ([]extractor.SubtitleS
 		subtitleIndex++
 	}
 
-	return streams, nil
+	return streams, durationNS, nil
 }

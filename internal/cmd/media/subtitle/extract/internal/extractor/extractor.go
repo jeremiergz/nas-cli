@@ -1,6 +1,7 @@
 package extractor
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"fmt"
@@ -8,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/jedib0t/go-pretty/v6/progress"
@@ -48,14 +50,16 @@ func OutputFilename(inputFile, lang string, forced bool) string {
 }
 
 type process struct {
+	duration  int64 // Nanoseconds.
 	inputFile string
 	streams   []SubtitleStream
 	tracker   *progress.Tracker
 	w         io.Writer
 }
 
-func New(inputFile string, streams []SubtitleStream) svc.Runnable {
+func New(inputFile string, streams []SubtitleStream, duration int64) svc.Runnable {
 	return &process{
+		duration:  duration,
 		inputFile: inputFile,
 		streams:   streams,
 		w:         os.Stdout,
@@ -79,17 +83,43 @@ func (p *process) Run(ctx context.Context) error {
 			"-y",
 			"-i", inputPath,
 			"-map", fmt.Sprintf("0:s:%d", stream.SubtitleIndex),
+			"-progress", "pipe:1",
 			outPath,
 		}
 
 		ffmpeg := exec.CommandContext(ctx, cmdutil.CommandFFmpeg, args...)
 
-		bufOut := new(bytes.Buffer)
+		stdoutPipe, err := ffmpeg.StdoutPipe()
+		if err != nil {
+			p.tracker.MarkAsErrored()
+			return fmt.Errorf("failed to create progress pipe for %s: %w", p.inputFile, err)
+		}
 		bufErr := new(bytes.Buffer)
-		ffmpeg.Stdout = bufOut
 		ffmpeg.Stderr = bufErr
 
-		if err := ffmpeg.Run(); err != nil {
+		if err := ffmpeg.Start(); err != nil {
+			p.tracker.MarkAsErrored()
+			return fmt.Errorf("failed to start ffmpeg for %s: %w", p.inputFile, err)
+		}
+
+		baseVal := int64(i * 100 / len(p.streams))
+		perStream := int64(100 / len(p.streams))
+		durationUS := p.duration / 1000
+
+		scanner := bufio.NewScanner(stdoutPipe)
+		for scanner.Scan() {
+			line := scanner.Text()
+			if after, ok := strings.CutPrefix(line, "out_time_us="); ok {
+				if durationUS > 0 {
+					if val, err := strconv.ParseInt(after, 10, 64); err == nil {
+						frac := min(val*perStream/durationUS, perStream)
+						p.tracker.SetValue(baseVal + frac)
+					}
+				}
+			}
+		}
+
+		if err := ffmpeg.Wait(); err != nil {
 			p.tracker.MarkAsErrored()
 			return fmt.Errorf("failed to extract %s subtitle from %s: %w", stream.Lang, p.inputFile, err)
 		}
