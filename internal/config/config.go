@@ -61,6 +61,7 @@ const (
 	KeySSHPort             string = "ssh.port"
 	KeySSHUser             string = "ssh.user"
 	KeySubsyncOptions      string = "subsync.options"
+	KeyTMDBAPIKey          string = "tmdb.api.key"
 )
 
 var (
@@ -91,6 +92,7 @@ var (
 		KeySSHClientKnownHosts,
 		KeySSHClientPrivateKey,
 		KeySubsyncOptions,
+		KeyTMDBAPIKey,
 	}
 
 	// UID is the processed files owner to set.
@@ -169,6 +171,8 @@ func init() {
 
 		viper.SetDefault(KeySubsyncOptions, []string{})
 
+		viper.SetDefault(KeyTMDBAPIKey, "")
+
 		err := Save()
 		if err != nil {
 			fmt.Println(pterm.Red("✗"), err.Error())
@@ -184,6 +188,7 @@ type (
 		SCP     SCP     `yaml:"scp"`
 		SSH     SSH     `yaml:"ssh"`
 		Subsync Subsync `yaml:"subsync"`
+		TMDB    TMDB    `yaml:"tmdb"`
 	}
 	NAS struct {
 		FQDN string `yaml:"fqdn"`
@@ -196,32 +201,38 @@ type (
 		Token string `yaml:"token"`
 	}
 	SCP struct {
-		Chown Chown `yaml:"chown"`
-		Dest  Dest  `yaml:"dest"`
+		Chown SCPChown `yaml:"chown"`
+		Dest  SCPDest  `yaml:"dest"`
 	}
-	Chown struct {
+	SCPChown struct {
 		UID   int    `yaml:"uid"`
 		User  string `yaml:"user"`
 		GID   int    `yaml:"gid"`
 		Group string `yaml:"group"`
 	}
-	Dest struct {
+	SCPDest struct {
 		AnimesPaths  []string `yaml:"animespaths"`
 		MoviesPaths  []string `yaml:"moviespaths"`
 		TVShowsPaths []string `yaml:"tvshowspaths"`
 	}
 	SSH struct {
-		Host   string `yaml:"host"`
-		Port   int    `yaml:"port"`
-		User   string `yaml:"user"`
-		Client Client `yaml:"client"`
+		Host   string    `yaml:"host"`
+		Port   int       `yaml:"port"`
+		User   string    `yaml:"user"`
+		Client SSHClient `yaml:"client"`
 	}
-	Client struct {
+	SSHClient struct {
 		KnownHosts string `yaml:"knownhosts"`
 		PrivateKey string `yaml:"privatekey"`
 	}
 	Subsync struct {
 		Options []string `yaml:"options"`
+	}
+	TMDB struct {
+		API TMDBAPI `yaml:"api"`
+	}
+	TMDBAPI struct {
+		Key string `yaml:"key"`
 	}
 )
 
@@ -237,13 +248,13 @@ func Save() error {
 			},
 		},
 		SCP: SCP{
-			Chown: Chown{
+			Chown: SCPChown{
 				UID:   viper.GetInt(KeySCPChownUID),
 				User:  viper.GetString(KeySCPChownUser),
 				GID:   viper.GetInt(KeySCPChownGID),
 				Group: viper.GetString(KeySCPChownGroup),
 			},
-			Dest: Dest{
+			Dest: SCPDest{
 				AnimesPaths:  viper.GetStringSlice(KeySCPDestAnimesPaths),
 				MoviesPaths:  viper.GetStringSlice(KeySCPDestMoviesPaths),
 				TVShowsPaths: viper.GetStringSlice(KeySCPDestTVShowsPaths),
@@ -253,13 +264,18 @@ func Save() error {
 			Host: viper.GetString(KeySSHHost),
 			Port: viper.GetInt(KeySSHPort),
 			User: viper.GetString(KeySSHUser),
-			Client: Client{
+			Client: SSHClient{
 				KnownHosts: viper.GetString(KeySSHClientKnownHosts),
 				PrivateKey: viper.GetString(KeySSHClientPrivateKey),
 			},
 		},
 		Subsync: Subsync{
 			Options: viper.GetStringSlice(KeySubsyncOptions),
+		},
+		TMDB: TMDB{
+			API: TMDBAPI{
+				Key: viper.GetString(KeyTMDBAPIKey),
+			},
 		},
 	}
 
