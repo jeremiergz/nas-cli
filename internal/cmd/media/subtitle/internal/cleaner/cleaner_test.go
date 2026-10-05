@@ -332,6 +332,37 @@ func TestRemoveEmptyItems_StylingTagOnly(t *testing.T) {
 	}
 }
 
+func TestRemoveEmptyItems_ClearsPositionFromRemovedDashLine(t *testing.T) {
+	item := newItem(0, 1000, "-", "Dialogue")
+	item.InlineStyle = &astisub.StyleAttributes{SRTPosition: 8}
+
+	result := removeEmptyItems([]*astisub.Item{item})
+
+	if len(result) != 1 {
+		t.Fatalf("expected 1 item, got %d", len(result))
+	}
+	if result[0].InlineStyle == nil || result[0].InlineStyle.SRTPosition != 0 {
+		t.Errorf("expected removed dash line position to be cleared, got %#v", result[0].InlineStyle)
+	}
+	if item.InlineStyle.SRTPosition != 8 {
+		t.Errorf("expected input item to remain unchanged, got position %d", item.InlineStyle.SRTPosition)
+	}
+}
+
+func TestRemoveEmptyItems_PreservesPositionWithoutDashLine(t *testing.T) {
+	item := newItem(0, 1000, "Dialogue")
+	item.InlineStyle = &astisub.StyleAttributes{SRTPosition: 8}
+
+	result := removeEmptyItems([]*astisub.Item{item})
+
+	if len(result) != 1 {
+		t.Fatalf("expected 1 item, got %d", len(result))
+	}
+	if result[0].InlineStyle == nil || result[0].InlineStyle.SRTPosition != 8 {
+		t.Errorf("expected position to be preserved, got %#v", result[0].InlineStyle)
+	}
+}
+
 func TestFullPipeline(t *testing.T) {
 	items := []*astisub.Item{
 		newItem(0, 1000, "[thunder rumbling]"),

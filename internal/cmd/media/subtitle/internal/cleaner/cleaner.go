@@ -348,6 +348,7 @@ func removeEmptyItems(items []*astisub.Item) []*astisub.Item {
 		// Filter out lines that are empty or consist of only a dash (possibly wrapped in styling tags).
 		// Lines containing only styling tags (e.g. {\an8}) without any dash are preserved.
 		var cleanedLines []astisub.Line
+		removedDashOnlyLine := false
 		for _, line := range item.Lines {
 			keepLine := true
 			for _, lineItem := range line.Items {
@@ -355,6 +356,7 @@ func removeEmptyItems(items []*astisub.Item) []*astisub.Item {
 				stripped = strings.TrimSpace(stripped)
 				if stripped == "-" {
 					keepLine = false
+					removedDashOnlyLine = true
 					break
 				}
 			}
@@ -388,6 +390,11 @@ func removeEmptyItems(items []*astisub.Item) []*astisub.Item {
 
 		cleanedItem := *item
 		cleanedItem.Lines = cleanedLines
+		if removedDashOnlyLine && cleanedItem.InlineStyle != nil && cleanedItem.InlineStyle.SRTPosition != 0 {
+			inlineStyle := *cleanedItem.InlineStyle
+			inlineStyle.SRTPosition = 0
+			cleanedItem.InlineStyle = &inlineStyle
+		}
 		result = append(result, &cleanedItem)
 	}
 
