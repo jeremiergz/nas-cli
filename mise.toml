@@ -1,0 +1,155 @@
+[tools]
+go = "1.27"
+
+[tasks.default]
+depends = ["build"]
+description = "Build the CLI"
+
+[tasks.clean]
+description = "Remove build and coverage outputs"
+run = "rm -rf build coverage"
+
+[tasks.build]
+depends = ["clean"]
+description = "Build the CLI for the current platform"
+run = '''
+set -euo pipefail
+
+tag="$(git describe --abbrev=0 2>/dev/null || printf 'N/A')"
+module="$(go list -m)"
+binary="$(basename "$module")"
+build_date="$(date -u +%FT%T.%3NZ)"
+git_commit="$(git rev-parse HEAD)"
+ldflags="-X ${module}/internal/config.AppName=${binary} -X ${module}/internal/config.BuildDate=${build_date} -X ${module}/internal/config.GitCommit=${git_commit} -X ${module}/internal/config.Version=${tag}"
+mkdir -p build
+
+output_suffix="${SUFFIX:-}"
+if [[ "${GOARCH:-}" == "arm" ]]; then
+    export GOARM=7
+fi
+output="build/${binary}${output_suffix}"
+go build -ldflags "$ldflags" -o "$output"
+
+if command -v sha256sum >/dev/null 2>&1; then
+    checksum="$(sha256sum "$output" | awk '{print $1}')"
+else
+    checksum="$(shasum -a 256 "$output" | awk '{print $1}')"
+fi
+printf '%s  %s\n' "$checksum" "${binary}${output_suffix}" > "${output}.sha256"
+printf '✔ successfully built [sha256: %s] %s\n' "$checksum" "$output"
+'''
+shell = "bash -c"
+
+[tasks.build-all]
+depends = ["clean"]
+description = "Build the CLI for all supported platforms"
+run = '''
+set -euo pipefail
+
+tag="$(git describe --abbrev=0 2>/dev/null || printf 'N/A')"
+module="$(go list -m)"
+binary="$(basename "$module")"
+build_date="$(date -u +%FT%T.%3NZ)"
+git_commit="$(git rev-parse HEAD)"
+ldflags="-X ${module}/internal/config.AppName=${binary} -X ${module}/internal/config.BuildDate=${build_date} -X ${module}/internal/config.GitCommit=${git_commit} -X ${module}/internal/config.Version=${tag}"
+mkdir -p build
+printf '➜ building %s\n' "$tag"
+
+build_binary() {
+    local goos="$1"
+    local goarch="$2"
+    local suffix="$3"
+    local output="build/${binary}-${suffix}"
+
+    GOOS="$goos" GOARCH="$goarch" go build -ldflags "$ldflags" -o "$output"
+    if command -v sha256sum >/dev/null 2>&1; then
+        checksum="$(sha256sum "$output" | awk '{print $1}')"
+    else
+        checksum="$(shasum -a 256 "$output" | awk '{print $1}')"
+    fi
+    printf '%s  %s-%s\n' "$checksum" "$binary" "$suffix" > "${output}.sha256"
+    printf '✔ successfully built [sha256: %s] %s\n' "$checksum" "$output"
+}
+
+build_binary darwin amd64 darwin-amd64
+build_binary darwin arm64 darwin-arm64
+build_binary freebsd 386 freebsd-386
+build_binary freebsd amd64 freebsd-amd64
+build_binary linux 386 linux-386
+build_binary linux amd64 linux-amd64
+build_binary linux arm64 linux-arm64
+GOARM=7 GOOS=linux GOARCH=arm go build -ldflags "$ldflags" -o "build/${binary}-linux-armv7"
+if command -v sha256sum >/dev/null 2>&1; then
+    checksum="$(sha256sum "build/${binary}-linux-armv7" | awk '{print $1}')"
+else
+    checksum="$(shasum -a 256 "build/${binary}-linux-armv7" | awk '{print $1}')"
+fi
+printf '%s  %s-linux-armv7\n' "$checksum" "$binary" > "build/${binary}-linux-armv7.sha256"
+printf '✔ successfully built [sha256: %s] build/%s-linux-armv7\n' "$checksum" "$binary"
+build_binary windows 386 windows-386.exe
+build_binary windows amd64 windows-amd64.exe
+'''
+shell = "bash -c"
+
+[tasks.test]
+depends = ["clean"]
+description = "Run the test suite with coverage instrumentation"
+run = '''
+set -euo pipefail
+module="$(go list -m)"
+mkdir -p coverage
+go test -coverpkg="${module}/..." -coverprofile=coverage/profile.cov ./...
+'''
+shell = "bash -c"
+
+[tasks.coverage]
+depends = ["clean"]
+description = "Run tests and print function coverage"
+run = '''
+set -euo pipefail
+module="$(go list -m)"
+mkdir -p coverage
+go test -coverpkg="${module}/..." -coverprofile=coverage/profile.cov ./... >/dev/null
+go tool cover -func coverage/profile.cov
+'''
+shell = "bash -c"
+
+[tasks.coverage-html]
+depends = ["clean"]
+description = "Run tests and open the HTML coverage report"
+run = '''
+set -euo pipefail
+module="$(go list -m)"
+mkdir -p coverage
+go test -coverpkg="${module}/..." -coverprofile=coverage/profile.cov ./... >/dev/null
+go tool cover -html coverage/profile.cov
+'''
+shell = "bash -c"
+
+[tasks.release]
+confirm = "This checks out main, creates a release tag, and pushes it. Continue?"
+description = "Create and push the next calendar-versioned release"
+run = '''
+set -euo pipefail
+
+mise run build
+mise run test
+
+tag="$(git describe --abbrev=0 2>/dev/null || printf 'N/A')"
+next_version_base="$(date +%y.%m)"
+version_base="${tag:1:5}"
+version_patch="${tag:7}"
+if [[ "$version_base" == "$next_version_base" ]]; then
+    next_version_patch="$((version_patch + 1))"
+else
+    next_version_patch=0
+fi
+next_version="v${next_version_base}.${next_version_patch}"
+
+printf '\n➜ creating release %s\n' "$next_version"
+git checkout main
+git tag --annotate "$next_version" --message "Release ${next_version}"
+git push --follow-tags
+printf '✔ successfully created release %s\n' "$next_version"
+'''
+shell = "bash -c"
