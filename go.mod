@@ -1,6 +1,6 @@
 module github.com/jeremiergz/nas-cli
 
-go 1.26
+go 1.27
 
 require (
 	github.com/asticode/go-astisub v0.42.0
