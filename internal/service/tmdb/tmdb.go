@@ -27,17 +27,28 @@ type Service struct {
 	baseURL          string
 	client           *http.Client
 	mu               sync.Mutex
+	cacheMu          sync.Mutex
+	responses        map[string][]byte
+	inFlight         map[string]*responseCall
 	rateLimitedUntil time.Time
 	nextRequestAt    time.Time
 	rateInterval     time.Duration
 	onRateLimit      func(time.Duration)
 }
 
+type responseCall struct {
+	done chan struct{}
+	body []byte
+	err  error
+}
+
 func NewService(apiKey string) *Service {
 	return &Service{
-		apiKey:  apiKey,
-		baseURL: apiURL,
-		client:  &http.Client{Timeout: 30 * time.Second},
+		apiKey:    apiKey,
+		baseURL:   apiURL,
+		client:    &http.Client{Timeout: 30 * time.Second},
+		responses: make(map[string][]byte),
+		inFlight:  make(map[string]*responseCall),
 	}
 }
 
@@ -119,13 +130,55 @@ func hasAllEpisodes(stored map[int]struct{}, episodeCount int) bool {
 }
 
 func (s *Service) get(ctx context.Context, path string, output any) error {
+	body, err := s.response(ctx, path)
+	if err != nil {
+		return err
+	}
+	if err := json.Unmarshal(body, output); err != nil {
+		return fmt.Errorf("failed to decode TMDB response: %w", err)
+	}
+	return nil
+}
+
+func (s *Service) response(ctx context.Context, path string) ([]byte, error) {
+	s.cacheMu.Lock()
+	if body, ok := s.responses[path]; ok {
+		s.cacheMu.Unlock()
+		return body, nil
+	}
+	if call, ok := s.inFlight[path]; ok {
+		s.cacheMu.Unlock()
+		select {
+		case <-ctx.Done():
+			return nil, fmt.Errorf("TMDB request wait canceled: %w", ctx.Err())
+		case <-call.done:
+			return call.body, call.err
+		}
+	}
+	call := &responseCall{done: make(chan struct{})}
+	s.inFlight[path] = call
+	s.cacheMu.Unlock()
+
+	call.body, call.err = s.request(ctx, path)
+
+	s.cacheMu.Lock()
+	if call.err == nil {
+		s.responses[path] = call.body
+	}
+	delete(s.inFlight, path)
+	close(call.done)
+	s.cacheMu.Unlock()
+	return call.body, call.err
+}
+
+func (s *Service) request(ctx context.Context, path string) ([]byte, error) {
 	targetURL, err := url.JoinPath(s.baseURL, path)
 	if err != nil {
-		return fmt.Errorf("failed to build TMDB URL: %w", err)
+		return nil, fmt.Errorf("failed to build TMDB URL: %w", err)
 	}
 	target, err := url.Parse(targetURL)
 	if err != nil {
-		return fmt.Errorf("failed to parse TMDB URL: %w", err)
+		return nil, fmt.Errorf("failed to parse TMDB URL: %w", err)
 	}
 	query := target.Query()
 	query.Set("api_key", s.apiKey)
@@ -133,18 +186,18 @@ func (s *Service) get(ctx context.Context, path string, output any) error {
 
 	for attempt := 0; ; attempt++ {
 		if err := s.waitForRequest(ctx); err != nil {
-			return err
+			return nil, err
 		}
 
 		req, err := http.NewRequestWithContext(ctx, http.MethodGet, target.String(), nil)
 		if err != nil {
-			return fmt.Errorf("failed to create TMDB request: %w", err)
+			return nil, fmt.Errorf("failed to create TMDB request: %w", err)
 		}
 		req.Header.Set("Accept", "application/json")
 
 		resp, err := s.client.Do(req)
 		if err != nil {
-			return fmt.Errorf("failed to request TMDB: %w", err)
+			return nil, fmt.Errorf("failed to request TMDB: %w", err)
 		}
 
 		if resp.StatusCode == http.StatusTooManyRequests {
@@ -152,15 +205,15 @@ func (s *Service) get(ctx context.Context, path string, output any) error {
 			body, readErr := io.ReadAll(io.LimitReader(resp.Body, 4096))
 			closeErr := resp.Body.Close()
 			if readErr != nil {
-				return fmt.Errorf("failed to read TMDB rate-limit response: %w", readErr)
+				return nil, fmt.Errorf("failed to read TMDB rate-limit response: %w", readErr)
 			}
 			if closeErr != nil {
-				return fmt.Errorf("failed to close TMDB rate-limit response: %w", closeErr)
+				return nil, fmt.Errorf("failed to close TMDB rate-limit response: %w", closeErr)
 			}
 			s.setRateLimit(delay)
 			s.notifyRateLimit(delay)
 			if attempt >= maxRateLimitRetries {
-				return fmt.Errorf("TMDB returned HTTP %s: %s", resp.Status, string(body))
+				return nil, fmt.Errorf("TMDB returned HTTP %s: %s", resp.Status, string(body))
 			}
 			continue
 		}
@@ -169,18 +222,22 @@ func (s *Service) get(ctx context.Context, path string, output any) error {
 			body, readErr := io.ReadAll(io.LimitReader(resp.Body, 4096))
 			closeErr := resp.Body.Close()
 			if readErr != nil {
-				return fmt.Errorf("TMDB returned HTTP %s and its error body could not be read: %w", resp.Status, readErr)
+				return nil, fmt.Errorf("TMDB returned HTTP %s and its error body could not be read: %w", resp.Status, readErr)
 			}
 			if closeErr != nil {
-				return fmt.Errorf("failed to close TMDB error response: %w", closeErr)
+				return nil, fmt.Errorf("failed to close TMDB error response: %w", closeErr)
 			}
-			return fmt.Errorf("TMDB returned HTTP %s: %s", resp.Status, string(body))
+			return nil, fmt.Errorf("TMDB returned HTTP %s: %s", resp.Status, string(body))
 		}
-		defer resp.Body.Close()
-		if err := json.NewDecoder(resp.Body).Decode(output); err != nil {
-			return fmt.Errorf("failed to decode TMDB response: %w", err)
+		body, err := io.ReadAll(resp.Body)
+		closeErr := resp.Body.Close()
+		if err != nil {
+			return nil, fmt.Errorf("failed to read TMDB response: %w", err)
 		}
-		return nil
+		if closeErr != nil {
+			return nil, fmt.Errorf("failed to close TMDB response: %w", closeErr)
+		}
+		return body, nil
 	}
 }
 

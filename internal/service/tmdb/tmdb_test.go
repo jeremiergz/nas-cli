@@ -51,6 +51,50 @@ func TestEpisodesFetchesAndSortsAllSeasons(t *testing.T) {
 	}
 }
 
+func TestEpisodesReusesConcurrentResponsesForDuplicateSeries(t *testing.T) {
+	var requests atomic.Int32
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requests.Add(1)
+		time.Sleep(10 * time.Millisecond)
+		switch r.URL.Path {
+		case "/3/tv/42":
+			fmt.Fprint(w, `{"seasons":[{"season_number":1,"episode_count":1},{"season_number":2,"episode_count":1}]}`)
+		case "/3/tv/42/season/1":
+			fmt.Fprint(w, `{"episodes":[{"season_number":1,"episode_number":1,"air_date":"2020-01-01","name":"First"}]}`)
+		case "/3/tv/42/season/2":
+			fmt.Fprint(w, `{"episodes":[{"season_number":2,"episode_number":1,"air_date":"2021-01-01","name":"Second"}]}`)
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer server.Close()
+
+	service := NewService("test-key")
+	service.baseURL = server.URL + "/3"
+	service.client = server.Client()
+
+	var group sync.WaitGroup
+	errors := make(chan error, 2)
+	for range 2 {
+		group.Add(1)
+		go func() {
+			defer group.Done()
+			_, err := service.Episodes(context.Background(), "42", nil)
+			errors <- err
+		}()
+	}
+	group.Wait()
+	close(errors)
+	for err := range errors {
+		if err != nil {
+			t.Errorf("Episodes() error = %v", err)
+		}
+	}
+	if got := requests.Load(); got != 3 {
+		t.Errorf("request count = %d, want 3 shared series/season requests", got)
+	}
+}
+
 func TestEpisodesRejectsInvalidSeriesID(t *testing.T) {
 	service := NewService("test-key")
 	if _, err := service.Episodes(context.Background(), "../42", nil); err == nil {
