@@ -3,17 +3,14 @@ package list
 import (
 	"cmp"
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"io/fs"
-	"math/rand/v2"
 	"path/filepath"
 	"slices"
 	"strconv"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/pkg/sftp"
 	"github.com/pterm/pterm"
@@ -31,12 +28,6 @@ import (
 var (
 	animeDesc  = "List animes"
 	tvShowDesc = "List TV shows"
-)
-
-const (
-	seasonDirReadRetries      = 3
-	initialSeasonDirRetryWait = 100 * time.Millisecond
-	maxSeasonDirRetryWait     = time.Second
 )
 
 func newAnimeCmd() *cobra.Command {
@@ -324,7 +315,7 @@ func (s *show) loadSeasons(ctx context.Context) error {
 
 			seasonPath := filepath.Join(showPath, showEntry.Name())
 
-			seasonEntries, err := readSeasonDirectory(ctx, s.sftp.ReadDir, seasonPath)
+			seasonEntries, err := readDirectoryWithRetry(ctx, s.sftp.ReadDir, seasonPath)
 			if err != nil {
 				return fmt.Errorf("failed to read season directory %s: %w", seasonPath, err)
 			}
@@ -378,39 +369,6 @@ func (s *show) loadSeasons(ctx context.Context) error {
 	}
 
 	return nil
-}
-
-func readSeasonDirectory(
-	ctx context.Context,
-	readDir func(string) ([]fs.FileInfo, error),
-	path string,
-) ([]fs.FileInfo, error) {
-	for attempt := 0; ; attempt++ {
-		if err := ctx.Err(); err != nil {
-			return nil, err
-		}
-
-		entries, err := readDir(path)
-		if err == nil || !isRetryableSeasonDirectoryError(err) || attempt >= seasonDirReadRetries {
-			return entries, err
-		}
-
-		delay := min(initialSeasonDirRetryWait<<attempt, maxSeasonDirRetryWait)
-		delay += time.Duration(rand.Int64N(int64(delay/4) + 1))
-
-		timer := time.NewTimer(delay)
-		select {
-		case <-ctx.Done():
-			timer.Stop()
-			return nil, ctx.Err()
-		case <-timer.C:
-		}
-	}
-}
-
-func isRetryableSeasonDirectoryError(err error) bool {
-	var statusErr *sftp.StatusError
-	return errors.As(err, &statusErr) && statusErr.Code == uint32(sftp.ErrSSHFxFailure)
 }
 
 func isVideoFile(name string) bool {

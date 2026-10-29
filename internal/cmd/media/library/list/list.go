@@ -3,11 +3,15 @@ package list
 import (
 	"cmp"
 	"context"
+	"errors"
 	"fmt"
 	"io/fs"
+	"math/rand/v2"
 	"slices"
 	"sync"
+	"time"
 
+	"github.com/pkg/sftp"
 	"github.com/pterm/pterm"
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
@@ -22,6 +26,12 @@ var (
 	flagOnlyComplete   bool
 	flagOnlyIncomplete bool
 	flagOnlyPartial    bool
+)
+
+const (
+	directoryReadRetries      = 3
+	initialDirectoryRetryWait = 100 * time.Millisecond
+	maxDirectoryRetryWait     = time.Second
 )
 
 func New() *cobra.Command {
@@ -85,6 +95,39 @@ func New() *cobra.Command {
 	cmd.AddCommand(newTVShowCmd())
 
 	return cmd
+}
+
+func readDirectoryWithRetry(
+	ctx context.Context,
+	readDir func(string) ([]fs.FileInfo, error),
+	path string,
+) ([]fs.FileInfo, error) {
+	for attempt := 0; ; attempt++ {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+
+		entries, err := readDir(path)
+		if err == nil || !isRetryableDirectoryReadError(err) || attempt >= directoryReadRetries {
+			return entries, err
+		}
+
+		delay := min(initialDirectoryRetryWait<<attempt, maxDirectoryRetryWait)
+		delay += time.Duration(rand.Int64N(int64(delay/4) + 1))
+
+		timer := time.NewTimer(delay)
+		select {
+		case <-ctx.Done():
+			timer.Stop()
+			return nil, ctx.Err()
+		case <-timer.C:
+		}
+	}
+}
+
+func isRetryableDirectoryReadError(err error) bool {
+	var statusErr *sftp.StatusError
+	return errors.As(err, &statusErr) && statusErr.Code == uint32(sftp.ErrSSHFxFailure)
 }
 
 func listFolders(ctx context.Context, targets []string) (map[string][]fs.FileInfo, error) {

@@ -110,7 +110,7 @@ func processMovies(
 
 	for _, movie := range movies {
 		eg.Go(func() error {
-			err := movie.loadFiles()
+			err := movie.loadFiles(ctx)
 			if err != nil {
 				return err
 			}
@@ -207,10 +207,10 @@ type movie struct {
 	State     movieState
 }
 
-func (m *movie) loadFiles() error {
+func (m *movie) loadFiles(ctx context.Context) error {
 	moviePath := filepath.Join(m.RemoteDir, m.Name)
 
-	movieEntries, err := m.sftp.ReadDir(moviePath)
+	movieEntries, err := readDirectoryWithRetry(ctx, m.sftp.ReadDir, moviePath)
 	if err != nil {
 		return err
 	}
