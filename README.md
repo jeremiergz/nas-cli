@@ -24,10 +24,11 @@ CLI application for managing my NAS.
 
 ## Development tasks
 
-Run `mise install` to install the Go version configured for this project. Use
+Run `mise install` to install the configured Go and golangci-lint versions. Use
 `mise run` or `mise run default` to build the CLI; `mise run build-all` builds all
 supported platforms; `mise run clean` removes
-build and coverage output; `mise run test`, `mise run coverage`, and
+build and coverage output; `mise run lint` runs golangci-lint; `mise run test`,
+`mise run coverage`, and
 `mise run coverage-html` run tests and generate coverage output; `mise run release`
 creates and pushes the next release tag after confirmation.
 

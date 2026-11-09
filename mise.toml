@@ -1,5 +1,6 @@
 [tools]
 go = "1.27"
+golangci-lint = "2.15"
 
 [tasks.default]
 depends = ["build"]
@@ -101,6 +102,10 @@ mkdir -p coverage
 go test -coverpkg="${module}/..." -coverprofile=coverage/profile.cov ./...
 '''
 shell = "bash -c"
+
+[tasks.lint]
+description = "Run golangci-lint"
+run = "golangci-lint run"
 
 [tasks.coverage]
 depends = ["clean"]
