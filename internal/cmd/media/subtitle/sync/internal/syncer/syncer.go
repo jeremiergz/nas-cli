@@ -28,8 +28,7 @@ var (
 
 type process struct {
 	outFile      string
-	streamLang   string
-	streamType   string
+	refStream    int
 	subtitle     string
 	subtitleLang string
 	tracker      *progress.Tracker
@@ -38,11 +37,10 @@ type process struct {
 	w            io.Writer
 }
 
-func New(video, videoLang, subtitle, subtitleLang, streamLang, streamType, outFile string) svc.Runnable {
+func New(video, videoLang, subtitle, subtitleLang string, refStream int, outFile string) svc.Runnable {
 	return &process{
 		outFile:      outFile,
-		streamLang:   streamLang,
-		streamType:   streamType,
+		refStream:    refStream,
 		subtitle:     subtitle,
 		subtitleLang: subtitleLang,
 		video:        video,
@@ -67,26 +65,24 @@ func (p *process) Run(ctx context.Context) error {
 		"sync",
 		"--ref",
 		videoPath,
-		"--ref-lang",
-		p.videoLang,
+		"--ref-stream",
+		strconv.Itoa(p.refStream),
 		"--sub",
 		subtitlePath,
-		"--sub-lang",
-		p.subtitleLang,
 		"--out",
 		outFilePath,
 	}
 
+	if p.videoLang != "" {
+		options = append(options, "--ref-lang", p.videoLang)
+	}
+
+	if p.subtitleLang != "" {
+		options = append(options, "--sub-lang", p.subtitleLang)
+	}
+
 	if configOptions := viper.GetStringSlice(config.KeySubsyncOptions); len(configOptions) > 0 {
 		options = append(options, configOptions...)
-	}
-
-	if p.streamLang != "" {
-		options = append(options, "--ref-stream-by-lang", p.streamLang)
-	}
-
-	if p.streamType != "" {
-		options = append(options, "--ref-stream-by-type", p.streamType)
 	}
 
 	subsync := exec.CommandContext(ctx, cmdutil.CommandSubsync, options...)

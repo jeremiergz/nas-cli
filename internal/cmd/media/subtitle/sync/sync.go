@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os/exec"
-	"path"
+	"path/filepath"
 	"sort"
 	"strings"
 	"time"
@@ -53,6 +53,11 @@ func New() *cobra.Command {
 			_, err := exec.LookPath(cmdutil.CommandSubsync)
 			if err != nil {
 				return fmt.Errorf("command not found: %s", cmdutil.CommandSubsync)
+			}
+
+			_, err = exec.LookPath(cmdutil.CommandFFprobe)
+			if err != nil {
+				return fmt.Errorf("command not found: %s", cmdutil.CommandFFprobe)
 			}
 
 			selectedDir := "."
@@ -120,12 +125,12 @@ func New() *cobra.Command {
 
 	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "print result without processing it")
 	cmd.Flags().IntVarP(&maxParallel, "max-parallel", "p", 0, "maximum number of parallel processes. 0 means no limit")
-	cmd.Flags().StringVar(&streamLang, "stream", "eng", "stream ISO 639-3 language code")
-	cmd.Flags().StringVar(&streamType, "stream-type", "", "stream type (audio|sub)")
+	cmd.Flags().StringVar(&streamLang, "stream", "", "prefer reference stream by ISO 639-3 language code")
+	cmd.Flags().StringVar(&streamType, "stream-type", "audio", "reference stream type (audio|sub)")
 	cmd.Flags().StringVar(&subtitleExtension, "sub-ext", util.AcceptedSubtitleExtension, "filter subtitles by extension")
-	cmd.Flags().StringVar(&subtitleLang, "sub-lang", "eng", "subtitle ISO 639-3 language code")
+	cmd.Flags().StringVar(&subtitleLang, "sub-lang", "", "subtitle ISO 639-3 language code (defaults to the subtitle filename or stream metadata)")
 	cmd.Flags().StringArrayVarP(&videoExtensions, "video-ext", "e", util.AcceptedVideoExtensions, "filter video files by extension")
-	cmd.Flags().StringVar(&videoLang, "video-lang", "eng", "video ISO 639-3 language code")
+	cmd.Flags().StringVar(&videoLang, "video-lang", "", "reference stream ISO 639-3 language code (defaults to stream metadata)")
 	cmd.Flags().BoolVarP(&yes, "yes", "y", false, "automatic yes to prompts")
 
 	return cmd
@@ -160,6 +165,13 @@ func process(ctx context.Context, out io.Writer, videoFiles, subtitleFiles []str
 
 	syncers := make([]svc.Runnable, len(videoFiles))
 	for index, videoFile := range videoFiles {
+		videoPath := filepath.Join(config.WD, videoFile)
+		stream, err := probeReferenceStream(ctx, videoPath, streamType, streamLang)
+		if err != nil {
+			return fmt.Errorf("failed to select reference stream for %s: %w", videoFile, err)
+		}
+
+		subLang := languageForSubtitle(subtitleFiles[index], subtitleLang)
 		paddingLength := padder.PaddingLength(videoFile, 12)
 		tracker := &progress.Tracker{
 			DeferStart: true,
@@ -171,12 +183,11 @@ func process(ctx context.Context, out io.Writer, videoFiles, subtitleFiles []str
 		s := syncer.
 			New(
 				videoFile,
-				videoLang,
+				normalizeSubsyncLanguage(firstNonEmpty(videoLang, stream.language)),
 				subtitleFiles[index],
-				subtitleLang,
-				streamLang,
-				streamType,
-				strings.Replace(videoFile, path.Ext(videoFile), fmt.Sprintf(".%s.srt", subtitleLang), 1),
+				subLang,
+				stream.index+1,
+				outputSubtitleName(videoFile, subLang),
 			).
 			SetOutput(out).
 			SetTracker(tracker)
@@ -199,4 +210,57 @@ func process(ctx context.Context, out io.Writer, videoFiles, subtitleFiles []str
 	}
 
 	return nil
+}
+
+func languageForSubtitle(subtitle, override string) string {
+	if override != "" {
+		return normalizeSubsyncLanguage(override)
+	}
+
+	name := strings.TrimSuffix(filepath.Base(subtitle), filepath.Ext(subtitle))
+	if strings.EqualFold(filepath.Ext(name), ".forced") {
+		name = strings.TrimSuffix(name, filepath.Ext(name))
+	}
+
+	languageStart := strings.LastIndex(name, ".")
+	if languageStart < 0 {
+		return ""
+	}
+
+	language := name[languageStart+1:]
+	if len(language) != 3 {
+		return ""
+	}
+	for _, char := range language {
+		if (char < 'a' || char > 'z') && (char < 'A' || char > 'Z') {
+			return ""
+		}
+	}
+
+	return normalizeSubsyncLanguage(language)
+}
+
+func outputSubtitleName(video, language string) string {
+	name := strings.TrimSuffix(video, filepath.Ext(video))
+	if language != "" {
+		name += "." + language
+	}
+	return name + ".srt"
+}
+
+func firstNonEmpty(values ...string) string {
+	for _, value := range values {
+		if value != "" {
+			return value
+		}
+	}
+	return ""
+}
+
+func normalizeSubsyncLanguage(language string) string {
+	language = strings.ToLower(strings.TrimSpace(language))
+	if language == "fra" || language == "fr" {
+		return "fre"
+	}
+	return language
 }
