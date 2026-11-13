@@ -80,7 +80,6 @@ var (
 		KeyNASFQDN,
 		KeyPlexAPIURL,
 		KeyPlexAPIToken,
-		KeyTermRefreshInterval,
 		KeySCPChownGID,
 		KeySCPChownGroup,
 		KeySCPChownUID,
@@ -94,6 +93,7 @@ var (
 		KeySSHClientKnownHosts,
 		KeySSHClientPrivateKey,
 		KeySubsyncOptions,
+		KeyTermRefreshInterval,
 		KeyTMDBAPIKey,
 	}
 
