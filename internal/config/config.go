@@ -122,7 +122,6 @@ func init() {
 
 		viper.SetDefault(KeyPlexAPIURL, "https://localhost:32400")
 		viper.SetDefault(KeyPlexAPIToken, "")
-		viper.SetDefault(KeyTermRefreshInterval, time.Second)
 
 		viper.SetDefault(KeySCPChownGID, 1000)
 		viper.SetDefault(KeySCPChownGroup, "media")
@@ -174,6 +173,8 @@ func init() {
 
 		viper.SetDefault(KeySubsyncOptions, []string{})
 
+		viper.SetDefault(KeyTermRefreshInterval, time.Second)
+
 		viper.SetDefault(KeyTMDBAPIKey, "")
 	})
 }
@@ -197,9 +198,6 @@ type (
 	PlexAPI struct {
 		URL   string `yaml:"url"`
 		Token string `yaml:"token"`
-	}
-	Term struct {
-		RefreshInterval time.Duration `yaml:"refreshinterval"`
 	}
 	SCP struct {
 		Chown SCPChown `yaml:"chown"`
@@ -229,6 +227,9 @@ type (
 	Subsync struct {
 		Options []string `yaml:"options"`
 	}
+	Term struct {
+		RefreshInterval time.Duration `yaml:"refreshinterval"`
+	}
 	TMDB struct {
 		API TMDBAPI `yaml:"api"`
 	}
@@ -247,9 +248,6 @@ func Save() error {
 				URL:   viper.GetString(KeyPlexAPIURL),
 				Token: viper.GetString(KeyPlexAPIToken),
 			},
-		},
-		Term: Term{
-			RefreshInterval: viper.GetDuration(KeyTermRefreshInterval),
 		},
 		SCP: SCP{
 			Chown: SCPChown{
@@ -275,6 +273,9 @@ func Save() error {
 		},
 		Subsync: Subsync{
 			Options: viper.GetStringSlice(KeySubsyncOptions),
+		},
+		Term: Term{
+			RefreshInterval: viper.GetDuration(KeyTermRefreshInterval),
 		},
 		TMDB: TMDB{
 			API: TMDBAPI{
