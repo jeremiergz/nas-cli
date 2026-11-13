@@ -13,6 +13,9 @@ import (
 	"github.com/jedib0t/go-pretty/v6/progress"
 	"github.com/pterm/pterm"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+
+	"github.com/jeremiergz/nas-cli/internal/config"
 )
 
 const (
@@ -86,7 +89,7 @@ func NewProgressWriter(out io.Writer, expectedLength int) progress.Writer {
 	pw.SetNumTrackersExpected(expectedLength)
 	pw.SetSortBy(progress.SortByNone)
 	pw.SetTrackerPosition(progress.PositionRight)
-	pw.SetUpdateFrequency(time.Millisecond * 100)
+	pw.SetUpdateFrequency(viper.GetDuration(config.KeyTermRefreshInterval))
 	pw.Style().Colors = progress.StyleColorsDefault
 	pw.Style().Options.PercentFormat = "%3.0f%%"
 	pw.Style().Options.TimeDonePrecision = time.Second

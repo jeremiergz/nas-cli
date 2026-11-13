@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"time"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -47,6 +48,7 @@ const (
 	KeyNASFQDN             string = "nas.fqdn"
 	KeyPlexAPIURL          string = "plex.api.url"
 	KeyPlexAPIToken        string = "plex.api.token"
+	KeyTermRefreshInterval string = "term.refreshinterval"
 	KeySCPChownGID         string = "scp.chown.gid"
 	KeySCPChownGroup       string = "scp.chown.group"
 	KeySCPChownUID         string = "scp.chown.uid"
@@ -78,6 +80,7 @@ var (
 		KeyNASFQDN,
 		KeyPlexAPIURL,
 		KeyPlexAPIToken,
+		KeyTermRefreshInterval,
 		KeySCPChownGID,
 		KeySCPChownGroup,
 		KeySCPChownUID,
@@ -119,6 +122,7 @@ func init() {
 
 		viper.SetDefault(KeyPlexAPIURL, "https://localhost:32400")
 		viper.SetDefault(KeyPlexAPIToken, "")
+		viper.SetDefault(KeyTermRefreshInterval, time.Second)
 
 		viper.SetDefault(KeySCPChownGID, 1000)
 		viper.SetDefault(KeySCPChownGroup, "media")
@@ -178,6 +182,7 @@ type (
 	Config struct {
 		NAS     NAS     `yaml:"nas"`
 		Plex    Plex    `yaml:"plex"`
+		Term    Term    `yaml:"term"`
 		SCP     SCP     `yaml:"scp"`
 		SSH     SSH     `yaml:"ssh"`
 		Subsync Subsync `yaml:"subsync"`
@@ -192,6 +197,9 @@ type (
 	PlexAPI struct {
 		URL   string `yaml:"url"`
 		Token string `yaml:"token"`
+	}
+	Term struct {
+		RefreshInterval time.Duration `yaml:"refreshinterval"`
 	}
 	SCP struct {
 		Chown SCPChown `yaml:"chown"`
@@ -239,6 +247,9 @@ func Save() error {
 				URL:   viper.GetString(KeyPlexAPIURL),
 				Token: viper.GetString(KeyPlexAPIToken),
 			},
+		},
+		Term: Term{
+			RefreshInterval: viper.GetDuration(KeyTermRefreshInterval),
 		},
 		SCP: SCP{
 			Chown: SCPChown{
