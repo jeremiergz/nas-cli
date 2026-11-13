@@ -183,10 +183,10 @@ type (
 	Config struct {
 		NAS     NAS     `yaml:"nas"`
 		Plex    Plex    `yaml:"plex"`
-		Term    Term    `yaml:"term"`
 		SCP     SCP     `yaml:"scp"`
 		SSH     SSH     `yaml:"ssh"`
 		Subsync Subsync `yaml:"subsync"`
+		Term    Term    `yaml:"term"`
 		TMDB    TMDB    `yaml:"tmdb"`
 	}
 	NAS struct {
