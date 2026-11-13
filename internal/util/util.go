@@ -20,12 +20,9 @@ func (list SortAlphabetic) Less(i, j int) bool {
 
 func (list SortAlphabetic) Swap(i, j int) { list[i], list[j] = list[j], list[i] }
 
-var (
-	diacriticsTransformer = transform.Chain(norm.NFD, runes.Remove(runes.In(unicode.Mn)), norm.NFC)
-)
-
 // Removes all diacritics from given string.
 func RemoveDiacritics(s string) string {
+	diacriticsTransformer := transform.Chain(norm.NFD, runes.Remove(runes.In(unicode.Mn)), norm.NFC)
 	output, _, err := transform.String(diacriticsTransformer, s)
 	if err != nil {
 		return s

@@ -316,25 +316,22 @@ func process(ctx context.Context, out io.Writer, uploads []*upload, kind media.K
 		permissionsDepth = 1
 	}
 
-	uploaders := make([]svc.Runnable, len(uploads))
-	for index, upload := range uploads {
-		paddingLength := padder.PaddingLength(upload.DisplayName, 1)
-		tracker := &progress.Tracker{
-			DeferStart: true,
-			Message:    fmt.Sprintf("%s%*s", upload.DisplayName, paddingLength, " "),
-			Total:      100,
-		}
-		pw.AppendTracker(tracker)
-
-		u := uploader.
-			New(kind, upload.File, upload.ImageFiles, upload.Destination, !delete, permissionsDepth).
-			SetOutput(out).
-			SetTracker(tracker)
-		uploaders[index] = u
-	}
-	for _, uploader := range uploaders {
+	for _, upload := range uploads {
+		upload := upload
 		eg.Go(func() error {
-			return uploader.Run(ctx)
+			paddingLength := padder.PaddingLength(upload.DisplayName, 1)
+			tracker := &progress.Tracker{
+				DeferStart: true,
+				Message:    fmt.Sprintf("%s%*s", upload.DisplayName, paddingLength, " "),
+				Total:      100,
+			}
+			pw.AppendTracker(tracker)
+
+			u := uploader.
+				New(kind, upload.File, upload.ImageFiles, upload.Destination, !delete, permissionsDepth).
+				SetOutput(out).
+				SetTracker(tracker)
+			return u.Run(ctx)
 		})
 	}
 	if err := eg.Wait(); err != nil {

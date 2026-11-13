@@ -19,7 +19,6 @@ import (
 	"github.com/jeremiergz/nas-cli/internal/config"
 	"github.com/jeremiergz/nas-cli/internal/media"
 	"github.com/jeremiergz/nas-cli/internal/prompt"
-	svc "github.com/jeremiergz/nas-cli/internal/service"
 	"github.com/jeremiergz/nas-cli/internal/service/str"
 	"github.com/jeremiergz/nas-cli/internal/util"
 	"github.com/jeremiergz/nas-cli/internal/util/cmdutil"
@@ -167,25 +166,22 @@ func process(ctx context.Context, w io.Writer, files []*media.File) error {
 
 	padder := str.NewPadder(lo.Map(files, func(file *media.File, _ int) string { return file.Basename() }))
 
-	cleaners := make([]svc.Runnable, len(files))
-	for index, file := range files {
-		paddingLength := padder.PaddingLength(file.Basename(), 1)
-		tracker := &progress.Tracker{
-			DeferStart: true,
-			Message:    fmt.Sprintf("%s%*s", file.Basename(), paddingLength, " "),
-			Total:      100,
-		}
-		pw.AppendTracker(tracker)
-
-		c := cleaner.
-			New(file, !delete, shouldOverrideLanguageRegions).
-			SetOutput(w).
-			SetTracker(tracker)
-		cleaners[index] = c
-	}
-	for _, cleaner := range cleaners {
+	for _, file := range files {
+		file := file
 		eg.Go(func() error {
-			return cleaner.Run(ctx)
+			paddingLength := padder.PaddingLength(file.Basename(), 1)
+			tracker := &progress.Tracker{
+				DeferStart: true,
+				Message:    fmt.Sprintf("%s%*s", file.Basename(), paddingLength, " "),
+				Total:      100,
+			}
+			pw.AppendTracker(tracker)
+
+			c := cleaner.
+				New(file, !delete, shouldOverrideLanguageRegions).
+				SetOutput(w).
+				SetTracker(tracker)
+			return c.Run(ctx)
 		})
 	}
 	if err := eg.Wait(); err != nil {

@@ -20,7 +20,6 @@ import (
 	"github.com/jeremiergz/nas-cli/internal/config"
 	"github.com/jeremiergz/nas-cli/internal/media"
 	"github.com/jeremiergz/nas-cli/internal/prompt"
-	svc "github.com/jeremiergz/nas-cli/internal/service"
 	"github.com/jeremiergz/nas-cli/internal/service/str"
 	"github.com/jeremiergz/nas-cli/internal/util"
 	"github.com/jeremiergz/nas-cli/internal/util/cmdutil"
@@ -191,50 +190,42 @@ func process(ctx context.Context, w io.Writer, files []*media.File, keepOriginal
 	padder := str.NewPadder(allFileNames)
 
 	for _, file := range files {
-		// Build per-file cleaners if --clean is set.
-		var cleaners []svc.Runnable
-		if cleanFirst {
-			subtitleNames := subtitleFileNames(file.Subtitles())
-			for _, subtitleName := range subtitleNames {
-				paddingLength := padder.PaddingLength(subtitleName, 1)
-				tracker := &progress.Tracker{
-					DeferStart: true,
-					Message:    fmt.Sprintf("%s%*s", subtitleName, paddingLength, " "),
-					Total:      100,
-				}
-				pw.AppendTracker(tracker)
-
-				subtitlePath := filepath.Join(filepath.Dir(file.FilePath()), subtitleName)
-
-				c := cleaner.
-					New(subtitlePath, true).
-					SetOutput(w).
-					SetTracker(tracker)
-				cleaners = append(cleaners, c)
-			}
-		}
-
-		// Merge tracker.
-		paddingLength := padder.PaddingLength(file.Basename(), 1)
-		mergeTracker := &progress.Tracker{
-			DeferStart: true,
-			Message:    fmt.Sprintf("%s%*s", file.Basename(), paddingLength, " "),
-			Total:      100,
-		}
-		pw.AppendTracker(mergeTracker)
-
-		m := merger.
-			New(file, keepOriginal).
-			SetOutput(w).
-			SetTracker(mergeTracker)
-
+		file := file
 		eg.Go(func() error {
 			// Clean each subtitle sequentially, then merge.
-			for _, cleaner := range cleaners {
-				if err := cleaner.Run(ctx); err != nil {
-					return err
+			if cleanFirst {
+				for _, subtitleName := range subtitleFileNames(file.Subtitles()) {
+					paddingLength := padder.PaddingLength(subtitleName, 1)
+					tracker := &progress.Tracker{
+						DeferStart: true,
+						Message:    fmt.Sprintf("%s%*s", subtitleName, paddingLength, " "),
+						Total:      100,
+					}
+					pw.AppendTracker(tracker)
+
+					subtitlePath := filepath.Join(filepath.Dir(file.FilePath()), subtitleName)
+					c := cleaner.
+						New(subtitlePath, true).
+						SetOutput(w).
+						SetTracker(tracker)
+					if err := c.Run(ctx); err != nil {
+						return err
+					}
 				}
 			}
+
+			paddingLength := padder.PaddingLength(file.Basename(), 1)
+			tracker := &progress.Tracker{
+				DeferStart: true,
+				Message:    fmt.Sprintf("%s%*s", file.Basename(), paddingLength, " "),
+				Total:      100,
+			}
+			pw.AppendTracker(tracker)
+
+			m := merger.
+				New(file, keepOriginal).
+				SetOutput(w).
+				SetTracker(tracker)
 			return m.Run(ctx)
 		})
 	}

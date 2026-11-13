@@ -19,7 +19,6 @@ import (
 	"github.com/jeremiergz/nas-cli/internal/config"
 	"github.com/jeremiergz/nas-cli/internal/media"
 	"github.com/jeremiergz/nas-cli/internal/prompt"
-	svc "github.com/jeremiergz/nas-cli/internal/service"
 	"github.com/jeremiergz/nas-cli/internal/service/str"
 	"github.com/jeremiergz/nas-cli/internal/util"
 	"github.com/jeremiergz/nas-cli/internal/util/cmdutil"
@@ -224,33 +223,30 @@ func process(ctx context.Context, out io.Writer, jobs []syncJob) error {
 
 	padder := str.NewPadder(videoFiles)
 
-	syncers := make([]svc.Runnable, len(jobs))
 	for index, job := range jobs {
-		subLang := languageForSubtitle(job.subtitle, subtitleLang)
-		paddingLength := padder.PaddingLength(job.video, 12)
-		tracker := &progress.Tracker{
-			DeferStart: true,
-			Message:    fmt.Sprintf("%s%*s", job.video, paddingLength, " "),
-			Total:      100,
-		}
-		pw.AppendTracker(tracker)
-
-		s := syncer.
-			New(
-				job.video,
-				normalizeSubsyncLanguage(firstNonEmpty(videoLang, streams[index].language)),
-				job.subtitle,
-				subLang,
-				streams[index].index+1,
-				outputSubtitleName(job.video, subLang, job.forced),
-			).
-			SetOutput(out).
-			SetTracker(tracker)
-		syncers[index] = s
-	}
-	for _, syncer := range syncers {
+		index, job := index, job
 		eg.Go(func() error {
-			return syncer.Run(ctx)
+			subLang := languageForSubtitle(job.subtitle, subtitleLang)
+			paddingLength := padder.PaddingLength(job.video, 12)
+			tracker := &progress.Tracker{
+				DeferStart: true,
+				Message:    fmt.Sprintf("%s%*s", job.video, paddingLength, " "),
+				Total:      100,
+			}
+			pw.AppendTracker(tracker)
+
+			s := syncer.
+				New(
+					job.video,
+					normalizeSubsyncLanguage(firstNonEmpty(videoLang, streams[index].language)),
+					job.subtitle,
+					subLang,
+					streams[index].index+1,
+					outputSubtitleName(job.video, subLang, job.forced),
+				).
+				SetOutput(out).
+				SetTracker(tracker)
+			return s.Run(ctx)
 		})
 	}
 	if err := eg.Wait(); err != nil {

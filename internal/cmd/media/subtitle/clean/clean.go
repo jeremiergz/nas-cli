@@ -17,7 +17,6 @@ import (
 	"github.com/jeremiergz/nas-cli/internal/cmd/media/subtitle/internal/cleaner"
 	"github.com/jeremiergz/nas-cli/internal/config"
 	"github.com/jeremiergz/nas-cli/internal/prompt"
-	svc "github.com/jeremiergz/nas-cli/internal/service"
 	"github.com/jeremiergz/nas-cli/internal/service/str"
 	"github.com/jeremiergz/nas-cli/internal/util/cmdutil"
 	"github.com/jeremiergz/nas-cli/internal/util/fsutil"
@@ -144,25 +143,22 @@ func process(ctx context.Context, w io.Writer, subtitleFiles []string, keepOrigi
 
 	padder := str.NewPadder(subtitleFiles)
 
-	cleaners := make([]svc.Runnable, len(subtitleFiles))
-	for index, subtitleFile := range subtitleFiles {
-		subtitleFilePath := filepath.Join(config.WD, subtitleFile)
-		paddingLength := padder.PaddingLength(subtitleFile, 1)
-		tracker := &progress.Tracker{
-			DeferStart: true,
-			Message:    fmt.Sprintf("%s%*s", subtitleFile, paddingLength, " "),
-			Total:      100,
-		}
-		pw.AppendTracker(tracker)
-
-		c := cleaner.New(subtitleFilePath, keepOriginal).
-			SetOutput(w).
-			SetTracker(tracker)
-		cleaners[index] = c
-	}
-	for _, cleaner := range cleaners {
+	for _, subtitleFile := range subtitleFiles {
+		subtitleFile := subtitleFile
 		eg.Go(func() error {
-			return cleaner.Run(ctx)
+			subtitleFilePath := filepath.Join(config.WD, subtitleFile)
+			paddingLength := padder.PaddingLength(subtitleFile, 1)
+			tracker := &progress.Tracker{
+				DeferStart: true,
+				Message:    fmt.Sprintf("%s%*s", subtitleFile, paddingLength, " "),
+				Total:      100,
+			}
+			pw.AppendTracker(tracker)
+
+			c := cleaner.New(subtitleFilePath, keepOriginal).
+				SetOutput(w).
+				SetTracker(tracker)
+			return c.Run(ctx)
 		})
 	}
 	if err := eg.Wait(); err != nil {

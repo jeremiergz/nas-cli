@@ -20,7 +20,6 @@ import (
 	"github.com/jeremiergz/nas-cli/internal/cmd/media/subtitle/extract/internal/extractor"
 	"github.com/jeremiergz/nas-cli/internal/config"
 	"github.com/jeremiergz/nas-cli/internal/prompt"
-	svc "github.com/jeremiergz/nas-cli/internal/service"
 	"github.com/jeremiergz/nas-cli/internal/service/str"
 	"github.com/jeremiergz/nas-cli/internal/util"
 	"github.com/jeremiergz/nas-cli/internal/util/cmdutil"
@@ -182,24 +181,21 @@ func process(ctx context.Context, w io.Writer, entries []mkvEntry) error {
 
 	padder := str.NewPadder(lo.Map(entries, func(e mkvEntry, _ int) string { return e.file }))
 
-	extractors := make([]svc.Runnable, len(entries))
-	for i, e := range entries {
-		paddingLength := padder.PaddingLength(e.file, 1)
-		tracker := &progress.Tracker{
-			DeferStart: true,
-			Message:    fmt.Sprintf("%s%*s", e.file, paddingLength, " "),
-			Total:      100,
-		}
-		pw.AppendTracker(tracker)
-
-		ex := extractor.
-			New(e.file, e.streams, e.duration).
-			SetOutput(w).
-			SetTracker(tracker)
-		extractors[i] = ex
-	}
-	for _, ex := range extractors {
+	for _, entry := range entries {
+		entry := entry
 		eg.Go(func() error {
+			paddingLength := padder.PaddingLength(entry.file, 1)
+			tracker := &progress.Tracker{
+				DeferStart: true,
+				Message:    fmt.Sprintf("%s%*s", entry.file, paddingLength, " "),
+				Total:      100,
+			}
+			pw.AppendTracker(tracker)
+
+			ex := extractor.
+				New(entry.file, entry.streams, entry.duration).
+				SetOutput(w).
+				SetTracker(tracker)
 			return ex.Run(ctx)
 		})
 	}
