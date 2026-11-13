@@ -66,7 +66,7 @@ type file struct {
 	extension string
 	filePath  string
 	id        uuid.UUID
-	subtitles map[string][]Subtitle
+	subtitles map[string]map[string][]Subtitle
 }
 
 func newFile(basename, extension, filePath string) (*file, error) {
@@ -115,13 +115,30 @@ func (f *file) SetFilePath(path string) {
 }
 
 func (f *file) Subtitles(languages ...string) map[string][]Subtitle {
+	return f.subtitlesWithExtension(util.AcceptedSubtitleExtension, languages...)
+}
+
+// SubtitlesWithExtension returns matching subtitle files with the given extension.
+func (f *file) SubtitlesWithExtension(extension string) map[string][]Subtitle {
+	return f.subtitlesWithExtension(extension)
+}
+
+func (f *file) subtitlesWithExtension(extension string, languages ...string) map[string][]Subtitle {
+	extension = strings.TrimPrefix(strings.ToLower(extension), ".")
+	normalizedLanguages := make([]string, 0, len(languages))
+	for _, language := range languages {
+		normalizedLanguages = append(normalizedLanguages, strings.ToLower(language))
+	}
 	if f.subtitles == nil {
+		f.subtitles = map[string]map[string][]Subtitle{}
+	}
+	if _, ok := f.subtitles[extension]; !ok {
 		subtitles := map[string][]Subtitle{}
 
 		files, err := os.ReadDir(filepath.Dir(f.FilePath()))
 		if err == nil {
 			videoName := util.RemoveDiacritics(strings.ToLower(f.Name()))
-			subtitleExtension := fmt.Sprintf(".%s", util.AcceptedSubtitleExtension)
+			subtitleExtension := fmt.Sprintf(".%s", extension)
 
 			for _, file := range files {
 				if file.IsDir() {
@@ -129,15 +146,15 @@ func (f *file) Subtitles(languages ...string) map[string][]Subtitle {
 				}
 
 				filename := file.Name()
-				if filepath.Ext(filename) != subtitleExtension {
+				if !strings.EqualFold(filepath.Ext(filename), subtitleExtension) {
 					continue
 				}
 
 				// Strip the subtitle extension to get "<name>.<lang>[.forced]".
-				withoutExt := strings.TrimSuffix(filename, subtitleExtension)
-				forced := strings.HasSuffix(withoutExt, ".forced")
+				withoutExt := strings.TrimSuffix(filename, filepath.Ext(filename))
+				forced := strings.HasSuffix(strings.ToLower(withoutExt), ".forced")
 				if forced {
-					withoutExt = strings.TrimSuffix(withoutExt, ".forced")
+					withoutExt = withoutExt[:len(withoutExt)-len(".forced")]
 				}
 				lastDot := strings.LastIndex(withoutExt, ".")
 				if lastDot < 0 {
@@ -147,10 +164,6 @@ func (f *file) Subtitles(languages ...string) map[string][]Subtitle {
 				subtitleName := withoutExt[:lastDot]
 				languageCode := strings.ToLower(withoutExt[lastDot+1:])
 				if len(languageCode) != 3 {
-					continue
-				}
-
-				if languages != nil && !slices.Contains(languages, languageCode) {
 					continue
 				}
 
@@ -164,10 +177,17 @@ func (f *file) Subtitles(languages ...string) map[string][]Subtitle {
 				}
 			}
 		}
-		f.subtitles = subtitles
+		f.subtitles[extension] = subtitles
 	}
 
-	return f.subtitles
+	subtitles := map[string][]Subtitle{}
+	for language, entries := range f.subtitles[extension] {
+		if len(normalizedLanguages) > 0 && !slices.Contains(normalizedLanguages, strings.ToLower(language)) {
+			continue
+		}
+		subtitles[language] = entries
+	}
+	return subtitles
 }
 
 var (

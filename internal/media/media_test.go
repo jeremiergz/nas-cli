@@ -3,6 +3,7 @@ package media
 import (
 	"os"
 	"path/filepath"
+	"reflect"
 	"testing"
 )
 
@@ -100,6 +101,19 @@ func TestFileSubtitles(t *testing.T) {
 			},
 		},
 		{
+			name:      "empty language filter uses all languages",
+			videoFile: "movie.mkv",
+			neighborFiles: []string{
+				"movie.eng.srt",
+				"movie.spa.srt",
+			},
+			filterLangs: []string{},
+			wantSubtitles: map[string][]Subtitle{
+				"eng": {{Kind: SubtitleKindFull, Name: "movie.eng.srt"}},
+				"spa": {{Kind: SubtitleKindFull, Name: "movie.spa.srt"}},
+			},
+		},
+		{
 			name:      "should ignore diacritics and case when matching subtitles",
 			videoFile: "movie.mkv",
 			neighborFiles: []string{
@@ -167,6 +181,28 @@ func TestFileSubtitles(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestFileSubtitlesWithExtension(t *testing.T) {
+	dir := t.TempDir()
+	for _, name := range []string{"movie.mkv", "movie.fre.ass", "movie.eng.srt"} {
+		if err := os.WriteFile(filepath.Join(dir, name), nil, 0644); err != nil {
+			t.Fatalf("failed to create file %s: %v", name, err)
+		}
+	}
+
+	video, err := newFile("movie.mkv", "mkv", filepath.Join(dir, "movie.mkv"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	got := video.SubtitlesWithExtension("ass")
+	want := map[string][]Subtitle{
+		"fre": {{Kind: SubtitleKindFull, Name: "movie.fre.ass"}},
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("SubtitlesWithExtension() = %+v, want %+v", got, want)
 	}
 }
 

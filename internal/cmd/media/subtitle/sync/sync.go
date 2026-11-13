@@ -17,6 +17,7 @@ import (
 
 	"github.com/jeremiergz/nas-cli/internal/cmd/media/subtitle/sync/internal/syncer"
 	"github.com/jeremiergz/nas-cli/internal/config"
+	"github.com/jeremiergz/nas-cli/internal/media"
 	"github.com/jeremiergz/nas-cli/internal/prompt"
 	svc "github.com/jeremiergz/nas-cli/internal/service"
 	"github.com/jeremiergz/nas-cli/internal/service/str"
@@ -81,16 +82,25 @@ func New() *cobra.Command {
 				return nil
 			}
 
-			videoFiles := fsutil.List(config.WD, videoExtensions, nil, false)
+			videoFiles, err := media.Files(config.WD, videoExtensions, false)
+			if err != nil {
+				return err
+			}
 			if len(videoFiles) == 0 {
 				pterm.Success.Println("No video file to process")
 				return nil
 			}
 
-			sort.Sort(util.SortAlphabetic(videoFiles))
-			sort.Sort(util.SortAlphabetic(subtitleFiles))
+			sort.Slice(videoFiles, func(i, j int) bool {
+				return strings.ToLower(videoFiles[i].Basename()) < strings.ToLower(videoFiles[j].Basename())
+			})
+			jobs := matchingSubtitles(videoFiles, subtitleExtension)
+			if len(jobs) == 0 {
+				pterm.Success.Println("No matching subtitle file to process")
+				return nil
+			}
 
-			displayList(out, config.WD, videoFiles, subtitleFiles)
+			displayList(out, config.WD, jobs)
 			if dryRun {
 				return nil
 			}
@@ -114,7 +124,7 @@ func New() *cobra.Command {
 
 			fmt.Fprintln(out)
 
-			err = process(cmd.Context(), out, videoFiles, subtitleFiles)
+			err = process(cmd.Context(), out, jobs)
 			if err != nil {
 				return err
 			}
@@ -136,24 +146,75 @@ func New() *cobra.Command {
 	return cmd
 }
 
-func displayList(out io.Writer, wd string, videos []string, subtitles []string) {
+func displayList(out io.Writer, wd string, jobs []syncJob) {
 	lw := cmdutil.NewListWriter()
 	lw.AppendItem(wd)
-	for index, video := range videos {
+	for index, job := range jobs {
 		lw.Indent()
 		lw.AppendItem(index + 1)
 
 		lw.Indent()
-		lw.AppendItem(subtitles[index])
-		lw.AppendItem(video)
+		lw.AppendItem(job.subtitle)
+		lw.AppendItem(job.video)
 
 		lw.UnIndentAll()
 	}
 	fmt.Fprintln(out, lw.Render())
 }
 
-func process(ctx context.Context, out io.Writer, videoFiles, subtitleFiles []string) error {
-	pw := cmdutil.NewProgressWriter(out, len(videoFiles))
+type syncJob struct {
+	video    string
+	subtitle string
+	forced   bool
+}
+
+func matchingSubtitles(videos []*media.File, extension string) []syncJob {
+	var jobs []syncJob
+	for _, video := range videos {
+		subtitlesByLanguage := video.SubtitlesWithExtension(extension)
+		languages := make([]string, 0, len(subtitlesByLanguage))
+		for language := range subtitlesByLanguage {
+			languages = append(languages, language)
+		}
+		sort.Strings(languages)
+
+		for _, language := range languages {
+			subtitles := subtitlesByLanguage[language]
+			sort.Slice(subtitles, func(i, j int) bool {
+				return strings.ToLower(subtitles[i].Name) < strings.ToLower(subtitles[j].Name)
+			})
+			for _, subtitle := range subtitles {
+				jobs = append(jobs, syncJob{
+					video:    video.Basename(),
+					subtitle: subtitle.Name,
+					forced:   subtitle.Kind == media.SubtitleKindForced,
+				})
+			}
+		}
+	}
+	return jobs
+}
+
+func process(ctx context.Context, out io.Writer, jobs []syncJob) error {
+	videoFiles := make([]string, len(jobs))
+	streams := make([]referenceStream, len(jobs))
+	streamsByVideo := make(map[string]referenceStream)
+	for i, job := range jobs {
+		videoFiles[i] = job.video
+		stream, ok := streamsByVideo[job.video]
+		if !ok {
+			videoPath := filepath.Join(config.WD, job.video)
+			var err error
+			stream, err = probeReferenceStream(ctx, videoPath, streamType, streamLang)
+			if err != nil {
+				return fmt.Errorf("failed to select reference stream for %s: %w", job.video, err)
+			}
+			streamsByVideo[job.video] = stream
+		}
+		streams[i] = stream
+	}
+
+	pw := cmdutil.NewProgressWriter(out, len(jobs))
 
 	eg, _ := errgroup.WithContext(ctx)
 	eg.SetLimit(cmdutil.MaxConcurrentGoroutines)
@@ -163,31 +224,25 @@ func process(ctx context.Context, out io.Writer, videoFiles, subtitleFiles []str
 
 	padder := str.NewPadder(videoFiles)
 
-	syncers := make([]svc.Runnable, len(videoFiles))
-	for index, videoFile := range videoFiles {
-		videoPath := filepath.Join(config.WD, videoFile)
-		stream, err := probeReferenceStream(ctx, videoPath, streamType, streamLang)
-		if err != nil {
-			return fmt.Errorf("failed to select reference stream for %s: %w", videoFile, err)
-		}
-
-		subLang := languageForSubtitle(subtitleFiles[index], subtitleLang)
-		paddingLength := padder.PaddingLength(videoFile, 12)
+	syncers := make([]svc.Runnable, len(jobs))
+	for index, job := range jobs {
+		subLang := languageForSubtitle(job.subtitle, subtitleLang)
+		paddingLength := padder.PaddingLength(job.video, 12)
 		tracker := &progress.Tracker{
 			DeferStart: true,
-			Message:    fmt.Sprintf("%s%*s", videoFile, paddingLength, " "),
+			Message:    fmt.Sprintf("%s%*s", job.video, paddingLength, " "),
 			Total:      100,
 		}
 		pw.AppendTracker(tracker)
 
 		s := syncer.
 			New(
-				videoFile,
-				normalizeSubsyncLanguage(firstNonEmpty(videoLang, stream.language)),
-				subtitleFiles[index],
+				job.video,
+				normalizeSubsyncLanguage(firstNonEmpty(videoLang, streams[index].language)),
+				job.subtitle,
 				subLang,
-				stream.index+1,
-				outputSubtitleName(videoFile, subLang),
+				streams[index].index+1,
+				outputSubtitleName(job.video, subLang, job.forced),
 			).
 			SetOutput(out).
 			SetTracker(tracker)
@@ -240,10 +295,13 @@ func languageForSubtitle(subtitle, override string) string {
 	return normalizeSubsyncLanguage(language)
 }
 
-func outputSubtitleName(video, language string) string {
+func outputSubtitleName(video, language string, forced bool) string {
 	name := strings.TrimSuffix(video, filepath.Ext(video))
 	if language != "" {
 		name += "." + language
+	}
+	if forced {
+		name += ".forced"
 	}
 	return name + ".srt"
 }
