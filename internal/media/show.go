@@ -101,8 +101,9 @@ func (s *Season) Episodes() []*Episode {
 type Episode struct {
 	*file
 
-	index  int
-	season *Season
+	index    int
+	rangeEnd int
+	season   *Season
 }
 
 func (e *Episode) Index() int {
@@ -111,6 +112,18 @@ func (e *Episode) Index() int {
 
 func (e *Episode) Name() string {
 	width := max(numberOfDigits(e.Index()), 2)
+	if e.rangeEnd > 0 {
+		endWidth := max(numberOfDigits(e.rangeEnd), 2)
+		return fmt.Sprintf("%s - S%02dE%0*d-E%0*d",
+			e.Season().Show().Name(),
+			e.Season().Index(),
+			width,
+			e.Index(),
+			endWidth,
+			e.rangeEnd,
+		)
+	}
+
 	return fmt.Sprintf("%s - S%02dE%0*d",
 		e.Season().Show().Name(),
 		e.Season().Index(),
@@ -264,7 +277,8 @@ func PrintShows(wd string, shows []*Show) {
 	pterm.Println(lw.Render())
 }
 
-var showParsingRegexp = regexp.MustCompile(`^(?<name>.+)\s-\sS(?<season>\d{2})E(?<episode>\d{2,4})\.(?<extension>.{3})$`)
+var showParsingRegexp = regexp.MustCompile(`^(?<name>.+)\s-\sS(?<season>\d{2})E(?<episode>\d{2,4})(?:-E?\d{2,4})?\.(?<extension>.{3})$`)
+var showEpisodeRangeRegexp = regexp.MustCompile(`(?i)S\d{1,2}E\d{2,4}-E?(\d{2,4})(?:[^0-9]|$)`)
 
 func parseShowWithRegexp(basename string) (name string, seasonNumber, episodeNumber int, extension string, err error) {
 	matches := showParsingRegexp.FindStringSubmatch(basename)
@@ -337,8 +351,9 @@ func listShowsWithParser(
 		}
 
 		episode := Episode{
-			file:  f,
-			index: episodeNumber,
+			file:     f,
+			index:    episodeNumber,
+			rangeEnd: showEpisodeRangeEnd(basename),
 		}
 
 		var season *Season
@@ -384,4 +399,14 @@ func listShowsWithParser(
 
 func numberOfDigits(n int) int {
 	return len(strconv.Itoa(int(math.Abs(float64(n)))))
+}
+
+func showEpisodeRangeEnd(basename string) int {
+	matches := showEpisodeRangeRegexp.FindStringSubmatch(basename)
+	if len(matches) != 2 {
+		return 0
+	}
+
+	rangeEnd, _ := strconv.Atoi(matches[1])
+	return rangeEnd
 }

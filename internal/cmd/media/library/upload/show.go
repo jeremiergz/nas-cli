@@ -119,13 +119,13 @@ func processShows(ctx context.Context, out io.Writer, kind media.Kind) error {
 					Destination: filepath.Join(
 						showDir,
 						episode.Season().Name(),
-						episode.FullName(),
+						episode.Basename(),
 					),
 					DisplayName: fmt.Sprintf(
 						"%s/%s/%s",
 						episode.Season().Show().Name(),
 						episode.Season().Name(),
-						episode.FullName(),
+						episode.Basename(),
 					),
 				})
 				// We only want to add the show's images to the first episode upload to avoid duplicate
