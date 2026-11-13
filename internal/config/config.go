@@ -48,7 +48,6 @@ const (
 	KeyNASFQDN             string = "nas.fqdn"
 	KeyPlexAPIURL          string = "plex.api.url"
 	KeyPlexAPIToken        string = "plex.api.token"
-	KeyTermRefreshInterval string = "term.refreshinterval"
 	KeySCPChownGID         string = "scp.chown.gid"
 	KeySCPChownGroup       string = "scp.chown.group"
 	KeySCPChownUID         string = "scp.chown.uid"
@@ -62,6 +61,7 @@ const (
 	KeySSHPort             string = "ssh.port"
 	KeySSHUser             string = "ssh.user"
 	KeySubsyncOptions      string = "subsync.options"
+	KeyTermRefreshInterval string = "term.refreshinterval"
 	KeyTMDBAPIKey          string = "tmdb.api.key"
 )
 
