@@ -8,7 +8,6 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/pterm/pterm"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"go.yaml.in/yaml/v4"
@@ -172,12 +171,6 @@ func init() {
 		viper.SetDefault(KeySubsyncOptions, []string{})
 
 		viper.SetDefault(KeyTMDBAPIKey, "")
-
-		err := Save()
-		if err != nil {
-			fmt.Println(pterm.Red("✗"), err.Error())
-			os.Exit(1)
-		}
 	})
 }
 

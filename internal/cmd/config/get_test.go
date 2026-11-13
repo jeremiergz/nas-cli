@@ -3,7 +3,9 @@ package config
 import (
 	"bytes"
 	"fmt"
+	"os"
 	"os/user"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -30,4 +32,6 @@ func Test_Config_Get(t *testing.T) {
 	currentUser, _ := user.Current()
 
 	assert.Equal(t, fmt.Sprintf("%s\n", currentUser.Username), output.String())
+	_, err = os.Stat(filepath.Join(tempDir, config.Filename))
+	assert.ErrorIs(t, err, os.ErrNotExist)
 }

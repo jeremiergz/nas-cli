@@ -38,15 +38,6 @@ func newListCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			out := cmd.OutOrStdout()
 
-			if err := viper.ReadInConfig(); err != nil {
-				if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
-					return err
-				}
-
-				fmt.Fprintln(out, "no configuration entries")
-				return nil
-			}
-
 			var toPrint string
 			switch cmdutil.OutputFormat {
 			case "json":
