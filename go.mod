@@ -5,7 +5,7 @@ go 1.27
 require (
 	github.com/asticode/go-astisub v0.45.0
 	github.com/google/uuid v1.6.0
-	github.com/jedib0t/go-pretty/v6 v6.9.1
+	github.com/jedib0t/go-pretty/v6 v6.9.2
 	github.com/pkg/sftp v1.13.12
 	github.com/pterm/pterm v0.12.84
 	github.com/samber/lo v1.53.0
