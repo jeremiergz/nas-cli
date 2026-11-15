@@ -89,7 +89,7 @@ func NewProgressWriter(out io.Writer, expectedLength int) progress.Writer {
 	pw.SetNumTrackersExpected(expectedLength)
 	pw.SetSortBy(progress.SortByNone)
 	pw.SetTrackerPosition(progress.PositionRight)
-	pw.SetUpdateFrequency(viper.GetDuration(config.KeyTermRefreshInterval))
+	pw.SetUpdateFrequency(RefreshInterval())
 	pw.Style().Colors = progress.StyleColorsDefault
 	pw.Style().Options.PercentFormat = "%3.0f%%"
 	pw.Style().Options.TimeDonePrecision = time.Second
@@ -107,6 +107,23 @@ func NewProgressWriter(out io.Writer, expectedLength int) progress.Writer {
 	go pw.Render()
 
 	return pw
+}
+
+// RefreshInterval returns the configured interval, or the progress library default if invalid.
+func RefreshInterval() time.Duration {
+	if refreshInterval := viper.GetDuration(config.KeyTermRefreshInterval); refreshInterval > 0 {
+		return refreshInterval
+	}
+
+	return progress.DefaultUpdateFrequency
+}
+
+// StartSpinner starts a spinner using the configured terminal refresh interval.
+func StartSpinner(text string) (*pterm.SpinnerPrinter, error) {
+	spinner := pterm.DefaultSpinner
+	spinner.Delay = RefreshInterval()
+
+	return spinner.Start(text)
 }
 
 // Checks that value passed to --output is valid.

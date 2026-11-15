@@ -78,7 +78,7 @@ func processMovies(
 	eg, _ := errgroup.WithContext(ctx)
 	eg.SetLimit(cmdutil.MaxConcurrentGoroutines)
 
-	spinner, err := pterm.DefaultSpinner.Start("Loading information...")
+	spinner, err := cmdutil.StartSpinner("Loading information...")
 	if err != nil {
 		return fmt.Errorf("could not start spinner: %w", err)
 	}

@@ -290,7 +290,7 @@ func process(ctx context.Context, out io.Writer, uploads []*upload, kind media.K
 	}
 
 	if len(imagesToConvert) > 0 {
-		spinner, err := pterm.DefaultSpinner.Start("Processing images...")
+		spinner, err := cmdutil.StartSpinner("Processing images...")
 		if err != nil {
 			return fmt.Errorf("could not start spinner: %w", err)
 		}

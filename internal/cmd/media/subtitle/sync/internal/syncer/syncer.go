@@ -97,6 +97,7 @@ func (p *process) Run(ctx context.Context) error {
 		return err
 	}
 
+	refreshInterval := cmdutil.RefreshInterval()
 	go func() {
 		originalMessage := p.tracker.Message[:(len(p.tracker.Message) - 12)] // Remove margin from the message.
 		for !p.tracker.IsDone() {
@@ -106,7 +107,7 @@ func (p *process) Run(ctx context.Context) error {
 				p.tracker.UpdateMessage(fmt.Sprintf("%s %s points ", originalMessage, formatPoints(points)))
 			}
 			bufOut.Reset()
-			time.Sleep(100 * time.Millisecond)
+			time.Sleep(refreshInterval)
 		}
 	}()
 

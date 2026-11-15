@@ -130,6 +130,7 @@ func (p *process) Run(ctx context.Context) error {
 		return err
 	}
 
+	refreshInterval := cmdutil.RefreshInterval()
 	go func() {
 		for !p.tracker.IsDone() {
 			progress, err := getRsyncProgress(bufOut.StringAndReset())
@@ -139,7 +140,7 @@ func (p *process) Run(ctx context.Context) error {
 					p.tracker.SetValue(int64(progress))
 				}
 			}
-			time.Sleep(100 * time.Millisecond)
+			time.Sleep(refreshInterval)
 		}
 	}()
 

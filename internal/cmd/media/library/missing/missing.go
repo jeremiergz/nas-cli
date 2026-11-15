@@ -91,7 +91,7 @@ func processMissing(cmd *cobra.Command, kind string) error {
 			config.KeyTMDBAPIKey, config.KeyTMDBAPIKey)
 	}
 
-	spinner, err := pterm.DefaultSpinner.Start("Loading shows and comparing episodes...")
+	spinner, err := cmdutil.StartSpinner("Loading shows and comparing episodes...")
 	if err != nil {
 		return fmt.Errorf("could not start spinner: %w", err)
 	}

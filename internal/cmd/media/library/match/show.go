@@ -12,6 +12,7 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/jeremiergz/nas-cli/internal/cmd/media/library/match/internal/plex"
+	"github.com/jeremiergz/nas-cli/internal/util/cmdutil"
 )
 
 var (
@@ -49,7 +50,7 @@ func newTVShowCmd() *cobra.Command {
 }
 
 func processShows(_ context.Context, kind plex.ShowsKind) error {
-	spinner, err := pterm.DefaultSpinner.Start("Loading information...")
+	spinner, err := cmdutil.StartSpinner("Loading information...")
 	if err != nil {
 		return fmt.Errorf("could not start spinner: %w", err)
 	}
